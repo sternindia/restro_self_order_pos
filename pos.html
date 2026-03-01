@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant POS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #f4f6f9;
+        }
+        .pos-header {
+            background: #212529;
+            color: #fff;
+            padding: 10px 15px;
+        }
+        .category-btn {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .menu-card {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .menu-card:hover {
+            transform: scale(1.03);
+        }
+        .bill-panel {
+            background: #fff;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+        .bill-footer button {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="pos-header d-flex justify-content-between align-items-center">
+    <div>
+        <strong>🍽 My Restaurant</strong>
+    </div>
+
+    <div class="d-flex gap-2">
+        <select class="form-select form-select-sm">
+            <option>DINE-IN</option>
+            <option>TAKEAWAY</option>
+            <option>DELIVERY</option>
+        </select>
+
+        <select class="form-select form-select-sm">
+            <option>Table T1</option>
+            <option>Table T2</option>
+            <option>Table T3</option>
+        </select>
+
+        <button class="btn btn-sm btn-warning">
+            <i class="bi bi-person-plus"></i> Customer
+        </button>
+    </div>
+
+    <div>
+        Cashier: <strong>Ravi</strong> |
+        <a href="#" class="text-danger text-decoration-none">Logout</a>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- LEFT: CATEGORIES -->
+        <div class="col-md-2 bg-light pt-3" style="height: calc(100vh - 70px); overflow-y:auto;">
+            <button class="btn btn-dark category-btn">All</button>
+            <button class="btn btn-outline-dark category-btn">Starters</button>
+            <button class="btn btn-outline-dark category-btn">Main Course</button>
+            <button class="btn btn-outline-dark category-btn">Breads</button>
+            <button class="btn btn-outline-dark category-btn">Drinks</button>
+            <button class="btn btn-outline-dark category-btn">Desserts</button>
+        </div>
+
+        <!-- CENTER: MENU ITEMS -->
+        <div class="col-md-6 pt-3">
+            <input type="text" class="form-control mb-3" placeholder="Search item...">
+
+            <div class="row g-3">
+                <!-- ITEM -->
+                <div class="col-md-4">
+					<div class="card menu-card text-center p-2"
+						 onclick="addToCart(1, 'Burger', 120)">
+						<h6>Burger</h6>
+						<strong>₹120</strong>
+					</div>
+				</div>
+
+                <div class="col-md-4">
+					<div class="card menu-card text-center p-2"
+						 onclick="addToCart(2, 'Pizza', 250)">
+						<h6>Pizza</h6>
+						<strong>₹250</strong>
+					</div>
+				</div>
+
+                <div class="col-md-4">
+                    <div class="card menu-card text-center p-2"
+						 onclick="addToCart(3, 'Pasta', 180)">
+                        <h6>Pasta</h6>
+                        <strong>₹180</strong>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+					<div class="card menu-card text-center p-2"
+						 onclick="addToCart(4, 'Fries', 90)">
+						<h6>Fries</h6>
+						<strong>₹90</strong>
+					</div>
+				</div>
+            </div>
+        </div>
+
+        <!-- RIGHT: BILL PANEL -->
+        <div class="col-md-4 bill-panel p-3">
+
+            <h6 class="border-bottom pb-2">Table: T1 | Order #1023</h6>
+
+            <!-- ITEMS -->
+            <div id="cart-items"></div>
+
+			<hr>
+
+            <!-- TOTALS -->
+            <div class="d-flex justify-content-between">
+				<span>Subtotal</span>
+				<strong>₹<span id="subtotal">0</span></strong>
+			</div>
+			<div class="d-flex justify-content-between">
+				<span>Tax (5%)</span>
+				<strong>₹<span id="tax">0</span></strong>
+			</div>
+			<div class="d-flex justify-content-between fs-5">
+				<strong>Grand Total</strong>
+				<strong>₹<span id="grand-total">0</span></strong>
+			</div>
+
+            <hr>
+
+            <!-- ACTIONS -->
+            <div class="bill-footer">
+                <button class="btn btn-secondary">Hold</button>
+                <button class="btn btn-warning">Print KOT</button>
+                <button class="btn btn-danger">Cancel</button>
+                <button class="btn btn-success" onclick="saveOrder()">Pay</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+let cart = {};
+const TAX_PERCENT = 5;
+
+/* ADD ITEM */
+function addToCart(id, name, price) {
+    if (cart[id]) {
+        cart[id].qty += 1;
+    } else {
+        cart[id] = {
+            name: name,
+            price: price,
+            qty: 1
+        };
+    }
+    renderCart();
+}
+
+/* INCREASE QTY */
+function increaseQty(id) {
+    cart[id].qty++;
+    renderCart();
+}
+
+/* DECREASE QTY */
+function decreaseQty(id) {
+    if (cart[id].qty > 1) {
+        cart[id].qty--;
+    } else {
+        delete cart[id];
+    }
+    renderCart();
+}
+
+/* REMOVE ITEM */
+function removeItem(id) {
+    delete cart[id];
+    renderCart();
+}
+
+/* RENDER CART */
+function renderCart() {
+    let cartHTML = '';
+    let subtotal = 0;
+
+    for (let id in cart) {
+        let item = cart[id];
+        let itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
+
+        cartHTML += `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <strong>${item.name}</strong><br>
+                    <button class="btn btn-sm btn-outline-secondary"
+                        onclick="decreaseQty(${id})">−</button>
+                    <span class="mx-2">${item.qty}</span>
+                    <button class="btn btn-sm btn-outline-secondary"
+                        onclick="increaseQty(${id})">+</button>
+                </div>
+                <div>
+                    ₹${itemTotal}
+                    <button class="btn btn-sm btn-danger ms-2"
+                        onclick="removeItem(${id})">×</button>
+                </div>
+            </div>
+        `;
+    }
+
+    let tax = (subtotal * TAX_PERCENT) / 100;
+    let grandTotal = subtotal + tax;
+
+    document.getElementById('cart-items').innerHTML = cartHTML || '<p class="text-muted">No items</p>';
+    document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+    document.getElementById('tax').innerText = tax.toFixed(2);
+    document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
+}
+</script>
+<script>
+function saveOrder() {
+    if (Object.keys(cart).length === 0) {
+        alert("Cart is empty!");
+        return;
+    }
+
+    let orderData = {
+        order_type: "DINE_IN",
+        table_id: 1,
+        customer_id: null,
+        cart: cart
+    };
+
+    fetch("save_order.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(orderData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert("Order Saved! Order ID: " + data.order_id);
+            cart = {};
+            renderCart();
+        } else {
+            alert("Error saving order");
+        }
+    });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
