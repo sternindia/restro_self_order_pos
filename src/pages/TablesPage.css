@@ -1,0 +1,310 @@
+/* --------<Navbar Styles>--------- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding-left: 3%;
+    padding-right: 3%;
+    padding-top: 1.5%;
+    padding-bottom: 1.5%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: 10vh;
+    z-index: 1000;
+    position: sticky;
+    top: 0;
+    box-sizing: border-box;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.shop-name {
+    font-size: 20px;
+    color: #0077b6;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+.icons {
+    display: flex;
+    gap: 15px;
+    font-size: 20px;
+    align-items: center;
+}
+
+.icons a {
+    text-decoration: none;
+    color: black;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+/* --------<Tables Management>--------- */
+.tables-body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f8f8;
+    padding-bottom: 3vh;
+}
+
+.tables-main {
+    margin-top: 20px;
+    padding: 10px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.table-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #eee;
+}
+
+.table-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.table-status-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.table-card.available .table-status-badge {
+    background-color: #27ae60;
+}
+
+.table-card.occupied .table-status-badge {
+    background-color: #f39c12;
+}
+
+.table-card.dirty .table-status-badge {
+    background-color: #7f8c8d;
+}
+
+.table-card.reserved .table-status-badge {
+    background-color: #3498db;
+}
+
+.table-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #000;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.table-seats {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.table-message {
+    font-size: 14px;
+    color: #e74c3c;
+    font-weight: 500;
+    margin: 8px 0;
+    text-align: left;
+}
+
+.table-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+
+.server-info,
+.time-info,
+.total-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.server-info .label {
+    color: #666;
+}
+
+.server-info .value {
+    font-weight: 500;
+    color: #000;
+}
+
+.time-info {
+    color: #e67e22;
+    font-weight: 500;
+}
+
+.time-value {
+    margin-left: 8px;
+}
+
+.total-info .label {
+    color: #666;
+}
+
+.total-info .total-value {
+    font-weight: bold;
+    color: #27ae60;
+    font-size: 16px;
+}
+
+.reservation-time,
+.guest-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.guest-name {
+    font-weight: 500;
+}
+
+.table-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.table-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.seat-guests-btn {
+    background-color: #27ae60;
+    color: white;
+}
+
+.seat-guests-btn:hover {
+    background-color: #229954;
+}
+
+.open-tab-btn {
+    background-color: #27ae60;
+    color: white;
+}
+
+.open-tab-btn:hover {
+    background-color: #229954;
+}
+
+.action-btn {
+    background-color: #3498db;
+    color: white;
+    flex: 1;
+}
+
+.action-btn:hover {
+    background-color: #2980b9;
+}
+
+.add-items {
+    background-color: #3498db;
+}
+
+.add-items:hover {
+    background-color: #2980b9;
+}
+
+.pay-now {
+    background-color: #3498db;
+}
+
+.pay-now:hover {
+    background-color: #2980b9;
+}
+
+.clean-btn {
+    background-color: #7f8c8d;
+    color: white;
+    width: 100%;
+}
+
+.clean-btn:hover {
+    background-color: #6c7a7d;
+}
+
+.arrived-btn {
+    background-color: #3498db;
+    color: white;
+    width: 100%;
+}
+
+.arrived-btn:hover {
+    background-color: #2980b9;
+}
+
+@media (max-width: 768px) {
+    .tables-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .table-card {
+        padding: 15px;
+    }
+
+    .table-number {
+        font-size: 24px;
+    }
+
+    .table-btn {
+        padding: 8px 10px;
+        font-size: 12px;
+        min-width: 100px;
+    }
+}
