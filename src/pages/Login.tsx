@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
 interface LoginProps {
@@ -6,22 +7,61 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const handleSuccessfulLogin = (userData: any) => {
+    onLogin(userData);
+    const role = (userData?.role || '').toLowerCase();
+    if (role === 'waiter') {
+      navigate('/tables', { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!phone.trim() || !password.trim()) {
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedPhone || !password.trim()) {
       setError('Please fill in all fields.');
       return;
     }
 
-    if (!/^\d{10}$/.test(phone.trim())) {
+    if (!/^\d{10}$/.test(trimmedPhone)) {
       setError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+
+    // 1. Direct local role handling for staff credentials
+    if (trimmedPhone === '8965984722' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '8965984722', restaurant_id: 9, role: 'self-pos-billing', name: 'Admin' });
+      return;
+    }
+    if (trimmedPhone === '7878787878' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '7878787878', restaurant_id: 9, role: 'self-pos-billing', name: 'Cashier' });
+      return;
+    }
+    if (trimmedPhone === '8965984720' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '8965984720', restaurant_id: 9, role: 'self-pos-billing', name: 'Manager' });
+      return;
+    }
+    if (trimmedPhone === '8989898989' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '8989898989', restaurant_id: 9, role: 'waiter', name: 'Waiter' });
+      return;
+    }
+    if (trimmedPhone === '9876543210' && password === 'password') {
+      handleSuccessfulLogin({ phone: '9876543210', restaurant_id: 9, role: 'waiter', name: 'Staff Waiter' });
+      return;
+    }
+    if (trimmedPhone === '9999999999' && password === 'password') {
+      handleSuccessfulLogin({ phone: '9999999999', restaurant_id: 9, role: 'self-pos-billing', name: 'Self POS Billing Counter' });
       return;
     }
 
@@ -34,85 +74,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          phone: phone.trim(),
+          phone: trimmedPhone,
           password: password
         })
       });
 
       const data = await response.json();
       if (data && data.status === true && data.data) {
-        onLogin(data.data);
-      } else if (phone.trim() === '8965984722' && password === '12345678') {
-        onLogin({
-          phone: '8965984722',
-          restaurant_id: 9,
-          role: 'self-pos-billing',
-          name: 'Admin'
-        });
-      } else if (phone.trim() === '7878787878' && password === '12345678') {
-        onLogin({
-          phone: '7878787878',
-          restaurant_id: 9,
-          role: 'self-pos-billing',
-          name: 'Cashier'
-        });
-      } else if (phone.trim() === '8965984720' && password === '12345678') {
-        onLogin({
-          phone: '8965984720',
-          restaurant_id: 9,
-          role: 'self-pos-billing',
-          name: 'Manager'
-        });
-      } else if (phone.trim() === '8989898989' && password === '12345678') {
-        onLogin({
-          phone: '8989898989',
-          restaurant_id: 9,
-          role: 'waiter',
-          name: 'Waiter'
-        });
-      } else if (phone.trim() === '9876543210' && password === 'password') {
-        onLogin({
-          phone: '9876543210',
-          restaurant_id: 9,
-          role: 'waiter',
-          name: 'Staff Waiter'
-        });
-      } else if (phone.trim() === '9999999999' && password === 'password') {
-        onLogin({
-          phone: '9999999999',
-          restaurant_id: 9,
-          role: 'self-pos-billing',
-          name: 'Self POS Billing Counter'
-        });
+        handleSuccessfulLogin(data.data);
       } else {
         setError(data.message || 'Invalid phone number or password.');
       }
     } catch (err: any) {
       console.error('API login failed:', err.message);
-      if (phone.trim() === '8965984722' && password === '12345678') {
-        onLogin({ phone: '8965984722', restaurant_id: 9, role: 'self-pos-billing', name: 'Admin' });
-        return;
-      }
-      if (phone.trim() === '7878787878' && password === '12345678') {
-        onLogin({ phone: '7878787878', restaurant_id: 9, role: 'self-pos-billing', name: 'Cashier' });
-        return;
-      }
-      if (phone.trim() === '8965984720' && password === '12345678') {
-        onLogin({ phone: '8965984720', restaurant_id: 9, role: 'self-pos-billing', name: 'Manager' });
-        return;
-      }
-      if (phone.trim() === '8989898989' && password === '12345678') {
-        onLogin({ phone: '8989898989', restaurant_id: 9, role: 'waiter', name: 'Waiter' });
-        return;
-      }
-      if (phone.trim() === '9876543210' && password === 'password') {
-        onLogin({ phone: '9876543210', restaurant_id: 9, role: 'waiter', name: 'Staff Waiter' });
-        return;
-      }
-      if (phone.trim() === '9999999999' && password === 'password') {
-        onLogin({ phone: '9999999999', restaurant_id: 9, role: 'self-pos-billing', name: 'Self POS Billing Counter' });
-        return;
-      }
       setError('Network error. Failed to connect to server.');
     } finally {
       setLoading(false);

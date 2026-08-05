@@ -634,7 +634,7 @@ const CartPage: React.FC = () => {
                   <span>Generating Bill...</span>
                 ) : (
                   <>
-                    <span>⚡ Print Bill</span>
+                    <span>⚡ Confirm & Print</span>
                     <span>→</span>
                   </>
                 )}
@@ -685,7 +685,7 @@ const CartPage: React.FC = () => {
                 disabled={submittingBilling}
                 className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all cursor-pointer shadow-md border border-white/40 disabled:opacity-50"
               >
-                {submittingBilling ? 'Generating Bill...' : '⚡ Print Bill →'}
+                {submittingBilling ? 'Generating Bill...' : '⚡ Confirm & Print →'}
               </button>
             </div>
           ) : !isGuestCustomer && existingOrderId ? (
