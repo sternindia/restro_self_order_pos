@@ -30,6 +30,7 @@ const TablesPage: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
   const fetchedRef = React.useRef(false);
 
   const fetchTables = async () => {
@@ -40,7 +41,41 @@ const TablesPage: React.FC = () => {
       const userObj = savedUser ? JSON.parse(savedUser) : null;
       const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || 9;
 
-      // Fetch both tables and orders in parallel to merge active sessions
+      const parseBool = (val: any, defaultVal: boolean = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const low = val.trim().toLowerCase();
+          if (low === 'true' || low === '1') return true;
+          if (low === 'false' || low === '0') return false;
+        }
+        return !!val;
+      };
+
+      // 1. Parse cached POS settings to determine if tables are enabled
+      let enableTables = true;
+      const cachedSettingsStr = localStorage.getItem('emenu_pos_settings');
+      if (cachedSettingsStr) {
+        try {
+          const settings = JSON.parse(cachedSettingsStr);
+          const enableTablesVal =
+            settings?.hardware_and_preferences?.is_enable_tables ??
+            settings?.is_enable_tables ??
+            settings?.isEnableTables;
+          enableTables = parseBool(enableTablesVal, false);
+          setIsEnableTables(enableTables);
+        } catch { }
+      }
+
+      // If tables are disabled in settings, skip calling backend table/order endpoints
+      if (!enableTables) {
+        setTables([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch tables and active orders in parallel from backend API
       const [tablesRes, ordersRes] = await Promise.all([
         fetch(`${API_BASE_URL}/tables/${restaurantId}`),
         fetch(`${API_BASE_URL}/orders/${restaurantId}`).catch(() => null)
@@ -52,20 +87,13 @@ const TablesPage: React.FC = () => {
       
       const data = await tablesRes.json();
       
-      let activeOrders: any[] = [];
+      let orderHistory: any[] = [];
       if (ordersRes && ordersRes.ok) {
         try {
           const ordersData = await ordersRes.json();
-          const rawOrders = Array.isArray(ordersData) 
+          orderHistory = Array.isArray(ordersData) 
             ? ordersData 
             : (ordersData && Array.isArray(ordersData.data) ? ordersData.data : []);
-          
-          // Match unpaid/pending orders using backend schema fields
-          activeOrders = rawOrders.filter((o: any) => {
-            const isUnpaid = o.bill?.payment_status?.toUpperCase() !== 'PAID';
-            const isPending = o.order_status?.toUpperCase() === 'PENDING';
-            return isUnpaid && isPending;
-          });
         } catch (e) {
           console.warn("Failed to parse orders response:", e);
         }
@@ -91,46 +119,47 @@ const TablesPage: React.FC = () => {
         }
       }
 
-      // Map API statuses cleanly and merge live active orders for Occupied tables
+      // Compute table status dynamically from backend API data:
+      // If table has a PENDING order in backend orderHistory -> Occupied with session details
+      // Otherwise -> Available
       const mappedList: Table[] = list.map((item: any) => {
-        let normalizedStatus: 'Available' | 'Occupied' | 'Busy' | 'Dirty' | 'Reserved' = 'Available';
-        const statusUpper = (item.status || '').toUpperCase();
-        if (statusUpper === 'OCCUPIED') normalizedStatus = 'Occupied';
-        else if (statusUpper === 'BUSY' || statusUpper === 'SELECTING') normalizedStatus = 'Busy';
-        else if (statusUpper === 'DIRTY') normalizedStatus = 'Dirty';
-        else if (statusUpper === 'RESERVED') normalizedStatus = 'Reserved';
-        else normalizedStatus = 'Available';
+        const cleanTableNum = String(item.table_name || item.table_number || item.table_id || '').replace(/[^0-9]/g, '');
+        const cleanTableId = String(item.table_id || '').replace(/[^0-9]/g, '');
 
-        const tableNumStr = item.table_name || item.table_number || `#${item.table_id}`;
-        
-        // Find active order matching this table ID or table name
-        const activeOrder = activeOrders.find((o: any) => {
-          return String(o.table_number_id) === String(item.table_id) || 
-                 String(o.table_name).trim().toLowerCase() === String(tableNumStr).trim().toLowerCase();
+        const activeOrder = orderHistory.find((oh: any) => {
+          const statusStr = String(oh.order_status || oh.status || '').toUpperCase();
+          if (statusStr !== 'PENDING') return false;
+
+          const cleanOrderTableNum = String(oh.table_name || oh.table_number || '').replace(/[^0-9]/g, '');
+          const orderTableId = String(oh.table_number_id || '');
+
+          return (cleanTableNum && cleanOrderTableNum && cleanTableNum === cleanOrderTableNum) ||
+                 (cleanTableId && orderTableId && cleanTableId === orderTableId);
         });
 
-        let currentSession: TableSession | null = null;
         if (activeOrder) {
-          currentSession = {
-            active_order_id: activeOrder.order_id,
-            staff_name: activeOrder.staff_name || 'Waiter',
-            current_total: Number(activeOrder.bill?.grand_total || activeOrder.bill?.total || 0),
-            updated_at: activeOrder.created_at || new Date().toISOString()
-          };
-        } else if (normalizedStatus === 'Occupied') {
-          currentSession = {
-            staff_name: 'Staff',
-            current_total: 0,
-            updated_at: new Date().toISOString()
+          return {
+            table_id: item.table_id || item.table_number,
+            table_number: item.table_name || item.table_number || `#${item.table_id}`,
+            capacity: Number(item.capacity) || 4,
+            status: 'Occupied',
+            current_session: {
+              active_order_id: String(activeOrder.order_id),
+              staff_name: activeOrder.staff_name || activeOrder.guest_name || 'Waiter',
+              updated_at: activeOrder.created_at || new Date().toISOString(),
+              current_total: Number(activeOrder.bill?.grand_total ?? activeOrder.total ?? 0),
+              total_items: (activeOrder.items || []).reduce((s: number, i: any) => s + (parseInt(i.quantity || i.qty) || 1), 0)
+            },
+            updated_at: item.updated_at
           };
         }
 
         return {
           table_id: item.table_id || item.table_number,
-          table_number: tableNumStr,
+          table_number: item.table_name || item.table_number || `#${item.table_id}`,
           capacity: Number(item.capacity) || 4,
-          status: normalizedStatus,
-          current_session: currentSession,
+          status: 'Available',
+          current_session: null,
           updated_at: item.updated_at
         };
       });
@@ -158,48 +187,18 @@ const TablesPage: React.FC = () => {
     navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
   };
 
-  const handleSeatGuests = async (tableNumber: string) => {
-    const session = {
-      staff_name: 'Staff',
-      current_total: 0,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Occupied',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleSeatGuests = (tableNumber: string) => {
+    const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
+    sessionStorage.setItem('emenu_table', cleanNum || tableNumber);
+    localStorage.removeItem('emenu_cart');
+    navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
   };
 
-  const handleOpenTab = async (tableNumber: string) => {
-    const session = {
-      staff_name: 'Staff',
-      current_total: 0,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Occupied',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleOpenTab = (tableNumber: string) => {
+    const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
+    sessionStorage.setItem('emenu_table', cleanNum || tableNumber);
+    localStorage.removeItem('emenu_cart');
+    navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
   };
 
   const handleAddItems = (tableNumber: string) => {
@@ -211,70 +210,52 @@ const TablesPage: React.FC = () => {
 
   const handlePayNow = async (tableNumber: string) => {
     const tableObj = tables.find(t => t.table_number === tableNumber);
-    const lastOrderId = tableObj?.current_session?.active_order_id || `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
-    const session = {
-      last_order_id: lastOrderId,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Dirty',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
+    const activeOrd = tableObj?.current_session?.active_order_id;
+    const tableIdNum = tableObj?.table_id ? parseInt(String(tableObj.table_id)) : null;
+
+    if (activeOrd) {
+      try {
+        const updatePayload = {
+          order_status: 'COMPLETED',
+          table_number_id: tableIdNum
+        };
+        let response = await fetch(`${API_BASE_URL}/order/update-status/${activeOrd}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload)
+        });
+
+        if (!response.ok) {
+          await fetch(`${API_BASE_URL}/order/update-status/${activeOrd}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePayload)
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to update status on server:', err);
+      }
+      localStorage.removeItem('emenu_last_order');
     }
+
+    // Refresh live status from backend API
+    await fetchTables();
   };
 
-  const handleMarkCleaned = async (tableNumber: string) => {
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Available',
-          current_session: null
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleMarkCleaned = (tableNumber: string) => {
+    fetchTables();
   };
 
-  const handleMarkArrived = async (tableNumber: string) => {
-    const session = {
-      staff_name: 'Staff',
-      current_total: 0,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Occupied',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleMarkArrived = (tableNumber: string) => {
+    fetchTables();
   };
 
   const getMinutesElapsed = (dateString?: string) => {
     if (!dateString) return '0m';
-    // Replace space with T for browser compatibility with SQL datetimes
-    const formattedString = dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString;
+    let formattedString = dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString;
+    if (!formattedString.endsWith('Z') && !formattedString.includes('+')) {
+      formattedString += 'Z';
+    }
     const date = new Date(formattedString);
     if (isNaN(date.getTime())) return '0m';
     const diffMs = Date.now() - date.getTime();
@@ -301,7 +282,21 @@ const TablesPage: React.FC = () => {
           </button>
         </div>
 
-        {error ? (
+        {!isEnableTables ? (
+          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-gray-200 shadow-xs max-w-md mx-auto my-6">
+            <div className="text-5xl mb-3">🪑</div>
+            <h3 className="text-lg font-black text-gray-900 mb-1">Tables Management Disabled</h3>
+            <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+              Table management is currently turned off in your restaurant POS Control Settings.
+            </p>
+            <button 
+              onClick={() => navigate('/')} 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0077b6] hover:bg-[#005f92] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+            >
+              Go to Menu View →
+            </button>
+          </div>
+        ) : error ? (
           <div className="text-center py-10 font-bold text-red-500">{error}</div>
         ) : loading ? (
           <div className="text-center py-10 font-bold text-[#0077b6]">Loading tables...</div>
@@ -388,7 +383,7 @@ const TablesPage: React.FC = () => {
                           <Plus size={11} /> <span className="truncate">ADD</span>
                         </button>
                         <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
-                          <CreditCard size={11} /> <span className="truncate">PAY</span>
+                          <CreditCard size={11} /> <span className="truncate">PAID</span>
                         </button>
                       </div>
                     )}

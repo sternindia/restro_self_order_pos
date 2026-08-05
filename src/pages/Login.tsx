@@ -42,6 +42,34 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const data = await response.json();
       if (data && data.status === true && data.data) {
         onLogin(data.data);
+      } else if (phone.trim() === '8965984722' && password === '12345678') {
+        onLogin({
+          phone: '8965984722',
+          restaurant_id: 9,
+          role: 'self-pos-billing',
+          name: 'Admin'
+        });
+      } else if (phone.trim() === '7878787878' && password === '12345678') {
+        onLogin({
+          phone: '7878787878',
+          restaurant_id: 9,
+          role: 'self-pos-billing',
+          name: 'Cashier'
+        });
+      } else if (phone.trim() === '8965984720' && password === '12345678') {
+        onLogin({
+          phone: '8965984720',
+          restaurant_id: 9,
+          role: 'self-pos-billing',
+          name: 'Manager'
+        });
+      } else if (phone.trim() === '8989898989' && password === '12345678') {
+        onLogin({
+          phone: '8989898989',
+          restaurant_id: 9,
+          role: 'waiter',
+          name: 'Waiter'
+        });
       } else if (phone.trim() === '9876543210' && password === 'password') {
         onLogin({
           phone: '9876543210',
@@ -61,22 +89,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
     } catch (err: any) {
       console.error('API login failed:', err.message);
+      if (phone.trim() === '8965984722' && password === '12345678') {
+        onLogin({ phone: '8965984722', restaurant_id: 9, role: 'self-pos-billing', name: 'Admin' });
+        return;
+      }
+      if (phone.trim() === '7878787878' && password === '12345678') {
+        onLogin({ phone: '7878787878', restaurant_id: 9, role: 'self-pos-billing', name: 'Cashier' });
+        return;
+      }
+      if (phone.trim() === '8965984720' && password === '12345678') {
+        onLogin({ phone: '8965984720', restaurant_id: 9, role: 'self-pos-billing', name: 'Manager' });
+        return;
+      }
+      if (phone.trim() === '8989898989' && password === '12345678') {
+        onLogin({ phone: '8989898989', restaurant_id: 9, role: 'waiter', name: 'Waiter' });
+        return;
+      }
       if (phone.trim() === '9876543210' && password === 'password') {
-        onLogin({
-          phone: '9876543210',
-          restaurant_id: 9,
-          role: 'waiter',
-          name: 'Staff Waiter'
-        });
+        onLogin({ phone: '9876543210', restaurant_id: 9, role: 'waiter', name: 'Staff Waiter' });
         return;
       }
       if (phone.trim() === '9999999999' && password === 'password') {
-        onLogin({
-          phone: '9999999999',
-          restaurant_id: 9,
-          role: 'self-pos-billing',
-          name: 'Self POS Billing Counter'
-        });
+        onLogin({ phone: '9999999999', restaurant_id: 9, role: 'self-pos-billing', name: 'Self POS Billing Counter' });
         return;
       }
       setError('Network error. Failed to connect to server.');
@@ -85,15 +119,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const handleFillWaiterDemo = () => {
-    setPhone('9876543210');
-    setPassword('password');
-    setError('');
-  };
-
-  const handleFillSelfPosDemo = () => {
-    setPhone('9999999999');
-    setPassword('password');
+  const handleFillRole = (ph: string, pass: string) => {
+    setPhone(ph);
+    setPassword(pass);
     setError('');
   };
 
@@ -117,29 +145,47 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Demo Credentials Info Box */}
-        <div className="mb-6 p-4 bg-[#d1efff]/20 border border-[#0077b6]/20 rounded-xl space-y-3">
-          <div className="text-xs font-bold text-[#0077b6] uppercase tracking-wider flex items-center gap-1.5">
-            <span>💡 Select Demo Role</span>
+        <div className="mb-6 p-3.5 bg-[#d1efff]/20 border border-[#0077b6]/20 rounded-xl space-y-2.5">
+          <div className="text-xs font-bold text-[#0077b6] uppercase tracking-wider flex items-center justify-between">
+            <span>💡 Staff Quick Login Roles</span>
             <span className="text-[10px] bg-[#0077b6]/20 px-1.5 py-0.5 rounded text-[#0077b6]">Auto-fill</span>
           </div>
           
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={handleFillWaiterDemo}
-              className="p-2.5 bg-white hover:bg-blue-50 border border-[#0077b6]/30 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-xs"
+              onClick={() => handleFillRole('8965984722', '12345678')}
+              className="p-2 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
             >
-              <div className="text-[11px] font-bold text-gray-900">🍽️ Waiter Role</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">9876543210</div>
+              <div className="text-[11px] font-bold text-emerald-800">👑 Admin (Self POS)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">8965984722</div>
             </button>
 
             <button
               type="button"
-              onClick={handleFillSelfPosDemo}
-              className="p-2.5 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-xs"
+              onClick={() => handleFillRole('8965984720', '12345678')}
+              className="p-2 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
             >
-              <div className="text-[11px] font-bold text-emerald-800">⚡ Self POS Billing</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">9999999999</div>
+              <div className="text-[11px] font-bold text-emerald-800">💼 Manager (Self POS)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">8965984720</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFillRole('7878787878', '12345678')}
+              className="p-2 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <div className="text-[11px] font-bold text-emerald-800">⚡ Cashier (Self POS)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">7878787878</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFillRole('8989898989', '12345678')}
+              className="p-2 bg-white hover:bg-sky-50 border border-sky-400/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <div className="text-[11px] font-bold text-[#0077b6]">🍽️ Waiter (Self Order)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">8989898989</div>
             </button>
           </div>
         </div>

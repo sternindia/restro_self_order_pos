@@ -26,17 +26,25 @@ const CartPage: React.FC = () => {
   useEffect(() => {
     const fetchPOSSettings = async () => {
       try {
+        const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
+        if (savedSettingsStr) {
+          const data = JSON.parse(savedSettingsStr);
+          const taxRate = parseFloat(data.financials?.tax_rate_percentage ?? data.taxRate ?? 5.0);
+          const serviceCharge = parseFloat(data.financials?.service_charge_percentage ?? data.serviceCharge ?? 0.0);
+          setPosSettings({ taxRate, serviceCharge });
+          return;
+        }
+
         const rid = getRestaurantId();
         const res = await fetch(`${API_BASE_URL}/settings/pos/${rid}`);
         if (res.ok) {
           const data = await res.json();
           if (data) {
-            const taxRate = parseFloat(data.financials?.tax_rate_percentage ?? 5.0);
-            const serviceCharge = parseFloat(data.financials?.service_charge_percentage ?? 0.0);
-            setPosSettings({
-              taxRate,
-              serviceCharge
-            });
+            const settings = data?.data || data;
+            localStorage.setItem('emenu_pos_settings', JSON.stringify(settings));
+            const taxRate = parseFloat(settings.financials?.tax_rate_percentage ?? 5.0);
+            const serviceCharge = parseFloat(settings.financials?.service_charge_percentage ?? 0.0);
+            setPosSettings({ taxRate, serviceCharge });
           }
         }
       } catch (e) {
@@ -784,10 +792,6 @@ const CartPage: React.FC = () => {
                   <div className="flex justify-between items-center text-gray-500 pl-2 text-[11px]">
                     <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
                     <span>+{sgstAmt.toFixed(2)} Rs</span>
-                  </div>
-                  <div className="flex justify-between items-center text-emerald-700 font-semibold">
-                    <span>Total Taxes ({taxRate}%)</span>
-                    <span>+{taxAmt.toFixed(2)} Rs</span>
                   </div>
                 </>
               )}

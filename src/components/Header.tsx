@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Menu as MenuIcon, X, User, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { API_BASE_URL, getRestaurantId } from '../config';
+import { API_BASE_URL, getRestaurantId, parseBool, getStoredPOSSettings } from '../config';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -13,33 +13,42 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const user = savedUser ? JSON.parse(savedUser) : null;
 
   const [restaurantName, setRestaurantName] = useState<string>('RESTAURANT');
+  const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchRestaurantInfo = async () => {
+      const applySettings = (settings: any) => {
+        if (!settings) return;
+        const name = settings?.restaurant_info?.name || settings?.restaurant_name || 'RESTAURANT';
+        setRestaurantName(name);
+
+        const enableTablesVal =
+          settings?.hardware_and_preferences?.is_enable_tables ??
+          settings?.is_enable_tables ??
+          settings?.isEnableTables;
+
+        setIsEnableTables(parseBool(enableTablesVal, false));
+      };
+
+      // 1. Initial render from local cache if available
       try {
         const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
         if (savedSettingsStr) {
-          const settings = JSON.parse(savedSettingsStr);
-          if (settings?.restaurant_info?.name) {
-            setRestaurantName(settings.restaurant_info.name);
-            return;
-          } else if (settings?.restaurant_name) {
-            setRestaurantName(settings.restaurant_name);
-            return;
-          }
+          applySettings(JSON.parse(savedSettingsStr));
         }
+      } catch (e) {
+        console.warn('Failed to parse cached POS settings in Header:', e);
+      }
 
+      // 2. Always fetch fresh settings from backend API
+      try {
         const rid = getRestaurantId();
         const res = await fetch(`${API_BASE_URL}/settings/pos/${rid}`);
         if (res.ok) {
           const data = await res.json();
           const settings = data?.data || data;
           localStorage.setItem('emenu_pos_settings', JSON.stringify(settings));
-          if (settings?.restaurant_info?.name) {
-            setRestaurantName(settings.restaurant_info.name);
-          } else if (settings?.restaurant_name) {
-            setRestaurantName(settings.restaurant_name);
-          }
+          applySettings(settings);
         }
       } catch (e) {
         console.error('Failed to fetch restaurant header info:', e);
@@ -82,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           <span className="logo text-lg sm:text-xl mr-1.5 flex-shrink-0">🏠</span>
           <div className="shop-name text-sm sm:text-base md:text-lg font-extrabold text-[#0077b6] flex items-center gap-1.5 min-w-0 truncate">
             <span className="truncate uppercase">{restaurantName}</span>
-            {displayTable && !isSelfPosBilling && (
+            {displayTable && !isSelfPosBilling && isEnableTables && (
               <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
                 {displayTable}
               </span>
@@ -102,11 +111,11 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             >
               🍔 Menu
             </Link>
-            {!isSelfPosBilling && (
+            {!isSelfPosBilling && isEnableTables && (
               <Link
                 to="/tables"
                 className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/tables'
-                    ? 'bg-white text-[#0077b6] shadow-xs'
+                    ? 'bg-white text-[#0077b6] shadow-[#0077b6]/20'
                     : 'text-gray-600 hover:text-gray-800'
                   }`}
               >
@@ -193,7 +202,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   <span className="text-base">🍔</span> Menu
                 </Link>
 
-                {!isSelfPosBilling && (
+                {!isSelfPosBilling && isEnableTables && (
                   <Link
                     to="/tables"
                     onClick={() => setIsMobileMenuOpen(false)}

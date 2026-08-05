@@ -489,10 +489,6 @@ ${400 + contentStream.length}
                   <span>SGST ({(posSettings?.financials?.sgst || 2.5)}%)</span>
                   <span>+₹{sgstAmt.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-xs sm:text-sm text-emerald-700 font-semibold">
-                  <span>Total Taxes</span>
-                  <span>+₹{taxTotal.toFixed(2)}</span>
-                </div>
               </>
             )}
 
