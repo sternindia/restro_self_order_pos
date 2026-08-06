@@ -30,6 +30,7 @@ const TablesPage: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
   const fetchedRef = React.useRef(false);
 
   const fetchTables = async () => {
@@ -40,7 +41,41 @@ const TablesPage: React.FC = () => {
       const userObj = savedUser ? JSON.parse(savedUser) : null;
       const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || 9;
 
-      // Fetch both tables and orders in parallel to merge active sessions
+      const parseBool = (val: any, defaultVal: boolean = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const low = val.trim().toLowerCase();
+          if (low === 'true' || low === '1') return true;
+          if (low === 'false' || low === '0') return false;
+        }
+        return !!val;
+      };
+
+      // 1. Parse cached POS settings to determine if tables are enabled
+      let enableTables = true;
+      const cachedSettingsStr = localStorage.getItem('emenu_pos_settings');
+      if (cachedSettingsStr) {
+        try {
+          const settings = JSON.parse(cachedSettingsStr);
+          const enableTablesVal =
+            settings?.hardware_and_preferences?.is_enable_tables ??
+            settings?.is_enable_tables ??
+            settings?.isEnableTables;
+          enableTables = parseBool(enableTablesVal, false);
+          setIsEnableTables(enableTables);
+        } catch { }
+      }
+
+      // If tables are disabled in settings, skip calling backend table/order endpoints
+      if (!enableTables) {
+        setTables([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch tables and active orders in parallel from backend API
       const [tablesRes, ordersRes] = await Promise.all([
         fetch(`${API_BASE_URL}/tables/${restaurantId}`),
         fetch(`${API_BASE_URL}/orders/${restaurantId}`).catch(() => null)
@@ -52,20 +87,13 @@ const TablesPage: React.FC = () => {
       
       const data = await tablesRes.json();
       
-      let activeOrders: any[] = [];
+      let orderHistory: any[] = [];
       if (ordersRes && ordersRes.ok) {
         try {
           const ordersData = await ordersRes.json();
-          const rawOrders = Array.isArray(ordersData) 
+          orderHistory = Array.isArray(ordersData) 
             ? ordersData 
             : (ordersData && Array.isArray(ordersData.data) ? ordersData.data : []);
-          
-          // Match unpaid/pending orders using backend schema fields
-          activeOrders = rawOrders.filter((o: any) => {
-            const isUnpaid = o.bill?.payment_status?.toUpperCase() !== 'PAID';
-            const isPending = o.order_status?.toUpperCase() === 'PENDING';
-            return isUnpaid && isPending;
-          });
         } catch (e) {
           console.warn("Failed to parse orders response:", e);
         }
@@ -91,46 +119,47 @@ const TablesPage: React.FC = () => {
         }
       }
 
-      // Map API statuses cleanly and merge live active orders for Occupied tables
+      // Compute table status dynamically from backend API data:
+      // If table has a PENDING order in backend orderHistory -> Occupied with session details
+      // Otherwise -> Available
       const mappedList: Table[] = list.map((item: any) => {
-        let normalizedStatus: 'Available' | 'Occupied' | 'Busy' | 'Dirty' | 'Reserved' = 'Available';
-        const statusUpper = (item.status || '').toUpperCase();
-        if (statusUpper === 'OCCUPIED') normalizedStatus = 'Occupied';
-        else if (statusUpper === 'BUSY' || statusUpper === 'SELECTING') normalizedStatus = 'Busy';
-        else if (statusUpper === 'DIRTY') normalizedStatus = 'Dirty';
-        else if (statusUpper === 'RESERVED') normalizedStatus = 'Reserved';
-        else normalizedStatus = 'Available';
+        const cleanTableNum = String(item.table_name || item.table_number || item.table_id || '').replace(/[^0-9]/g, '');
+        const cleanTableId = String(item.table_id || '').replace(/[^0-9]/g, '');
 
-        const tableNumStr = item.table_name || item.table_number || `#${item.table_id}`;
-        
-        // Find active order matching this table ID or table name
-        const activeOrder = activeOrders.find((o: any) => {
-          return String(o.table_number_id) === String(item.table_id) || 
-                 String(o.table_name).trim().toLowerCase() === String(tableNumStr).trim().toLowerCase();
+        const activeOrder = orderHistory.find((oh: any) => {
+          const statusStr = String(oh.order_status || oh.status || '').toUpperCase();
+          if (statusStr !== 'PENDING') return false;
+
+          const cleanOrderTableNum = String(oh.table_name || oh.table_number || '').replace(/[^0-9]/g, '');
+          const orderTableId = String(oh.table_number_id || '');
+
+          return (cleanTableNum && cleanOrderTableNum && cleanTableNum === cleanOrderTableNum) ||
+                 (cleanTableId && orderTableId && cleanTableId === orderTableId);
         });
 
-        let currentSession: TableSession | null = null;
         if (activeOrder) {
-          currentSession = {
-            active_order_id: activeOrder.order_id,
-            staff_name: activeOrder.staff_name || 'Waiter',
-            current_total: Number(activeOrder.bill?.grand_total || activeOrder.bill?.total || 0),
-            updated_at: activeOrder.created_at || new Date().toISOString()
-          };
-        } else if (normalizedStatus === 'Occupied') {
-          currentSession = {
-            staff_name: 'Staff',
-            current_total: 0,
-            updated_at: new Date().toISOString()
+          return {
+            table_id: item.table_id || item.table_number,
+            table_number: item.table_name || item.table_number || `#${item.table_id}`,
+            capacity: Number(item.capacity) || 4,
+            status: 'Occupied',
+            current_session: {
+              active_order_id: String(activeOrder.order_id),
+              staff_name: activeOrder.staff_name || activeOrder.guest_name || 'Waiter',
+              updated_at: activeOrder.created_at || new Date().toISOString(),
+              current_total: Number(activeOrder.bill?.grand_total ?? activeOrder.total ?? 0),
+              total_items: (activeOrder.items || []).reduce((s: number, i: any) => s + (parseInt(i.quantity || i.qty) || 1), 0)
+            },
+            updated_at: item.updated_at
           };
         }
 
         return {
           table_id: item.table_id || item.table_number,
-          table_number: tableNumStr,
+          table_number: item.table_name || item.table_number || `#${item.table_id}`,
           capacity: Number(item.capacity) || 4,
-          status: normalizedStatus,
-          current_session: currentSession,
+          status: 'Available',
+          current_session: null,
           updated_at: item.updated_at
         };
       });
@@ -158,48 +187,18 @@ const TablesPage: React.FC = () => {
     navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
   };
 
-  const handleSeatGuests = async (tableNumber: string) => {
-    const session = {
-      staff_name: 'Staff',
-      current_total: 0,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Occupied',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleSeatGuests = (tableNumber: string) => {
+    const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
+    sessionStorage.setItem('emenu_table', cleanNum || tableNumber);
+    localStorage.removeItem('emenu_cart');
+    navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
   };
 
-  const handleOpenTab = async (tableNumber: string) => {
-    const session = {
-      staff_name: 'Staff',
-      current_total: 0,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Occupied',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleOpenTab = (tableNumber: string) => {
+    const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
+    sessionStorage.setItem('emenu_table', cleanNum || tableNumber);
+    localStorage.removeItem('emenu_cart');
+    navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
   };
 
   const handleAddItems = (tableNumber: string) => {
@@ -211,70 +210,52 @@ const TablesPage: React.FC = () => {
 
   const handlePayNow = async (tableNumber: string) => {
     const tableObj = tables.find(t => t.table_number === tableNumber);
-    const lastOrderId = tableObj?.current_session?.active_order_id || `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
-    const session = {
-      last_order_id: lastOrderId,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Dirty',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
+    const activeOrd = tableObj?.current_session?.active_order_id;
+    const tableIdNum = tableObj?.table_id ? parseInt(String(tableObj.table_id)) : null;
+
+    if (activeOrd) {
+      try {
+        const updatePayload = {
+          order_status: 'COMPLETED',
+          table_number_id: tableIdNum
+        };
+        let response = await fetch(`${API_BASE_URL}/order/update-status/${activeOrd}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload)
+        });
+
+        if (!response.ok) {
+          await fetch(`${API_BASE_URL}/order/update-status/${activeOrd}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePayload)
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to update status on server:', err);
+      }
+      localStorage.removeItem('emenu_last_order');
     }
+
+    // Refresh live status from backend API
+    await fetchTables();
   };
 
-  const handleMarkCleaned = async (tableNumber: string) => {
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Available',
-          current_session: null
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleMarkCleaned = (tableNumber: string) => {
+    fetchTables();
   };
 
-  const handleMarkArrived = async (tableNumber: string) => {
-    const session = {
-      staff_name: 'Staff',
-      current_total: 0,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await fetch(`${API_BASE_URL}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_number: tableNumber,
-          status: 'Occupied',
-          current_session: session
-        })
-      });
-      fetchTables();
-    } catch (e) {
-      console.warn("Failed to update table status on backend:", e);
-    }
+  const handleMarkArrived = (tableNumber: string) => {
+    fetchTables();
   };
 
   const getMinutesElapsed = (dateString?: string) => {
     if (!dateString) return '0m';
-    // Replace space with T for browser compatibility with SQL datetimes
-    const formattedString = dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString;
+    let formattedString = dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString;
+    if (!formattedString.endsWith('Z') && !formattedString.includes('+')) {
+      formattedString += 'Z';
+    }
     const date = new Date(formattedString);
     if (isNaN(date.getTime())) return '0m';
     const diffMs = Date.now() - date.getTime();
@@ -301,17 +282,31 @@ const TablesPage: React.FC = () => {
           </button>
         </div>
 
-        {error ? (
+        {!isEnableTables ? (
+          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-gray-200 shadow-xs max-w-md mx-auto my-6">
+            <div className="text-5xl mb-3">🪑</div>
+            <h3 className="text-lg font-black text-gray-900 mb-1">Tables Management Disabled</h3>
+            <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+              Table management is currently turned off in your restaurant POS Control Settings.
+            </p>
+            <button 
+              onClick={() => navigate('/')} 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0077b6] hover:bg-[#005f92] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+            >
+              Go to Menu View →
+            </button>
+          </div>
+        ) : error ? (
           <div className="text-center py-10 font-bold text-red-500">{error}</div>
         ) : loading ? (
           <div className="text-center py-10 font-bold text-[#0077b6]">Loading tables...</div>
         ) : (
-          <div className="grid gap-5 py-5 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 py-3 sm:py-5">
             {tables.map((table) => {
               // Map badge color based on exact requested status colors:
               // Available: Green | Busy: Amber Yellow | Occupied: Red | Dirty: Slate | Reserved: Purple
               let badgeColor = 'bg-emerald-600';
-              if (table.status === 'Occupied') badgeColor = 'bg-red-600';
+              if (table.status === 'Occupied') badgeColor = 'bg-rose-600';
               else if (table.status === 'Busy') badgeColor = 'bg-amber-500 text-slate-900';
               else if (table.status === 'Dirty') badgeColor = 'bg-slate-500';
               else if (table.status === 'Reserved') badgeColor = 'bg-purple-600';
@@ -319,28 +314,38 @@ const TablesPage: React.FC = () => {
               return (
                 <div 
                   key={table.table_id} 
-                  className="relative bg-white rounded-xl p-5 shadow-sm hover:shadow-md border border-gray-200 flex flex-col gap-3 transition-all duration-200 cursor-pointer"
+                  className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-gray-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
                   onClick={() => handleTableSelect(table.table_number)}
                 >
-                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase ${badgeColor}`}>
+                  {/* Top-Right Modern Corner Tag (Mobile: top-right corner tag, Desktop: pill badge) */}
+                  <div className={`absolute top-0 right-0 px-2 py-0.5 sm:px-3 sm:py-1 rounded-bl-xl sm:rounded-bl-none sm:rounded-full sm:top-3 sm:right-3 text-[9px] sm:text-[10px] font-extrabold text-white uppercase tracking-wider ${badgeColor}`}>
                     {table.status}
                   </div>
-                  <div className="text-3xl font-bold text-black mt-2.5 text-left">{table.table_number}</div>
-                  <div className="text-sm text-gray-500 mb-2 text-left">{table.capacity} Seats</div>
 
+                  {/* Table Header */}
+                  <div className="text-left pt-1 sm:pt-0 border-b border-gray-100/80 pb-1.5">
+                    <h3 className="text-xs xs:text-sm sm:text-xl font-black text-gray-900 leading-tight truncate pr-14 sm:pr-20">
+                      {table.table_number}
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold mt-0.5">
+                      {table.capacity} Seats
+                    </p>
+                  </div>
+
+                  {/* Occupied Session Box */}
                   {table.status === 'Occupied' && table.current_session && (
-                    <div className="flex flex-col gap-2 py-2.5 border-t border-b border-gray-100">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500">Server:</span>
-                        <span className="font-medium text-black">{table.current_session.staff_name || 'Staff'}</span>
+                    <div className="bg-slate-50/80 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-slate-100/80">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 font-medium">Server</span>
+                        <span className="font-bold text-gray-800 truncate max-w-[65px] sm:max-w-none">{table.current_session.staff_name || 'Staff'}</span>
                       </div>
-                      <div className="flex justify-between items-center text-sm text-orange-500 font-medium">
-                        <span className="flex items-center"><Clock size={14} className="inline mr-1" /> Elapsed:</span>
+                      <div className="flex justify-between items-center text-amber-600 font-bold">
+                        <span className="flex items-center gap-1"><Clock size={10} className="shrink-0" /> Elapsed</span>
                         <span>{getMinutesElapsed(table.current_session.updated_at)}</span>
                       </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500">Current total:</span>
-                        <span className="font-bold text-green-600 text-base">
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 mt-0.5">
+                        <span className="text-gray-500 font-medium">Total</span>
+                        <span className="font-black text-emerald-600 text-xs sm:text-base">
                           ₹{(table.current_session.current_total || 0).toFixed(2)}
                         </span>
                       </div>
@@ -348,48 +353,50 @@ const TablesPage: React.FC = () => {
                   )}
 
                   {table.status === 'Dirty' && (
-                    <div className="text-sm text-red-500 font-medium my-2 text-left">Needs Cleaning</div>
+                    <div className="bg-rose-50/60 rounded-xl p-1.5 text-center text-[10px] sm:text-xs text-rose-600 font-extrabold border border-rose-100">
+                      Needs Cleaning
+                    </div>
                   )}
 
                   {table.status === 'Reserved' && table.current_session && (
-                    <div className="flex flex-col gap-2 py-2.5 border-t border-b border-gray-100">
-                      <div className="flex items-center gap-2 text-sm text-gray-700">
-                        <Clock size={14} className="inline mr-1" />
-                        <span>7:30 PM</span>
+                    <div className="bg-purple-50/60 rounded-xl p-1.5 flex flex-col gap-0.5 text-[10px] sm:text-xs border border-purple-100">
+                      <div className="flex items-center gap-1 text-purple-700 font-semibold">
+                        <Clock size={10} className="shrink-0" /> 7:30 PM
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-750 font-medium">
-                        <span>{table.current_session.customer_name || 'Sarah Jenkins'}</span>
+                      <div className="font-bold text-purple-900 truncate">
+                        {table.current_session.customer_name || 'Reserved'}
                       </div>
                     </div>
                   )}
 
-                  <div className="flex gap-2.5 flex-wrap mt-auto" onClick={(e) => e.stopPropagation()}>
+                  {/* Action Buttons with Compact Height & Modern Radius for Mobile */}
+                  <div className="flex gap-1.5 sm:gap-2 mt-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
                     {table.status === 'Available' && (
-                      <button className="flex-1 min-w-[120px] px-3 py-2.5 rounded-md text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 transition-all duration-200 bg-green-600 text-white hover:bg-green-700 w-full" onClick={() => handleAddItems(table.table_number)}>
-                        <Receipt size={14} /> OPEN TAB
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                        <Receipt size={12} /> OPEN TAB
                       </button>
                     )}
 
                     {table.status === 'Occupied' && (
-                      <>
-                        <button className="flex-1 min-w-[120px] px-3 py-2.5 rounded-md text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 transition-all duration-200 bg-[#0077b6] text-white hover:bg-[#005f92]" onClick={() => handleAddItems(table.table_number)}>
-                          <Plus size={14} /> ADD ITEMS
+                      <div className="grid grid-cols-2 gap-1.5 w-full">
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#0077b6] hover:bg-[#005f92] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                          <Plus size={11} /> <span className="truncate">ADD</span>
                         </button>
-                        <button className="flex-1 min-w-[120px] px-3 py-2.5 rounded-md text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 transition-all duration-200 bg-[#0077b6] text-white hover:bg-[#005f92]" onClick={() => handlePayNow(table.table_number)}>
-                          <CreditCard size={14} /> PAY NOW
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
+                          <CreditCard size={11} /> <span className="truncate">PAID</span>
                         </button>
-                      </>
+                      </div>
                     )}
 
                     {table.status === 'Dirty' && (
-                      <button className="flex-1 min-w-[120px] px-3 py-2.5 rounded-md text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 transition-all duration-200 bg-gray-500 text-white hover:bg-gray-600 w-full" onClick={() => handleMarkCleaned(table.table_number)}>
-                        <Check size={14} /> TABLE CLEANED
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-slate-600 hover:bg-slate-700 text-white shadow-2xs active:scale-95" onClick={() => handleMarkCleaned(table.table_number)}>
+                        <Check size={12} /> CLEANED
                       </button>
                     )}
 
                     {table.status === 'Reserved' && (
-                      <button className="flex-1 min-w-[120px] px-3 py-2.5 rounded-md text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 transition-all duration-200 bg-[#0077b6] text-white hover:bg-[#005f92] w-full" onClick={() => handleMarkArrived(table.table_number)}>
-                        <Check size={14} /> ARRIVED
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#0077b6] hover:bg-[#005f92] text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
+                        <Check size={12} /> ARRIVED
                       </button>
                     )}
                   </div>

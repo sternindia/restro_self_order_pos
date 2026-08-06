@@ -240,13 +240,12 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
     return { ...cat, items };
   }).filter(cat => cat.items.length > 0);
 
-  // Derive flat list of all menu items for the slide menu modal
-  const allMenuItems = categories.reduce((acc: any[], cat: any) => {
-    return [...acc, ...(cat.items || [])];
-  }, []);
 
   const MenuSection = ({ title, items }: { title: string; items: any[] }) => (
-    <section className="menu ml-[2.5vw] mt-[3vh] w-[95%] rounded-[10px] bg-white p-[15px] shadow-md">
+    <section 
+      id={`category-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`} 
+      className="menu ml-[2.5vw] mt-[3vh] w-[95%] rounded-[10px] bg-white p-[15px] shadow-md scroll-mt-20"
+    >
       <h2 className="section-heading mb-[2.5%] mt-[1%] text-left text-base md:text-[20px] font-bold text-black">
         {title}
       </h2>
@@ -499,26 +498,67 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
         </div>
       )}
 
-      {/* Modal for Menu */}
+      {/* Modal / Bottom Sheet for Category Quick Jump */}
       {isMenuOpen && (
-        <div className="modal fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setIsMenuOpen(false)}>
-          <div
-            className="modal-content relative mt-[20vh] w-full max-w-[400px] overflow-hidden rounded-[10px] bg-white p-[2vh] shadow-[0_5px_5px_rgba(0,0,0,0.5)]"
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 animate-fade-in" 
+          onClick={() => setIsMenuOpen(false)}
+        >
+          <div 
+            className="w-full sm:max-w-[380px] max-h-[75vh] overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up flex flex-col" 
             onClick={(e) => e.stopPropagation()}
           >
-            <span
-              className="close absolute right-4 top-2 cursor-pointer text-[22px]"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              &times;
-            </span>
-            <div className="modal-menu-list max-h-[40vh] overflow-y-auto pr-[10px]">
-              {allMenuItems.map((item: any, index: number) => {
-                const priceNum = parseFloat(item.price || '0');
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#0077b6]/10 border border-[#0077b6]/20 flex items-center justify-center text-[#0077b6] font-bold">
+                  📋
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">Menu Categories</h3>
+                  <p className="text-[11px] text-gray-500 font-medium">Select a category to jump directly</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsMenuOpen(false)} 
+                className="text-gray-400 hover:text-gray-700 text-lg font-bold p-1 cursor-pointer transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Category Quick Jump List */}
+            <div className="space-y-2 overflow-y-auto pr-1 flex-1 max-h-[50vh] no-scrollbar">
+              {filteredCategories.map((category: any) => {
+                const count = category.items ? category.items.length : 0;
+                const catId = `category-${category.category_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
                 return (
-                  <p key={index} className="p-[8px] text-[17px] border-b border-gray-100 last:border-0">
-                    {item.item_name} - {priceNum.toFixed(2)} Rs
-                  </p>
+                  <button
+                    key={category.category_id}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setTimeout(() => {
+                        const el = document.getElementById(catId);
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-[#0077b6]/10 hover:border-[#0077b6]/30 border border-gray-100 transition-all cursor-pointer group text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-base group-hover:scale-110 transition-transform">🍽️</span>
+                      <span className="text-xs sm:text-sm font-bold text-gray-800 group-hover:text-[#0077b6]">
+                        {category.category_name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-semibold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200 shadow-2xs">
+                        {count} {count === 1 ? 'item' : 'items'}
+                      </span>
+                      <span className="text-gray-400 text-xs font-bold group-hover:text-[#0077b6]">→</span>
+                    </div>
+                  </button>
                 );
               })}
             </div>

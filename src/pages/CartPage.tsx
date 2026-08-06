@@ -19,22 +19,32 @@ const CartPage: React.FC = () => {
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
   const isGuestCustomer = !userObj || userObj.isGuest || userObj.role?.toLowerCase() === 'guest';
+  const isSelfPosBilling = userObj?.role === 'self-pos-billing' || userObj?.role === 'self_pos_billing';
   const [existingOrderId, setExistingOrderId] = useState<string | null>(null);
+  const [submittingBilling, setSubmittingBilling] = useState(false);
 
   useEffect(() => {
     const fetchPOSSettings = async () => {
       try {
+        const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
+        if (savedSettingsStr) {
+          const data = JSON.parse(savedSettingsStr);
+          const taxRate = parseFloat(data.financials?.tax_rate_percentage ?? data.taxRate ?? 5.0);
+          const serviceCharge = parseFloat(data.financials?.service_charge_percentage ?? data.serviceCharge ?? 0.0);
+          setPosSettings({ taxRate, serviceCharge });
+          return;
+        }
+
         const rid = getRestaurantId();
         const res = await fetch(`${API_BASE_URL}/settings/pos/${rid}`);
         if (res.ok) {
           const data = await res.json();
           if (data) {
-            const taxRate = parseFloat(data.financials?.tax_rate_percentage ?? 5.0);
-            const serviceCharge = parseFloat(data.financials?.service_charge_percentage ?? 0.0);
-            setPosSettings({
-              taxRate,
-              serviceCharge
-            });
+            const settings = data?.data || data;
+            localStorage.setItem('emenu_pos_settings', JSON.stringify(settings));
+            const taxRate = parseFloat(settings.financials?.tax_rate_percentage ?? 5.0);
+            const serviceCharge = parseFloat(settings.financials?.service_charge_percentage ?? 0.0);
+            setPosSettings({ taxRate, serviceCharge });
           }
         }
       } catch (e) {
@@ -196,6 +206,215 @@ const CartPage: React.FC = () => {
     }
   };
 
+  const handleSelfPosPlaceOrder = async () => {
+    if (cartItems.length === 0) {
+      toast.warning("Your cart is empty!");
+      return;
+    }
+
+    setSubmittingBilling(true);
+    try {
+      const storedTable = sessionStorage.getItem('emenu_table') || '';
+      const cleanTableNum = String(storedTable).replace(/[^0-9]/g, '') || '1';
+      const restaurantId = getRestaurantId();
+
+      const payloadItems = cartItems.map(item => ({
+        item_id: parseInt(item.id) || item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.price * item.quantity,
+        addons: [],
+        notes: item.notes || ""
+      }));
+
+      const orderPayload = {
+        order_meta: {
+          restaurant_id: restaurantId,
+          staff_id: userObj?.id || 99,
+          staff_name: userObj?.name || "Self POS Counter",
+          order_type: "TAKEAWAY",
+          table_number: "Counter Order",
+          table_number_id: null,
+          guest_count: 1
+        },
+        items: payloadItems,
+        totals: {
+          subtotal: parseFloat(subtotal.toFixed(2)),
+          tax: parseFloat(taxAmt.toFixed(2)),
+          service_charge: parseFloat(serviceChargeAmt.toFixed(2)),
+          discount_amount: 0.00,
+          grand_total: parseFloat(grandTotal.toFixed(2))
+        },
+        order_status: "CONFIRMED",
+        status: "CONFIRMED",
+        payment_status: "PAID",
+        created_at: new Date().toISOString()
+      };
+
+      const response = await fetch(`${API_BASE_URL}/order/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const orderNum = data.data?.order_id || data.order_id || `#${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+
+      localStorage.setItem('emenu_last_order', JSON.stringify({
+        order_id: orderNum,
+        table: "Counter Order",
+        guest_name: userObj?.name || 'Self POS Counter',
+        phone: userObj?.phone || '9999999999',
+        items: cartItems,
+        subTotal: subtotal,
+        tax: taxAmt,
+        serviceCharge: serviceChargeAmt,
+        total: grandTotal,
+        created_at: new Date().toISOString()
+      }));
+
+      // Trigger instant real-time thermal receipt print matching exact POS standard format
+      const printWindow = window.open('', '_blank', 'width=420,height=600');
+      if (printWindow) {
+        const totalQty = cartItems.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
+        const cgstAmt = taxAmt / 2;
+        const sgstAmt = taxAmt / 2;
+        const cleanDate = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+
+        const itemsRowsHtml = cartItems.map((item: any) => {
+          const unitPrice = parseFloat(item.price || 0);
+          const itemAmount = unitPrice * (item.quantity || 1);
+          return `
+            <div style="margin-bottom: 3px;">
+              <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                <span style="flex: 1; text-align: left; word-break: break-word;">${item.name}</span>
+                <span style="width: 32px; text-align: center;">${item.quantity || 1}</span>
+                <span style="width: 55px; text-align: right;">${unitPrice.toFixed(2)}</span>
+                <span style="width: 60px; text-align: right;">${itemAmount.toFixed(2)}</span>
+              </div>
+              ${item.notes ? `<div style="font-size: 9px; color: #333; font-style: italic; padding-left: 4px;">* ${item.notes}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        const receiptHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>POS Receipt #${orderNum}</title>
+            <style>
+              @page { size: 80mm auto; margin: 0; }
+              body {
+                font-family: monospace, sans-serif;
+                width: 80mm;
+                max-width: 100%;
+                margin: 0 auto;
+                padding: 8px;
+                color: #000;
+                background: #fff;
+                font-size: 11px;
+                line-height: 1.3;
+              }
+            </style>
+          </head>
+          <body>
+            <div style="text-align: center; margin-bottom: 6px;">
+              <div style="font-size: 14px; font-weight: bold;">${posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
+              <div style="font-size: 10px;">${posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
+              <div style="font-size: 10px;">
+                ${[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
+              </div>
+              <div style="font-size: 10px;">GSTIN: ${posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
+              <div style="font-size: 10px;">FSSAI NO: ${posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
+            </div>
+
+            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 10px;">
+              <span>Bill No: ${orderNum}</span>
+              <span>Date: ${cleanDate}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px;">
+              <span>Type: COUNTER BILLING</span>
+              <span>Staff: ${userObj?.name || 'Counter'}</span>
+            </div>
+
+            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
+              <span style="flex: 1; text-align: left;">Item</span>
+              <span style="width: 32px; text-align: center;">Qty.</span>
+              <span style="width: 55px; text-align: right;">Price</span>
+              <span style="width: 60px; text-align: right;">Amount</span>
+            </div>
+
+            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+
+            ${itemsRowsHtml}
+
+            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+
+            <div style="font-size: 10px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span>Total Qty: ${totalQty}</span>
+                <span>Sub Total &nbsp;&nbsp;${subtotal.toFixed(2)}</span>
+              </div>
+              ${taxRate > 0 ? `
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
+                  <span>CGST ${(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;${cgstAmt.toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
+                  <span>SGST ${(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;${sgstAmt.toFixed(2)}</span>
+                </div>
+              ` : ''}
+              ${serviceChargeAmt > 0 ? `
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
+                  <span>Service Charge ${serviceChargeRate}% &nbsp;&nbsp;${serviceChargeAmt.toFixed(2)}</span>
+                </div>
+              ` : ''}
+              <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 4px;">
+                <span>Grand Total (INR)</span>
+                <span>${grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div style="border-top: 1px dashed #000; margin: 6px 0 4px 0;"></div>
+
+            <div style="text-align: center; font-size: 11px; font-weight: 500; padding: 2px 0;">
+              Thank you & Visit Again
+            </div>
+
+            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
+
+            <script>
+              window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+              };
+            </script>
+          </body>
+          </html>
+        `;
+        printWindow.document.write(receiptHtml);
+        printWindow.document.close();
+      }
+
+      saveCart({});
+      toast.success("Bill Printed & Order Placed!");
+      navigate('/');
+    } catch (error: any) {
+      console.error("Self POS Billing Order failed:", error.message);
+      toast.error("Failed to place order: " + error.message);
+    } finally {
+      setSubmittingBilling(false);
+    }
+  };
+
   const updateQty = (id: string, delta: number) => {
     const newCart = { ...cart };
     if (!newCart[id]) return;
@@ -225,13 +444,13 @@ const CartPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const [isServiceChargeIncluded, setIsServiceChargeIncluded] = useState(true);
   const cartItems = Object.values(cart);
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const serviceChargeRate = posSettings.serviceCharge || 0.0;
-  const serviceChargeAmt = (subtotal * serviceChargeRate) / 100;
-  const taxableAmount = subtotal + serviceChargeAmt;
+  const serviceChargeAmt = isServiceChargeIncluded ? (subtotal * serviceChargeRate) / 100 : 0.0;
   const taxRate = posSettings.taxRate || 5.0;
-  const taxAmt = (taxableAmount * taxRate) / 100;
+  const taxAmt = (subtotal * taxRate) / 100;
   const cgstAmt = taxAmt / 2;
   const sgstAmt = taxAmt / 2;
   const grandTotal = subtotal + serviceChargeAmt + taxAmt;
@@ -405,7 +624,22 @@ const CartPage: React.FC = () => {
               </div>
             </div>
 
-            {!isGuestCustomer && existingOrderId ? (
+            {isSelfPosBilling ? (
+              <button 
+                onClick={handleSelfPosPlaceOrder}
+                disabled={submittingBilling}
+                className="bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-md flex items-center justify-center gap-1 text-xs sm:text-sm whitespace-nowrap transition-all border border-emerald-700/20 cursor-pointer disabled:opacity-50"
+              >
+                {submittingBilling ? (
+                  <span>Generating Bill...</span>
+                ) : (
+                  <>
+                    <span>⚡ Confirm & Print</span>
+                    <span>→</span>
+                  </>
+                )}
+              </button>
+            ) : !isGuestCustomer && existingOrderId ? (
               <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
                 <button
                   onClick={() => setShowCancelModal(true)}
@@ -440,7 +674,21 @@ const CartPage: React.FC = () => {
           </div>
 
           {/* Desktop Bottom Footer */}
-          {!isGuestCustomer && existingOrderId ? (
+          {isSelfPosBilling ? (
+            <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-emerald-600 p-[15px] shadow-md">
+              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
+                <span>Self POS Billing - Total {grandTotal.toFixed(2)} Rs</span>
+                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Direct Bill Generation</span>
+              </div>
+              <button 
+                onClick={handleSelfPosPlaceOrder}
+                disabled={submittingBilling}
+                className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all cursor-pointer shadow-md border border-white/40 disabled:opacity-50"
+              >
+                {submittingBilling ? 'Generating Bill...' : '⚡ Confirm & Print →'}
+              </button>
+            </div>
+          ) : !isGuestCustomer && existingOrderId ? (
             <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md">
               <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
                 <span>Update Order - {grandTotal.toFixed(2)} Rs</span>
@@ -513,9 +761,25 @@ const CartPage: React.FC = () => {
               </div>
 
               {serviceChargeRate > 0 && (
-                <div className="flex justify-between items-center text-gray-700 font-medium">
-                  <span>Service Charge ({serviceChargeRate}%)</span>
-                  <span className="font-bold">+{serviceChargeAmt.toFixed(2)} Rs</span>
+                <div className="flex justify-between items-center text-gray-700 font-medium py-1 border-b border-gray-100">
+                  <div className="flex items-center gap-1.5">
+                    <span>Service Charge ({serviceChargeRate}%)</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsServiceChargeIncluded(!isServiceChargeIncluded)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold transition-all cursor-pointer ${
+                        isServiceChargeIncluded 
+                          ? 'bg-rose-100 text-rose-600 hover:bg-rose-200 border border-rose-200' 
+                          : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
+                      }`}
+                      title={isServiceChargeIncluded ? "Click to remove Service Charge" : "Click to include Service Charge"}
+                    >
+                      {isServiceChargeIncluded ? '✕ Remove' : '+ Add'}
+                    </button>
+                  </div>
+                  <span className={`font-bold ${isServiceChargeIncluded ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
+                    {isServiceChargeIncluded ? `+${serviceChargeAmt.toFixed(2)} Rs` : '0.00 Rs'}
+                  </span>
                 </div>
               )}
 
@@ -528,10 +792,6 @@ const CartPage: React.FC = () => {
                   <div className="flex justify-between items-center text-gray-500 pl-2 text-[11px]">
                     <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
                     <span>+{sgstAmt.toFixed(2)} Rs</span>
-                  </div>
-                  <div className="flex justify-between items-center text-emerald-700 font-semibold">
-                    <span>Total Taxes ({taxRate}%)</span>
-                    <span>+{taxAmt.toFixed(2)} Rs</span>
                   </div>
                 </>
               )}

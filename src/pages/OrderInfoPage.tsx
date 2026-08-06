@@ -12,16 +12,36 @@ const OrderInfoPage: React.FC = () => {
     taxRate: 5.0,
     serviceCharge: 0.0
   });
+  const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
 
   React.useEffect(() => {
     const fetchPOSSettings = async () => {
+      const parseBool = (val: any, defaultVal: boolean = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const low = val.trim().toLowerCase();
+          if (low === 'true' || low === '1') return true;
+          if (low === 'false' || low === '0') return false;
+        }
+        return !!val;
+      };
+
+      const applySettings = (settingsData: any) => {
+        if (!settingsData) return;
+        const taxRate = parseFloat(settingsData.financials?.tax_rate_percentage ?? settingsData.taxRate ?? 5.0);
+        const serviceCharge = parseFloat(settingsData.financials?.service_charge_percentage ?? settingsData.serviceCharge ?? 0.0);
+        const enableTablesVal = settingsData?.hardware_and_preferences?.is_enable_tables ?? settingsData?.is_enable_tables ?? settingsData?.isEnableTables;
+        
+        setPosSettings({ taxRate, serviceCharge });
+        setIsEnableTables(parseBool(enableTablesVal, false));
+      };
+
       try {
         const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
         if (savedSettingsStr) {
-          const savedSettings = JSON.parse(savedSettingsStr);
-          const taxRate = parseFloat(savedSettings.financials?.tax_rate_percentage ?? savedSettings.taxRate ?? 5.0);
-          const serviceCharge = parseFloat(savedSettings.financials?.service_charge_percentage ?? savedSettings.serviceCharge ?? 0.0);
-          setPosSettings({ taxRate, serviceCharge });
+          applySettings(JSON.parse(savedSettingsStr));
           return;
         }
 
@@ -32,13 +52,11 @@ const OrderInfoPage: React.FC = () => {
           if (data) {
             const settingsData = data?.data || data;
             localStorage.setItem('emenu_pos_settings', JSON.stringify(settingsData));
-            const taxRate = parseFloat(settingsData.financials?.tax_rate_percentage ?? settingsData.taxRate ?? 5.0);
-            const serviceCharge = parseFloat(settingsData.financials?.service_charge_percentage ?? settingsData.serviceCharge ?? 0.0);
-            setPosSettings({ taxRate, serviceCharge });
+            applySettings(settingsData);
           }
         }
       } catch (e) {
-        console.warn('Failed to load dynamic POS settings in OrderInfo:', e);
+        console.warn("Failed to fetch settings in OrderInfoPage:", e);
       }
     };
     fetchPOSSettings();
@@ -234,9 +252,8 @@ const OrderInfoPage: React.FC = () => {
   const subTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const serviceChargeRate = posSettings.serviceCharge || 0.0;
   const serviceChargeAmt = (subTotal * serviceChargeRate) / 100;
-  const taxableAmount = subTotal + serviceChargeAmt;
   const taxRate = posSettings.taxRate || 5.0;
-  const taxAmt = (taxableAmount * taxRate) / 100;
+  const taxAmt = (subTotal * taxRate) / 100;
   const cgstAmt = taxAmt / 2;
   const sgstAmt = taxAmt / 2;
   const total = subTotal + serviceChargeAmt + taxAmt;
@@ -249,7 +266,7 @@ const OrderInfoPage: React.FC = () => {
 
     const targetTableNum = selectedTable || tableIdFromUrl;
     const cleanTableNum = String(targetTableNum).replace(/[^0-9]/g, '');
-    if (!targetTableNum || !cleanTableNum) {
+    if (isEnableTables && (!targetTableNum || !cleanTableNum)) {
       toast.warning("Please select a valid Table Number before placing your order!");
       return;
     }
@@ -287,9 +304,9 @@ const OrderInfoPage: React.FC = () => {
         restaurant_id: restaurantId,
         staff_id: 5,
         staff_name: guestName || "E-Menu Customer",
-        order_type: "DINE_IN",
-        table_number: `Table #${cleanTableNum}`,
-        table_number_id: tableNumberId,
+        order_type: isEnableTables ? "DINE_IN" : "TAKEAWAY",
+        table_number: isEnableTables && cleanTableNum ? `Table #${cleanTableNum}` : null,
+        table_number_id: isEnableTables ? tableNumberId : null,
         guest_count: 1
       },
       items: payloadItems,
@@ -497,50 +514,52 @@ const OrderInfoPage: React.FC = () => {
           </div>
 
           {/* Order Type & Table Badges */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                 Order Type
               </label>
               <div className="rounded-xl border border-sky-200/60 bg-sky-50/70 p-3 text-center text-xs font-bold text-[#0077b6] flex items-center justify-center gap-1.5">
-                <span>🍽️</span> DINE-IN
+                <span>{isEnableTables ? '🍽️' : '🛍️'}</span> {isEnableTables ? 'DINE-IN' : 'DIRECT ORDER'}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                Table Number *
-              </label>
-              {(!isGuestCustomer || tableIdFromUrl) && selectedTable ? (
-                <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/70 p-3 text-center text-xs font-bold text-emerald-700 flex items-center justify-center gap-1 shadow-sm">
-                  <span>📋</span> Table #{String(selectedTable).replace(/[^0-9]/g, '') || selectedTable}
-                </div>
-              ) : (
-                <select
-                  value={selectedTable}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedTable(val);
-                    if (val) {
-                      sessionStorage.setItem('emenu_table', val);
-                    } else {
-                      sessionStorage.removeItem('emenu_table');
-                    }
-                  }}
-                  className="w-full rounded-xl border border-gray-300 p-2.5 outline-none focus:border-[#0077b6] focus:ring-2 focus:ring-[#0077b6]/20 text-xs font-semibold text-gray-900 bg-white"
-                >
-                  <option value="">-- Select Table Number * --</option>
-                  {tables.map((t: any) => {
-                    const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
-                    return (
-                      <option key={t.table_id || num} value={num}>
-                        Table #{num} ({t.status || 'Available'})
-                      </option>
-                    );
-                  })}
-                </select>
-              )}
-            </div>
+            {isEnableTables && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Table Number *
+                </label>
+                {(!isGuestCustomer || tableIdFromUrl) && selectedTable ? (
+                  <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/70 p-3 text-center text-xs font-bold text-emerald-700 flex items-center justify-center gap-1 shadow-sm">
+                    <span>📋</span> Table #{String(selectedTable).replace(/[^0-9]/g, '') || selectedTable}
+                  </div>
+                ) : (
+                  <select
+                    value={selectedTable}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedTable(val);
+                      if (val) {
+                        sessionStorage.setItem('emenu_table', val);
+                      } else {
+                        sessionStorage.removeItem('emenu_table');
+                      }
+                    }}
+                    className="w-full rounded-xl border border-gray-300 p-2.5 outline-none focus:border-[#0077b6] focus:ring-2 focus:ring-[#0077b6]/20 text-xs font-semibold text-gray-900 bg-white"
+                  >
+                    <option value="">-- Select Table Number * --</option>
+                    {tables.map((t: any) => {
+                      const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
+                      return (
+                        <option key={t.table_id || num} value={num}>
+                          Table #{num} ({t.status || 'Available'})
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Personal Information */}
@@ -615,10 +634,6 @@ const OrderInfoPage: React.FC = () => {
                 <div className="flex justify-between text-gray-500 pl-2 text-[11px]">
                   <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
                   <span>+₹{sgstAmt.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Total Taxes ({taxRate}%)</span>
-                  <span>+₹{taxAmt.toFixed(2)}</span>
                 </div>
               </>
             )}

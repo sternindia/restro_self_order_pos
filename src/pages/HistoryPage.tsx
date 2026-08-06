@@ -32,11 +32,17 @@ interface OrderHistoryItem {
 
 const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const savedUser = localStorage.getItem('emenu_user');
+  const currentUser = savedUser ? JSON.parse(savedUser) : null;
+  const isSelfPosBilling = currentUser?.role === 'self-pos-billing' || currentUser?.role === 'self_pos_billing';
+
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK'>('ALL');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
 
   const handleOpenOrderPlacedPage = (order: any) => {
@@ -62,6 +68,7 @@ const HistoryPage: React.FC = () => {
     const saved = localStorage.getItem('emenu_pos_settings');
     return saved ? JSON.parse(saved) : null;
   });
+  const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
 
   const fetchOrderHistory = async () => {
     try {
@@ -71,18 +78,30 @@ const HistoryPage: React.FC = () => {
       const userObj = savedUser ? JSON.parse(savedUser) : null;
       const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || 9;
 
-      // Fetch POS settings (/api/settings/pos/:id) if not cached
+      const parseBool = (val: any, defaultVal: boolean = true) => {
+        if (val === undefined || val === null) return defaultVal;
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'number') return val === 1;
+        if (typeof val === 'string') {
+          const low = val.trim().toLowerCase();
+          if (low === 'true' || low === '1') return true;
+          if (low === 'false' || low === '0') return false;
+        }
+        return !!val;
+      };
+
+      const applySettings = (settingsData: any) => {
+        if (!settingsData) return;
+        setPosSettings(settingsData);
+        const enableTablesVal = settingsData?.hardware_and_preferences?.is_enable_tables ?? settingsData?.is_enable_tables ?? settingsData?.isEnableTables;
+        setIsEnableTables(parseBool(enableTablesVal, false));
+      };
+
       const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
-      if (!savedSettingsStr) {
-        fetch(`${API_BASE_URL}/settings/pos/${restaurantId}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            const settings = data?.data || data;
-            if (settings?.restaurant_info) {
-              setPosSettings(settings);
-              localStorage.setItem('emenu_pos_settings', JSON.stringify(settings));
-            }
-          }).catch(e => console.error('Error fetching POS settings in history:', e));
+      if (savedSettingsStr) {
+        try {
+          applySettings(JSON.parse(savedSettingsStr));
+        } catch { }
       }
 
       // Fetch orders from server
@@ -253,7 +272,7 @@ ${400 + contentStream.length}
 
     const subTotalNum = Number(order.bill?.subtotal ?? order.subTotal ?? order.subtotal ?? itemsSubtotal);
     const serviceAmt = Number(order.bill?.service_charge ?? order.serviceCharge ?? ((subTotalNum * serviceChargeRate) / 100));
-    const taxTotal = Number(order.bill?.tax_amount ?? order.tax ?? (((subTotalNum + serviceAmt) * taxRate) / 100));
+    const taxTotal = Number(order.bill?.tax_amount ?? order.tax ?? ((subTotalNum * taxRate) / 100));
     const cgstAmt = taxTotal / 2;
     const sgstAmt = taxTotal / 2;
     const grandTotalNum = Number(order.bill?.grand_total ?? order.total ?? order.grand_total ?? (subTotalNum + serviceAmt + taxTotal));
@@ -350,9 +369,9 @@ ${400 + contentStream.length}
           <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
             <span>SGST ${((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}% &nbsp;&nbsp;${sgstAmt.toFixed(2)}</span>
           </div>
-          ${parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 5) > 0 ? `
+          ${serviceAmt > 0 ? `
             <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-              <span>Service Charge ${parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 5)}% &nbsp;&nbsp;${((subTotalNum * parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 5)) / 100).toFixed(2)}</span>
+              <span>Service Charge ${serviceChargeRate}% &nbsp;&nbsp;${serviceAmt.toFixed(2)}</span>
             </div>
           ` : ''}
           <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 4px;">
@@ -388,7 +407,7 @@ ${400 + contentStream.length}
 
   const getStatusBadgeClass = (status: string) => {
     const s = (status || '').toUpperCase();
-    if (s === 'PAID' || s === 'COMPLETED') return 'bg-emerald-50 text-emerald-600 border border-emerald-200/50';
+    if (s === 'PAID' || s === 'COMPLETED' || s === 'CONFIRMED') return 'bg-emerald-50 text-emerald-600 border border-emerald-200/50';
     if (s === 'CANCELLED') return 'bg-rose-50 text-rose-600 border border-rose-200/50';
     if (s === 'PENDING') return 'bg-amber-50 text-amber-600 border border-amber-200/50';
     if (s === 'PREPARING' || s === 'SERVED') return 'bg-sky-50 text-sky-600 border border-sky-200/50';
@@ -396,10 +415,36 @@ ${400 + contentStream.length}
   };
 
   const filteredOrders = orders.filter((order: any) => {
-    // 1. Date Filter
-    if (dateFilter !== 'ALL') {
-      const dateStr = order.created_at || '';
-      const orderDate = new Date(dateStr.includes(' ') ? dateStr.replace(' ', 'T') : dateStr);
+    const orderType = (order.order_meta?.order_type || order.order_type || '').toUpperCase();
+    const tableNum = String(order.order_meta?.table_number || order.table_name || '').toLowerCase();
+    const staffName = String(order.order_meta?.staff_name || order.staff_name || '').toLowerCase();
+    const isCounterOrder = orderType === 'TAKEAWAY' || tableNum.includes('counter') || staffName.includes('self pos') || staffName.includes('counter');
+
+    // Strict role segregation: Self POS Billing sees Counter Orders; Waiters/Staff see Table/Dine-In Orders only.
+    if (isSelfPosBilling) {
+      if (!isCounterOrder) return false;
+    } else {
+      if (isCounterOrder) return false;
+    }
+
+    // 1. Date Range Filter (Between Dates)
+    const dateStr = order.created_at || '';
+    const orderDate = new Date(dateStr.includes(' ') ? dateStr.replace(' ', 'T') : dateStr);
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      if (orderDate < start) return false;
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      if (orderDate > end) return false;
+    }
+
+    // 2. Preset Date Filter (only if custom date inputs are empty)
+    if (!startDate && !endDate && dateFilter !== 'ALL') {
       const today = new Date();
 
       if (dateFilter === 'TODAY') {
@@ -461,62 +506,108 @@ ${400 + contentStream.length}
           </button>
         </div>
 
-        {/* Quick Filters for Date & Payment Status */}
-        <div className="flex items-center gap-2 mb-5 overflow-x-auto select-none no-scrollbar pb-1 px-1">
-          <button
-            onClick={() => { setDateFilter('ALL'); setStatusFilter('ALL'); }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dateFilter === 'ALL' && statusFilter === 'ALL'
-                ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            📋 All Logs
-          </button>
+        {/* Mobile & Desktop Responsive Date Filter Toolbar */}
+        <div className="flex flex-col gap-2.5 mb-5 select-none">
+          {/* Top Row: Scrollable Quick Presets */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 min-w-0">
+            <button
+              onClick={() => { setDateFilter('ALL'); setStatusFilter('ALL'); setStartDate(''); setEndDate(''); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'ALL' && statusFilter === 'ALL' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              📋 All Logs
+            </button>
 
-          <button
-            onClick={() => setDateFilter(dateFilter === 'TODAY' ? 'ALL' : 'TODAY')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dateFilter === 'TODAY'
-                ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            📅 Today
-          </button>
+            <button
+              onClick={() => { setDateFilter(dateFilter === 'TODAY' ? 'ALL' : 'TODAY'); setStartDate(''); setEndDate(''); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'TODAY' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              📅 Today
+            </button>
 
-          <button
-            onClick={() => setDateFilter(dateFilter === 'THIS_WEEK' ? 'ALL' : 'THIS_WEEK')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dateFilter === 'THIS_WEEK'
-                ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            📆 This Week
-          </button>
+            <button
+              onClick={() => { setDateFilter(dateFilter === 'THIS_WEEK' ? 'ALL' : 'THIS_WEEK'); setStartDate(''); setEndDate(''); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'THIS_WEEK' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              📆 This Week
+            </button>
 
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'PAID' ? 'ALL' : 'PAID')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              statusFilter === 'PAID'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Paid
-          </button>
+            <div className="h-4 w-[1px] bg-gray-300 mx-0.5 flex-shrink-0"></div>
 
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              statusFilter === 'PENDING'
-                ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
-                : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400"></span> Pending
-          </button>
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'PAID' ? 'ALL' : 'PAID')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                statusFilter === 'PAID'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                  : 'bg-white text-emerald-700 border-emerald-200/80 hover:bg-emerald-50'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Paid
+            </button>
+
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                statusFilter === 'PENDING'
+                  ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                  : 'bg-white text-amber-700 border-amber-200/80 hover:bg-amber-50'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pending
+            </button>
+          </div>
+
+          {/* Custom Date Range Pill Bar (Fits 100% width on Mobile without clipping) */}
+          <div className="flex items-center gap-1.5 w-full bg-white p-1.5 rounded-xl border border-gray-200 shadow-2xs">
+            <div className="flex-1 min-w-0 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/60 focus-within:border-[#0077b6] transition-colors">
+              <span className="text-[10px] font-extrabold text-gray-400 uppercase">From</span>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (e.target.value) setDateFilter('ALL');
+                }}
+                className="w-full bg-transparent text-[11px] sm:text-xs font-semibold text-gray-800 outline-none cursor-pointer p-0"
+              />
+            </div>
+
+            <span className="text-gray-300 font-extrabold text-xs px-0.5">→</span>
+
+            <div className="flex-1 min-w-0 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/60 focus-within:border-[#0077b6] transition-colors">
+              <span className="text-[10px] font-extrabold text-gray-400 uppercase">To</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  if (e.target.value) setDateFilter('ALL');
+                }}
+                className="w-full bg-transparent text-[11px] sm:text-xs font-semibold text-gray-800 outline-none cursor-pointer p-0"
+              />
+            </div>
+
+            {(startDate || endDate) && (
+              <button 
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                className="p-1 px-2 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer flex-shrink-0"
+                title="Clear date filter"
+              >
+                Clear ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -548,7 +639,9 @@ ${400 + contentStream.length}
                 <thead className="bg-gray-50 border-b border-gray-200/80">
                   <tr>
                     <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider whitespace-nowrap">Table</th>
+                    {isEnableTables && (
+                      <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider whitespace-nowrap">Table</th>
+                    )}
                     <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider whitespace-nowrap">Date & Time</th>
                     <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider">Items</th>
                     <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider whitespace-nowrap">Total</th>
@@ -583,11 +676,13 @@ ${400 + contentStream.length}
                               #{order.order_id}
                             </button>
                           </td>
-                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-bold text-[#0077b6] whitespace-nowrap">
-                            <span className="bg-[#0077b6]/5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs">
-                              {order.table_name || 'Walk-In'}
-                            </span>
-                          </td>
+                          {isEnableTables && (
+                            <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-bold text-[#0077b6] whitespace-nowrap">
+                              <span className="bg-[#0077b6]/5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs">
+                                {order.table_name || 'Walk-In'}
+                              </span>
+                            </td>
+                          )}
                           <td className="px-3 sm:px-5 py-3 sm:py-4 text-[11px] sm:text-xs text-gray-500 font-medium whitespace-nowrap">
                             {cleanDate}
                           </td>
@@ -598,35 +693,44 @@ ${400 + contentStream.length}
                             ₹{Number(order.bill?.grand_total || 0).toFixed(2)}
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4">
-                            <span className={`text-[9px] sm:text-[10px] font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider border whitespace-nowrap ${getStatusBadgeClass(order.resolved_status)}`}>
-                              {order.resolved_status || 'N/A'}
+                            <span className={`text-[9px] sm:text-[10px] font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider border whitespace-nowrap ${getStatusBadgeClass(isSelfPosBilling ? 'COMPLETED' : order.resolved_status)}`}>
+                              {isSelfPosBilling ? 'COMPLETED' : (order.resolved_status || 'N/A')}
                             </span>
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button 
                                 className="p-1.5 hover:bg-emerald-100/70 text-emerald-700 bg-emerald-50 rounded-lg transition-colors border border-emerald-200/50 cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); handleOpenOrderPlacedPage(order); }}
-                                title="Open Order Placed Page to Review/Update"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (isSelfPosBilling) {
+                                    toggleExpand(order.order_id);
+                                  } else {
+                                    handleOpenOrderPlacedPage(order);
+                                  }
+                                }}
+                                title={isSelfPosBilling ? "View Order Items Detail" : "Open Order Placed Page to Review/Update"}
                               >
                                 <Eye size={14} />
                               </button>
-                              {order.resolved_status !== 'CANCELLED' && order.resolved_status !== 'REJECTED' && (
-                                <button 
-                                  className="p-1.5 hover:bg-amber-100/70 text-amber-700 bg-amber-50 rounded-lg transition-colors border border-amber-200/50 cursor-pointer"
-                                  onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }}
-                                  title="Print Bill"
-                                >
-                                  <Printer size={14} />
-                                </button>
+                              {!isSelfPosBilling && order.resolved_status !== 'CANCELLED' && order.resolved_status !== 'REJECTED' && (
+                                <>
+                                  <button 
+                                    className="p-1.5 hover:bg-amber-100/70 text-amber-700 bg-amber-50 rounded-lg transition-colors border border-amber-200/50 cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }}
+                                    title="Print Bill"
+                                  >
+                                    <Printer size={14} />
+                                  </button>
+                                  <button 
+                                    className="p-1.5 hover:bg-[#0077b6]/10 text-[#0077b6] bg-[#0077b6]/5 rounded-lg transition-colors border border-[#0077b6]/20 cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
+                                    title="Download Bill"
+                                  >
+                                    <Download size={14} />
+                                  </button>
+                                </>
                               )}
-                              <button 
-                                className="p-1.5 hover:bg-[#0077b6]/10 text-[#0077b6] bg-[#0077b6]/5 rounded-lg transition-colors border border-[#0077b6]/20 cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
-                                title="Download Bill"
-                              >
-                                <Download size={14} />
-                              </button>
                               <button 
                                 className="p-1 hover:bg-gray-200/50 rounded-lg text-gray-400 hover:text-gray-700 transition-colors ml-0.5"
                                 onClick={(e) => { e.stopPropagation(); toggleExpand(order.order_id); }}
@@ -641,7 +745,7 @@ ${400 + contentStream.length}
                         {/* Expandable Sub-Row (Receipt details) */}
                         {isExpanded && (
                           <tr className="bg-gray-50/30">
-                            <td colSpan={7} className="p-1 sm:px-6 sm:py-4 border-t border-b border-gray-100">
+                            <td colSpan={isEnableTables ? 7 : 6} className="p-1 sm:px-6 sm:py-4 border-t border-b border-gray-100">
                               <div className="sticky left-0 w-[calc(100vw-1.5rem)] sm:w-full max-w-full px-1 sm:px-0">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 items-start w-full">
                                 {/* Left Side: Items Detail */}
@@ -701,32 +805,36 @@ ${400 + contentStream.length}
                                         <span className="text-[#0077b6]">₹{Number(order.bill.grand_total).toFixed(2)}</span>
                                       </div>
                                       <div className="text-[9px] text-center text-gray-400 font-bold tracking-wide uppercase pt-2">
-                                        Payment state: {order.bill.payment_status} | Bill: {order.bill.bill_status}
+                                        Payment state: {isSelfPosBilling ? 'PAID' : order.bill.payment_status} | Bill: {isSelfPosBilling ? 'COMPLETED' : order.bill.bill_status}
                                       </div>
 
-                                      {/* Print & Download Action Buttons */}
-                                      <div className="flex items-center gap-2 pt-3 border-t border-dashed border-gray-200">
-                                        {order.resolved_status !== 'CANCELLED' && order.resolved_status !== 'REJECTED' ? (
-                                          <button 
-                                            onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }}
-                                            className="flex-1 py-1.5 px-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
-                                          >
-                                            <Printer size={13} />
-                                            <span>Print Bill</span>
-                                          </button>
-                                        ) : (
-                                          <div className="flex-1 py-1.5 px-2 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold text-center border border-rose-200">
-                                            Order Cancelled
-                                          </div>
-                                        )}
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
-                                          className="flex-1 py-1.5 px-2 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
-                                        >
-                                          <Download size={13} />
-                                          <span>Download Bill</span>
-                                        </button>
-                                      </div>
+                                      {/* Print & Download Action Buttons (Hidden for self-pos-billing) */}
+                                      {!isSelfPosBilling && (
+                                        <div className="flex items-center gap-2 pt-3 border-t border-dashed border-gray-200">
+                                          {order.resolved_status !== 'CANCELLED' && order.resolved_status !== 'REJECTED' ? (
+                                            <>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }}
+                                                className="flex-1 py-1.5 px-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                                              >
+                                                <Printer size={13} />
+                                                <span>Print Bill</span>
+                                              </button>
+                                              <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
+                                                className="flex-1 py-1.5 px-2 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                                              >
+                                                <Download size={13} />
+                                                <span>Download Bill</span>
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <div className="w-full py-1.5 px-2 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold text-center border border-rose-200">
+                                              Order Cancelled
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}

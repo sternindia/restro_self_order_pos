@@ -58,3 +58,44 @@ export const clearEmenuCart = () => {
   localStorage.setItem('emenu_cart', '{}');
   window.dispatchEvent(new Event('emenu_cart_updated'));
 };
+
+export const parseBool = (val: any, defaultVal: boolean = true): boolean => {
+  if (val === undefined || val === null) return defaultVal;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val === 1;
+  if (typeof val === 'string') {
+    const low = val.trim().toLowerCase();
+    if (low === 'true' || low === '1') return true;
+    if (low === 'false' || low === '0') return false;
+  }
+  return !!val;
+};
+
+let cachedPosSettingsObj: any = null;
+
+export const getStoredPOSSettings = (): any => {
+  if (cachedPosSettingsObj) return cachedPosSettingsObj;
+  try {
+    const saved = localStorage.getItem('emenu_pos_settings');
+    if (saved) {
+      cachedPosSettingsObj = JSON.parse(saved);
+      return cachedPosSettingsObj;
+    }
+  } catch { }
+  return null;
+};
+
+export const setStoredPOSSettings = (settings: any): void => {
+  if (!settings) return;
+  cachedPosSettingsObj = settings;
+  try {
+    localStorage.setItem('emenu_pos_settings', JSON.stringify(settings));
+  } catch { }
+};
+
+export const isTablesEnabled = (): boolean => {
+  const settings = getStoredPOSSettings();
+  if (!settings) return true;
+  const val = settings?.hardware_and_preferences?.is_enable_tables ?? settings?.is_enable_tables ?? settings?.isEnableTables;
+  return parseBool(val, false);
+};

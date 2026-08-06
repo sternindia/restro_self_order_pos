@@ -92,7 +92,17 @@ function App() {
         <Routes>
           <Route 
             path="/login" 
-            element={user && !user.isGuest ? <Navigate to="/tables" replace /> : <Login onLogin={handleLogin} />} 
+            element={
+              user && !user.isGuest ? (
+                user.role === 'self-pos-billing' || user.role === 'self_pos_billing' ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Navigate to="/tables" replace />
+                )
+              ) : (
+                <Login onLogin={handleLogin} />
+              )
+            } 
           />
           <Route 
             path="/" 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
 interface LoginProps {
@@ -6,22 +7,61 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const handleSuccessfulLogin = (userData: any) => {
+    onLogin(userData);
+    const role = (userData?.role || '').toLowerCase();
+    if (role === 'waiter') {
+      navigate('/tables', { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!phone.trim() || !password.trim()) {
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedPhone || !password.trim()) {
       setError('Please fill in all fields.');
       return;
     }
 
-    if (!/^\d{10}$/.test(phone.trim())) {
+    if (!/^\d{10}$/.test(trimmedPhone)) {
       setError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+
+    // 1. Direct local role handling for staff credentials
+    if (trimmedPhone === '8965984722' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '8965984722', restaurant_id: 9, role: 'self-pos-billing', name: 'Admin' });
+      return;
+    }
+    if (trimmedPhone === '7878787878' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '7878787878', restaurant_id: 9, role: 'self-pos-billing', name: 'Cashier' });
+      return;
+    }
+    if (trimmedPhone === '8965984720' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '8965984720', restaurant_id: 9, role: 'self-pos-billing', name: 'Manager' });
+      return;
+    }
+    if (trimmedPhone === '8989898989' && password === '12345678') {
+      handleSuccessfulLogin({ phone: '8989898989', restaurant_id: 9, role: 'waiter', name: 'Waiter' });
+      return;
+    }
+    if (trimmedPhone === '9876543210' && password === 'password') {
+      handleSuccessfulLogin({ phone: '9876543210', restaurant_id: 9, role: 'waiter', name: 'Staff Waiter' });
+      return;
+    }
+    if (trimmedPhone === '9999999999' && password === 'password') {
+      handleSuccessfulLogin({ phone: '9999999999', restaurant_id: 9, role: 'self-pos-billing', name: 'Self POS Billing Counter' });
       return;
     }
 
@@ -34,44 +74,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          phone: phone.trim(),
+          phone: trimmedPhone,
           password: password
         })
       });
 
       const data = await response.json();
       if (data && data.status === true && data.data) {
-        onLogin(data.data);
-      } else if (phone.trim() === '9876543210' && password === 'password') {
-        onLogin({
-          phone: '9876543210',
-          restaurant_id: 9,
-          role: 'waiter',
-          name: 'Staff Waiter'
-        });
+        handleSuccessfulLogin(data.data);
       } else {
         setError(data.message || 'Invalid phone number or password.');
       }
     } catch (err: any) {
       console.error('API login failed:', err.message);
-      if (phone.trim() === '9876543210' && password === 'password') {
-        onLogin({
-          phone: '9876543210',
-          restaurant_id: 9,
-          role: 'waiter',
-          name: 'Staff Waiter'
-        });
-        return;
-      }
       setError('Network error. Failed to connect to server.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFillDemo = () => {
-    setPhone('9876543210');
-    setPassword('password');
+  const handleFillRole = (ph: string, pass: string) => {
+    setPhone(ph);
+    setPassword(pass);
     setError('');
   };
 
@@ -95,22 +119,48 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Demo Credentials Info Box */}
-        <div 
-          onClick={handleFillDemo}
-          className="group mb-6 p-4 bg-[#d1efff]/20 hover:bg-[#d1efff]/45 border border-[#0077b6]/20 rounded-xl cursor-pointer transition-all duration-300 flex items-start gap-3"
-        >
-          <span className="text-[#0077b6] text-lg mt-0.5 group-hover:scale-110 transition-transform">💡</span>
-          <div>
-            <div className="text-xs font-semibold text-[#0077b6] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              Demo Credentials
-              <span className="inline-block px-1.5 py-0.5 bg-[#0077b6]/20 text-[10px] text-[#0077b6] rounded-md font-semibold border border-[#0077b6]/20 animate-pulse">
-                Click to Auto-fill
-              </span>
-            </div>
-            <p className="text-xs text-gray-700 leading-relaxed">
-              Phone: <strong className="text-gray-950">9876543210</strong><br />
-              Password: <strong className="text-gray-950">password</strong>
-            </p>
+        <div className="mb-6 p-3.5 bg-[#d1efff]/20 border border-[#0077b6]/20 rounded-xl space-y-2.5">
+          <div className="text-xs font-bold text-[#0077b6] uppercase tracking-wider flex items-center justify-between">
+            <span>💡 Staff Quick Login Roles</span>
+            <span className="text-[10px] bg-[#0077b6]/20 px-1.5 py-0.5 rounded text-[#0077b6]">Auto-fill</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleFillRole('8965984722', '12345678')}
+              className="p-2 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <div className="text-[11px] font-bold text-emerald-800">👑 Admin (Self POS)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">8965984722</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFillRole('8965984720', '12345678')}
+              className="p-2 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <div className="text-[11px] font-bold text-emerald-800">💼 Manager (Self POS)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">8965984720</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFillRole('7878787878', '12345678')}
+              className="p-2 bg-white hover:bg-emerald-50 border border-emerald-500/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <div className="text-[11px] font-bold text-emerald-800">⚡ Cashier (Self POS)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">7878787878</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFillRole('8989898989', '12345678')}
+              className="p-2 bg-white hover:bg-sky-50 border border-sky-400/40 rounded-lg text-left transition-all active:scale-95 cursor-pointer shadow-2xs"
+            >
+              <div className="text-[11px] font-bold text-[#0077b6]">🍽️ Waiter (Self Order)</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">8989898989</div>
+            </button>
           </div>
         </div>
 
