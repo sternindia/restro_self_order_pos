@@ -128,7 +128,7 @@ const TablesPage: React.FC = () => {
 
         const activeOrder = orderHistory.find((oh: any) => {
           const statusStr = String(oh.order_status || oh.status || '').toUpperCase();
-          if (statusStr !== 'PENDING') return false;
+          if (statusStr === 'COMPLETED' || statusStr === 'CANCELLED' || statusStr === 'PAID') return false;
 
           const cleanOrderTableNum = String(oh.table_name || oh.table_number || '').replace(/[^0-9]/g, '');
           const orderTableId = String(oh.table_number_id || '');
@@ -137,18 +137,28 @@ const TablesPage: React.FC = () => {
                  (cleanTableId && orderTableId && cleanTableId === orderTableId);
         });
 
-        if (activeOrder) {
+        const statusRaw = String(item.status || 'Available').toUpperCase();
+        const isOccupied = statusRaw === 'OCCUPIED' || !!activeOrder;
+
+        if (isOccupied) {
+          const orderTime = activeOrder ? (activeOrder.created_at || activeOrder.updated_at || activeOrder.time) : item.updated_at;
+          const itemsList = activeOrder?.items || item.current_session?.items || [];
+          const computedItemsTotal = itemsList.reduce((s: number, i: any) => s + (parseFloat(i.price || i.unit_price || 0) * parseInt(i.qty || i.quantity || 1)), 0);
+          const totalAmount = activeOrder ? (activeOrder.total || activeOrder.bill?.grand_total || computedItemsTotal) : (item.current_session?.current_total || item.current_session?.total_amount || computedItemsTotal || 0);
+
           return {
             table_id: item.table_id || item.table_number,
             table_number: item.table_name || item.table_number || `#${item.table_id}`,
             capacity: Number(item.capacity) || 4,
             status: 'Occupied',
             current_session: {
-              active_order_id: String(activeOrder.order_id),
-              staff_name: activeOrder.staff_name || activeOrder.guest_name || 'Waiter',
-              updated_at: activeOrder.created_at || new Date().toISOString(),
-              current_total: Number(activeOrder.bill?.grand_total ?? activeOrder.total ?? 0),
-              total_items: (activeOrder.items || []).reduce((s: number, i: any) => s + (parseInt(i.quantity || i.qty) || 1), 0)
+              active_order_id: String(activeOrder?.order_id || item.current_session?.active_order_id || 'N/A'),
+              order_status: activeOrder?.order_status || activeOrder?.status || item.current_session?.order_status || 'PENDING',
+              staff_name: activeOrder?.staff_name || activeOrder?.guest_name || item.current_session?.staff_name || 'Customer',
+              updated_at: orderTime,
+              created_at: orderTime,
+              current_total: Number(totalAmount),
+              total_items: itemsList.reduce((s: number, i: any) => s + (parseInt(i.quantity || i.qty) || 1), 0)
             },
             updated_at: item.updated_at
           };
@@ -188,17 +198,11 @@ const TablesPage: React.FC = () => {
   };
 
   const handleSeatGuests = (tableNumber: string) => {
-    const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
-    sessionStorage.setItem('emenu_table', cleanNum || tableNumber);
-    localStorage.removeItem('emenu_cart');
-    navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
+    handleAddItems(tableNumber);
   };
 
   const handleOpenTab = (tableNumber: string) => {
-    const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
-    sessionStorage.setItem('emenu_table', cleanNum || tableNumber);
-    localStorage.removeItem('emenu_cart');
-    navigate(`/?table=${cleanNum || encodeURIComponent(tableNumber)}`);
+    handleAddItems(tableNumber);
   };
 
   const handleAddItems = (tableNumber: string) => {
@@ -242,28 +246,48 @@ const TablesPage: React.FC = () => {
     await fetchTables();
   };
 
-  const handleMarkCleaned = (tableNumber: string) => {
+  const handleMarkCleaned = (_tableNumber: string) => {
     fetchTables();
   };
 
-  const handleMarkArrived = (tableNumber: string) => {
+  const handleMarkArrived = (_tableNumber: string) => {
     fetchTables();
+  };
+
+  // Prevent linter warnings for helper functions available for future card actions
+  void handleSeatGuests;
+  void handleOpenTab;
+  void handleMarkCleaned;
+  void handleMarkArrived;
+
+  const parseUtcDate = (val?: string) => {
+    if (!val) return new Date();
+    let str = String(val).trim();
+    if (str.includes(' ') && !str.includes('T')) {
+      str = str.replace(' ', 'T');
+    }
+    if (!str.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(str)) {
+      str += 'Z';
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date(val) : d;
   };
 
   const getMinutesElapsed = (dateString?: string) => {
-    if (!dateString) return '0m';
-    let formattedString = dateString.includes(' ') ? dateString.replace(' ', 'T') : dateString;
-    if (!formattedString.endsWith('Z') && !formattedString.includes('+')) {
-      formattedString += 'Z';
-    }
-    const date = new Date(formattedString);
-    if (isNaN(date.getTime())) return '0m';
-    const diffMs = Date.now() - date.getTime();
-    const mins = Math.max(0, Math.floor(diffMs / 60000));
+    if (!dateString) return '1s';
+    const date = parseUtcDate(dateString);
+    if (isNaN(date.getTime())) return '1s';
+
+    let diffMs = Date.now() - date.getTime();
+    if (diffMs < 0) diffMs = 0;
+
+    const secs = Math.max(1, Math.floor(diffMs / 1000));
+    if (secs < 60) return `${secs}s`;
+    const mins = Math.floor(secs / 60);
     if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
-    const remainMins = mins % 60;
-    return `${hrs}h ${remainMins}m`;
+    const remMins = mins % 60;
+    return `${hrs}h ${remMins}m`;
   };
 
   return (

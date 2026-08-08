@@ -331,13 +331,14 @@ const OrderInfoPage: React.FC = () => {
         const rawCheckOrders = Array.isArray(ordersCheckData) ? ordersCheckData : (ordersCheckData?.data || []);
         const isTableOccupiedNow = rawCheckOrders.some((o: any) => {
           const cleanOrderTable = String(o.table_name || o.table_number || o.table_number_id || '').replace(/[^0-9]/g, '');
-          const isPending = (o.order_status || o.status || '').toUpperCase() === 'PENDING';
-          const isUnpaid = (o.bill?.payment_status || '').toUpperCase() !== 'PAID';
-          return cleanOrderTable !== '' && cleanOrderTable === cleanTableNum && isPending && isUnpaid;
+          const st = (o.order_status || o.status || '').toUpperCase();
+          const isActive = st === 'PENDING' || st === 'PREPARING' || st === 'READY' || st === 'CONFIRMED' || st === 'IN_PROGRESS';
+          const isUnpaid = (o.bill?.payment_status || o.payment_status || '').toUpperCase() !== 'PAID';
+          return cleanOrderTable !== '' && cleanOrderTable === cleanTableNum && isActive && isUnpaid;
         });
 
         if (isTableOccupiedNow && !existingOrderId) {
-          toast.error(`Table #${cleanTableNum} was just occupied. Please select an available table.`);
+          toast.error(`Table #${cleanTableNum} is currently occupied with an active order. Please select an available table.`);
           setLoading(false);
           return;
         }
