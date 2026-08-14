@@ -722,13 +722,6 @@ ${400 + contentStream.length}
                                   >
                                     <Printer size={14} />
                                   </button>
-                                  <button 
-                                    className="p-1.5 hover:bg-[#0077b6]/10 text-[#0077b6] bg-[#0077b6]/5 rounded-lg transition-colors border border-[#0077b6]/20 cursor-pointer"
-                                    onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
-                                    title="Download Bill"
-                                  >
-                                    <Download size={14} />
-                                  </button>
                                 </>
                               )}
                               <button 
@@ -815,17 +808,10 @@ ${400 + contentStream.length}
                                             <>
                                               <button 
                                                 onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }}
-                                                className="flex-1 py-1.5 px-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                                                className="w-full py-1.5 px-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
                                               >
                                                 <Printer size={13} />
                                                 <span>Print Bill</span>
-                                              </button>
-                                              <button 
-                                                onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
-                                                className="flex-1 py-1.5 px-2 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
-                                              >
-                                                <Download size={13} />
-                                                <span>Download Bill</span>
                                               </button>
                                             </>
                                           ) : (
