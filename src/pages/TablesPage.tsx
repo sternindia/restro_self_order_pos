@@ -340,8 +340,8 @@ const TablesPage: React.FC = () => {
                   className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-gray-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
                   onClick={() => handleTableSelect(table.table_number)}
                 >
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                    <TableStatusBadge status={table.status} />
+                  <div className="absolute top-0 right-0">
+                    <TableStatusBadge status={table.status} variant="corner" />
                   </div>
 
                   {/* Table Header */}
