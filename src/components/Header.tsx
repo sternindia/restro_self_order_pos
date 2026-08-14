@@ -138,9 +138,19 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           {/* User Profile Badge */}
           {isStaffUser && !isSelfPosBilling && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200/80 px-2.5 py-1 rounded-full border border-gray-200/60 transition-colors cursor-pointer">
+            <div 
+              className="relative group hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200/80 px-2.5 py-1 rounded-full border border-gray-200/60 transition-all cursor-pointer"
+              title={`Logged in as: ${user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}`}
+            >
               <User size={15} className="text-[#0077b6]" />
-              <span>Profile</span>
+              <span className="max-w-[120px] truncate">{user?.username || user?.name || user?.phone || user?.user_name || 'Profile'}</span>
+
+              {/* Hover Tooltip Popup */}
+              <div className="absolute top-full right-0 mt-2 hidden group-hover:flex flex-col bg-slate-900 text-white text-[11px] font-medium py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap z-50 pointer-events-none border border-slate-800">
+                <span className="font-bold text-amber-400">Logged in User</span>
+                <span className="text-white fw-bold">{user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}</span>
+                {user?.role && <span className="text-[10px] text-slate-400 capitalize">Role: {user.role}</span>}
+              </div>
             </div>
           )}
 
