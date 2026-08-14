@@ -681,7 +681,7 @@ const CartPage: React.FC = () => {
                 className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
                 title="Click to view detailed Bill Summary"
               >
-                <span>Self POS Billing - Total {grandTotal.toFixed(2)} Rs</span>
+                <span>Total - {grandTotal.toFixed(2)} Rs</span>
                 <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
                   <FileText size={13} />
                   <span>Bill Summary</span>
