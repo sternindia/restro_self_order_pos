@@ -770,26 +770,26 @@ const CartPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-2 text-xs text-gray-600 py-1">
+            <div className="space-y-2 text-xs text-slate-800 py-1">
               {/* Itemized List of Cart Dishes */}
               <div className="space-y-1.5 border-b border-gray-100 pb-2.5 max-h-40 overflow-y-auto">
                 {cartItems.map((item: any) => {
                   const itemLineTotal = (item.price * item.quantity).toFixed(2);
                   return (
-                    <div key={item.id} className="flex justify-between items-center text-gray-800">
-                      <span className="font-semibold truncate max-w-[200px]">
-                        {item.name} <span className="text-gray-500 font-normal">× {item.quantity}</span>
+                    <div key={item.id} className="flex justify-between items-center text-slate-900">
+                      <span className="font-bold truncate max-w-[200px] text-slate-900">
+                        {item.name} <span className="text-slate-700 font-medium">× {item.quantity}</span>
                       </span>
-                      <span className="font-bold text-gray-900">{itemLineTotal} Rs</span>
+                      <span className="font-extrabold text-slate-900">{itemLineTotal} Rs</span>
                     </div>
                   );
                 })}
               </div>
 
               {serviceChargeRate > 0 && (
-                <div className="flex justify-between items-center text-gray-700 font-medium py-1 border-b border-gray-100">
+                <div className="flex justify-between items-center text-slate-900 font-bold py-1 border-b border-gray-100">
                   <div className="flex items-center gap-1.5">
-                    <span>Service Charge ({serviceChargeRate}%)</span>
+                    <span className="text-slate-900">Service Charge ({serviceChargeRate}%)</span>
                     <button
                       type="button"
                       onClick={() => setIsServiceChargeIncluded(!isServiceChargeIncluded)}
@@ -803,7 +803,7 @@ const CartPage: React.FC = () => {
                       {isServiceChargeIncluded ? '✕ Remove' : '+ Add'}
                     </button>
                   </div>
-                  <span className={`font-bold ${isServiceChargeIncluded ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
+                  <span className={`font-extrabold ${isServiceChargeIncluded ? 'text-slate-900' : 'text-slate-400 line-through'}`}>
                     {isServiceChargeIncluded ? `+${serviceChargeAmt.toFixed(2)} Rs` : '0.00 Rs'}
                   </span>
                 </div>
@@ -811,20 +811,20 @@ const CartPage: React.FC = () => {
 
               {taxRate > 0 && (
                 <>
-                  <div className="flex justify-between items-center text-gray-500 pl-2 text-[11px]">
-                    <span>CGST ({(taxRate / 2).toFixed(1)}%)</span>
-                    <span>+{cgstAmt.toFixed(2)} Rs</span>
+                  <div className="flex justify-between items-center text-slate-800 font-semibold text-xs">
+                    <span className="text-slate-800 font-semibold">CGST ({(taxRate / 2).toFixed(1)}%)</span>
+                    <span className="text-slate-900 font-bold">+{cgstAmt.toFixed(2)} Rs</span>
                   </div>
-                  <div className="flex justify-between items-center text-gray-500 pl-2 text-[11px]">
-                    <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
-                    <span>+{sgstAmt.toFixed(2)} Rs</span>
+                  <div className="flex justify-between items-center text-slate-800 font-semibold text-xs">
+                    <span className="text-slate-800 font-semibold">SGST ({(taxRate / 2).toFixed(1)}%)</span>
+                    <span className="text-slate-900 font-bold">+{sgstAmt.toFixed(2)} Rs</span>
                   </div>
                 </>
               )}
 
-              <div className="border-t border-dashed border-gray-200 pt-2.5 flex justify-between items-center text-sm font-extrabold text-gray-900">
-                <span>To Pay (Grand Total)</span>
-                <span className="text-[#0077b6] text-base">{grandTotal.toFixed(2)} Rs</span>
+              <div className="border-t border-dashed border-gray-300 pt-2.5 flex justify-between items-center text-sm font-extrabold text-slate-900">
+                <span className="text-slate-900 font-extrabold">To Pay (Grand Total)</span>
+                <span className="text-[#0077b6] text-lg font-black">{grandTotal.toFixed(2)} Rs</span>
               </div>
             </div>
 
