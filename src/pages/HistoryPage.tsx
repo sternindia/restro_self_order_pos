@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
 import OrderStatusBadge from '../components/OrderStatusBadge';
+import ReceiptBillPrint from '../components/ReceiptBillPrint';
 
 interface OrderHistoryItem {
   order_id: string;
@@ -317,21 +318,25 @@ ${400 + contentStream.length}
     URL.revokeObjectURL(link.href);
   };
 
+  const [printOrderData, setPrintOrderData] = useState<any>(null);
+
   const handlePrintOrder = (order: any) => {
     const cleanDate = order.created_at 
       ? new Date(order.created_at.includes(' ') ? order.created_at.replace(' ', 'T') : order.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
       : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
-    const items = order.items || [];
-    const totalQty = items.reduce((sum: number, item: any) => sum + (parseInt(item.quantity || item.qty) || 1), 0);
-    
-    // Fallback subtotal calculation from items if order.bill is empty
-    const itemsSubtotal = items.reduce((sum: number, item: any) => {
+    const items = (order.items || []).map((item: any) => {
       const q = parseInt(item.quantity || item.qty) || 1;
       const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
-      return sum + (unitP * q);
-    }, 0);
-
+      return {
+        name: item.name,
+        quantity: q,
+        price: unitP,
+        total_price: Number(item.total_price || (unitP * q))
+      };
+    });
+    
+    const itemsSubtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
     const taxRate = parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5);
     const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
 
@@ -342,132 +347,35 @@ ${400 + contentStream.length}
     const sgstAmt = taxTotal / 2;
     const grandTotalNum = Number(order.bill?.grand_total ?? order.total ?? order.grand_total ?? (subTotalNum + serviceAmt + taxTotal));
 
-    const itemsRowsHtml = items.map((item: any) => {
-      const qty = parseInt(item.quantity || item.qty) || 1;
-      const unitPrice = Number(item.unit_price || item.price || 0);
-      const itemAmount = Number(item.total_price || (unitPrice * qty));
-      return `
-        <div style="margin-bottom: 3px;">
-          <div style="display: flex; justify-content: space-between; font-size: 10px;">
-            <span style="flex: 1; text-align: left; word-break: break-word;">${item.name}</span>
-            <span style="width: 32px; text-align: center;">${qty}</span>
-            <span style="width: 55px; text-align: right;">${unitPrice.toFixed(2)}</span>
-            <span style="width: 60px; text-align: right;">${itemAmount.toFixed(2)}</span>
-          </div>
-          ${(item.notes && !item.notes.includes('Session Order')) ? `<div style="font-size: 9px; color: #333; font-style: italic; padding-left: 4px;">* ${item.notes}</div>` : ''}
-        </div>
-      `;
-    }).join('');
+    const printData = {
+      orderId: order.order_id,
+      dateStr: cleanDate,
+      tableName: order.table_name || 'Walk-In',
+      staffName: order.staff_name || 'Staff',
+      guestName: order.guest_name,
+      items: items,
+      subtotal: subTotalNum,
+      taxRate: taxRate,
+      cgstAmt: cgstAmt,
+      sgstAmt: sgstAmt,
+      serviceChargeRate: serviceChargeRate,
+      serviceChargeAmt: serviceAmt,
+      grandTotal: grandTotalNum,
+      restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info || {
+        name: posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT',
+        address: posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel',
+        city: posSettings?.city || posSettings?.restaurant_info?.city || 'Mumbai',
+        state: posSettings?.state || posSettings?.restaurant_info?.state || 'MH',
+        pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode || '',
+        gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || '27AAAAA0000A1Z5',
+        fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || '10019022009876'
+      }
+    };
 
-    const receiptHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>POS Receipt #${order.order_id}</title>
-        <style>
-          @page { size: 80mm auto; margin: 0; }
-          body {
-            font-family: monospace, sans-serif;
-            width: 80mm;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 8px;
-            color: #000;
-            background: #fff;
-            font-size: 11px;
-            line-height: 1.3;
-          }
-        </style>
-      </head>
-      <body>
-        <div style="text-align: center; margin-bottom: 6px;">
-          <div style="font-size: 14px; font-weight: bold;">${posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
-          <div style="font-size: 10px;">${posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
-          <div style="font-size: 10px;">
-            ${[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
-          </div>
-          <div style="font-size: 10px;">GSTIN: ${posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
-          <div style="font-size: 10px;">FSSAI NO: ${posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        ${order.guest_name ? `
-          <div style="font-size: 10px;">
-            Customer Name: ${order.guest_name} ${order.phone ? `(${order.phone})` : ''}
-          </div>
-          <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-        ` : ''}
-
-        <div style="display: flex; justify-content: space-between; font-size: 10px;">
-          <span>Bill No: ${order.order_id}</span>
-          <span>Date: ${cleanDate}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px;">
-          <span>${order.table_name ? `Dine In: ${order.table_name}` : 'Type: DINE-IN'}</span>
-          <span>Waiter: Ravi</span>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
-          <span style="flex: 1; text-align: left;">Item</span>
-          <span style="width: 32px; text-align: center;">Qty.</span>
-          <span style="width: 55px; text-align: right;">Price</span>
-          <span style="width: 60px; text-align: right;">Amount</span>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        ${itemsRowsHtml}
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        <div style="font-size: 10px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span>Total Qty: ${totalQty}</span>
-            <span>Sub Total &nbsp;&nbsp;${subTotalNum.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-            <span>CGST ${((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}% &nbsp;&nbsp;${cgstAmt.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-            <span>SGST ${((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}% &nbsp;&nbsp;${sgstAmt.toFixed(2)}</span>
-          </div>
-          ${serviceAmt > 0 ? `
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-              <span>Service Charge ${serviceChargeRate}% &nbsp;&nbsp;${serviceAmt.toFixed(2)}</span>
-            </div>
-          ` : ''}
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 4px;">
-            <span>Grand Total (INR)</span>
-            <span>${grandTotalNum.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0 4px 0;"></div>
-
-        <div style="text-align: center; font-size: 11px; font-weight: 500; padding: 2px 0;">
-          Thank you & Visit Again
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() { window.close(); }, 500);
-          };
-        </script>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank', 'width=420,height=600');
-    if (printWindow) {
-      printWindow.document.write(receiptHtml);
-      printWindow.document.close();
-    }
+    setPrintOrderData(printData);
+    setTimeout(() => {
+      window.print();
+    }, 150);
   };
 
   const filteredOrders = orders.filter((order: any) => {
@@ -1055,6 +963,13 @@ ${400 + contentStream.length}
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Unified Thermal Receipt Print Component */}
+      {printOrderData && (
+        <div className="hidden print:block">
+          <ReceiptBillPrint {...printOrderData} />
         </div>
       )}
     </div>
