@@ -771,41 +771,17 @@ const CartPage: React.FC = () => {
             </div>
 
             <div className="space-y-2 text-xs text-slate-800 py-1">
-              {/* Itemized List of Cart Dishes */}
-              <div className="space-y-1.5 border-b border-gray-100 pb-2.5 max-h-40 overflow-y-auto">
-                {cartItems.map((item: any) => {
-                  const itemLineTotal = (item.price * item.quantity).toFixed(2);
-                  return (
-                    <div key={item.id} className="flex justify-between items-center text-slate-900">
-                      <span className="font-bold truncate max-w-[200px] text-slate-900">
-                        {item.name} <span className="text-slate-700 font-medium">× {item.quantity}</span>
-                      </span>
-                      <span className="font-extrabold text-slate-900">{itemLineTotal} Rs</span>
-                    </div>
-                  );
-                })}
+              {/* Subtotal */}
+              <div className="flex justify-between items-center text-slate-800 font-semibold text-xs pb-2 border-b border-gray-100">
+                <span className="text-slate-800 font-semibold">Subtotal</span>
+                <span className="text-slate-900 font-bold">{subtotal.toFixed(2)} Rs</span>
               </div>
 
+              {/* Service Charge formatted like CGST & SGST (no remove button, normal font) */}
               {serviceChargeRate > 0 && (
-                <div className="flex justify-between items-center text-slate-900 font-bold py-1 border-b border-gray-100">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-900">Service Charge ({serviceChargeRate}%)</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsServiceChargeIncluded(!isServiceChargeIncluded)}
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold transition-all cursor-pointer ${
-                        isServiceChargeIncluded 
-                          ? 'bg-rose-100 text-rose-600 hover:bg-rose-200 border border-rose-200' 
-                          : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
-                      }`}
-                      title={isServiceChargeIncluded ? "Click to remove Service Charge" : "Click to include Service Charge"}
-                    >
-                      {isServiceChargeIncluded ? '✕ Remove' : '+ Add'}
-                    </button>
-                  </div>
-                  <span className={`font-extrabold ${isServiceChargeIncluded ? 'text-slate-900' : 'text-slate-400 line-through'}`}>
-                    {isServiceChargeIncluded ? `+${serviceChargeAmt.toFixed(2)} Rs` : '0.00 Rs'}
-                  </span>
+                <div className="flex justify-between items-center text-slate-800 font-semibold text-xs">
+                  <span className="text-slate-800 font-semibold">Service Charge ({serviceChargeRate}%)</span>
+                  <span className="text-slate-900 font-bold">+{serviceChargeAmt.toFixed(2)} Rs</span>
                 </div>
               )}
 
