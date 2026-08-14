@@ -190,6 +190,12 @@ const TablesPage: React.FC = () => {
     fetchTables();
   }, []);
 
+  useEffect(() => {
+    if (!loading && !isEnableTables) {
+      navigate('/', { replace: true });
+    }
+  }, [loading, isEnableTables, navigate]);
+
   const handleTableSelect = (tableNumber: string) => {
     const cleanNum = String(tableNumber).replace(/[^0-9]/g, '');
     sessionStorage.setItem('emenu_table', cleanNum || tableNumber);

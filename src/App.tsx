@@ -93,11 +93,22 @@ function App() {
             path="/login" 
             element={
               user && !user.isGuest ? (
-                user.role === 'self-pos-billing' || user.role === 'self_pos_billing' ? (
-                  <Navigate to="/" replace />
-                ) : (
-                  <Navigate to="/tables" replace />
-                )
+                (() => {
+                  let enableTables = true;
+                  try {
+                    const cachedStr = localStorage.getItem('emenu_pos_settings');
+                    if (cachedStr) {
+                      const s = JSON.parse(cachedStr);
+                      const val = s?.hardware_and_preferences?.is_enable_tables ?? s?.is_enable_tables ?? s?.isEnableTables;
+                      if (val === false || val === 'false' || val === 0 || val === '0') enableTables = false;
+                    }
+                  } catch {}
+                  
+                  if (user.role === 'self-pos-billing' || user.role === 'self_pos_billing' || !enableTables) {
+                    return <Navigate to="/" replace />;
+                  }
+                  return <Navigate to="/tables" replace />;
+                })()
               ) : (
                 <Login onLogin={handleLogin} />
               )
