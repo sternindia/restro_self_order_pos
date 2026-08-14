@@ -79,10 +79,9 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('emenu_user');
     sessionStorage.removeItem('emenu_table');
-    // Fallback to guest mode so customer can still browse menu
-    const guestUser = { phone: 'Guest Customer', isGuest: true };
-    localStorage.setItem('emenu_user', JSON.stringify(guestUser));
-    setUser(guestUser);
+    localStorage.removeItem('emenu_token');
+    setUser(null);
+    window.location.href = '/login';
   };
 
   return (

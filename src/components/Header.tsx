@@ -146,9 +146,21 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
 
 
-          <button id="notification-btn" className="text-gray-700 hover:text-[#0077b6] transition-colors cursor-pointer p-1">
+          <button id="notification-btn" className="text-gray-700 hover:text-[#0077b6] transition-colors cursor-pointer p-1" title="Notifications">
             <Bell size={18} />
           </button>
+
+          {/* Logout Button (Visible ONLY for Staff/Logged-in Users) */}
+          {isStaffUser && onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-full border border-rose-200/80 transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Logout Account"
+            >
+              <LogOut size={15} className="text-rose-600" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          )}
 
           {/* 3-BAR HAMBURGER TOGGLE BUTTON */}
           {isStaffUser && (
