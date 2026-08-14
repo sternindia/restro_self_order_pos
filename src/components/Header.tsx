@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Bell, Menu as MenuIcon, X, User, LogOut, Search } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getRestaurantId, parseBool, getStoredPOSSettings } from '../config';
 
 interface HeaderProps {
@@ -8,9 +8,21 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onLogout }) => {
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
+  const [trackInputId, setTrackInputId] = useState('');
   const savedUser = localStorage.getItem('emenu_user');
   const user = savedUser ? JSON.parse(savedUser) : null;
+
+  const handleTrackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trackInputId.trim()) return;
+    const cleanId = trackInputId.replace(/^#/i, '').trim();
+    setIsTrackModalOpen(false);
+    setTrackInputId('');
+    navigate(`/order-number?id=${cleanId}`);
+  };
 
   const [restaurantName, setRestaurantName] = useState<string>('RESTAURANT');
   const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
@@ -156,6 +168,18 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
 
 
+          {/* Track Order Button (Visible ONLY for Guest Customers) */}
+          {!isStaffUser && (
+            <button
+              onClick={() => setIsTrackModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-bold text-[#0077b6] bg-[#0077b6]/10 hover:bg-[#0077b6]/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#0077b6]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="Track your order status"
+            >
+              <Search size={14} className="text-[#0077b6]" />
+              <span>Track Order</span>
+            </button>
+          )}
+
           <button id="notification-btn" className="text-gray-700 hover:text-[#0077b6] transition-colors cursor-pointer p-1" title="Notifications">
             <Bell size={18} />
           </button>
@@ -267,6 +291,61 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+      {/* TRACK ORDER MODAL FOR GUEST CUSTOMERS */}
+      {isTrackModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setIsTrackModalOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#0077b6]/10 flex items-center justify-center text-[#0077b6]">
+                  <Search size={16} />
+                </div>
+                <h3 className="text-sm font-bold text-gray-900">Track Order Status</h3>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsTrackModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-700 text-lg font-bold p-1 cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleTrackSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Enter Order ID
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="e.g. 107 or #107"
+                  value={trackInputId}
+                  onChange={(e) => setTrackInputId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0077b6]/40 focus:border-[#0077b6]"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsTrackModalOpen(false)}
+                  className="flex-1 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 text-xs font-bold text-white bg-[#0077b6] hover:bg-[#005f92] rounded-xl shadow-md transition-all cursor-pointer"
+                >
+                  Track Order →
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

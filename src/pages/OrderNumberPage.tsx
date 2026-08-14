@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Printer, ShoppingBag, Clock, Download, UtensilsCrossed, Grid } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Printer, ShoppingBag, Clock, UtensilsCrossed, Grid } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
 const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const queryParams = new URLSearchParams(location.search);
+  const urlOrderId = queryParams.get('id') || queryParams.get('order_id') || queryParams.get('track_id');
 
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
@@ -21,17 +25,14 @@ const OrderNumberPage: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const fetchedRef = useRef(false);
-
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
     const fetchLatestDataFromBackend = async () => {
       try {
         const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || 9;
+        const targetOrderId = urlOrderId || orderInfo?.order_id;
+        if (!targetOrderId) return;
 
-        // Fetch POS Settings (if not cached) and Orders in parallel ONCE
+        // Fetch POS Settings (if not cached) and Orders in parallel
         const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
         const [settingsRes, ordersRes] = await Promise.all([
           savedSettingsStr ? null : fetch(`${API_BASE_URL}/settings/pos/${restaurantId}`).catch(() => null),
@@ -47,27 +48,27 @@ const OrderNumberPage: React.FC = () => {
           }
         }
 
-        const targetOrderId = orderInfo?.order_id;
-        if (!targetOrderId || !ordersRes || !ordersRes.ok) return;
+        if (ordersRes && ordersRes.ok) {
+          const data = await ordersRes.json();
+          const rawOrders = Array.isArray(data) ? data : (data?.data || []);
+          const cleanTarget = String(targetOrderId).replace(/^#/i, '').trim();
+          const freshOrder = rawOrders.find((o: any) => String(o.order_id).replace(/^#/i, '').trim() === cleanTarget);
 
-        const data = await ordersRes.json();
-        if (data && data.status === true && Array.isArray(data.data)) {
-          const freshOrder = data.data.find((o: any) => String(o.order_id) === String(targetOrderId));
           if (freshOrder) {
             const updated = {
               order_id: freshOrder.order_id,
-              table: freshOrder.table_name || 'Walk-In',
-              guest_name: freshOrder.guest_name,
-              phone: freshOrder.phone,
+              table: freshOrder.table_name || freshOrder.table_number || 'Walk-In',
+              guest_name: freshOrder.guest_name || freshOrder.staff_name || 'Customer',
+              phone: freshOrder.phone || '',
               items: freshOrder.items || [],
-              subTotal: freshOrder.bill?.subtotal || 0,
-              tax: freshOrder.bill?.tax_amount || 0,
+              subTotal: freshOrder.bill?.subtotal || freshOrder.subtotal || 0,
+              tax: freshOrder.bill?.tax_amount || freshOrder.tax_amount || 0,
               serviceCharge: freshOrder.bill?.service_charge !== undefined 
                 ? parseFloat(freshOrder.bill.service_charge) 
                 : (orderInfo?.serviceCharge ?? 0),
-              total: freshOrder.bill?.grand_total || 0,
+              total: freshOrder.bill?.grand_total || freshOrder.total || 0,
               order_status: freshOrder.order_status || freshOrder.status || 'PENDING',
-              created_at: freshOrder.created_at
+              created_at: freshOrder.created_at || freshOrder.time
             };
             setOrderInfo(updated);
             localStorage.setItem('emenu_last_order', JSON.stringify(updated));
@@ -79,7 +80,7 @@ const OrderNumberPage: React.FC = () => {
     };
 
     fetchLatestDataFromBackend();
-  }, []);
+  }, [location.search]);
 
   if (!orderInfo) {
     return (
