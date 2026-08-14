@@ -503,16 +503,18 @@ const OrderInfoPage: React.FC = () => {
       <div className="bodymiddle flex justify-center min-h-[calc(100vh-4rem-5rem)] px-1 sm:px-4 py-1.5 sm:py-6">
         <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-6 shadow-none sm:shadow-sm border-0 sm:border border-gray-200/80 space-y-4 sm:space-y-6 flex flex-col justify-between">
 
-          {/* Restaurant Header Info */}
-          <div className="restaurant-info bg-gray-50/80 rounded-xl p-3 sm:p-4 border border-gray-100">
-            <h2 className="text-lg font-black text-gray-900 mb-1 tracking-tight">BIG BEN RESTAURANT</h2>
-            <p className="text-xs text-gray-600 flex items-start gap-1.5 my-1">
-              <span>📍</span> <span>1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)</span>
-            </p>
-            <p className="text-xs text-gray-600 flex items-center gap-1.5 my-1">
-              <span>📞</span> <span>+91-9876543212</span>
-            </p>
-          </div>
+          {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
+          {isGuestCustomer && (
+            <div className="restaurant-info bg-gray-50/80 rounded-xl p-3 sm:p-4 border border-gray-100">
+              <h2 className="text-lg font-black text-gray-900 mb-1 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
+              <p className="text-xs text-gray-600 flex items-start gap-1.5 my-1">
+                <span>📍</span> <span>{posSettings?.restaurant_info?.address || '1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)'}</span>
+              </p>
+              <p className="text-xs text-gray-600 flex items-center gap-1.5 my-1">
+                <span>📞</span> <span>{posSettings?.restaurant_info?.phone || '+91-9876543212'}</span>
+              </p>
+            </div>
+          )}
 
           {/* Order Type & Table Badges */}
           <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
