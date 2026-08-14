@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Receipt, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Receipt, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Printer, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
@@ -41,10 +41,74 @@ const HistoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH'>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'COMPLETED' | 'PENDING' | 'CANCELLED'>('ALL');
+
+  // Single Unified Calendar Modal State (Matches restaurant_pos 1-to-1)
+  const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false);
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(() => new Date());
+  const [tempStartDate, setTempStartDate] = useState<string>('');
+  const [tempEndDate, setTempEndDate] = useState<string>('');
+
+  const openCalendarModal = () => {
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+    if (startDate) {
+      setCalendarViewDate(new Date(startDate));
+    } else {
+      setCalendarViewDate(new Date());
+    }
+    setShowCalendarModal(true);
+  };
+
+  const handleDateClick = (dateStr: string) => {
+    if (!tempStartDate || (tempStartDate && tempEndDate)) {
+      setTempStartDate(dateStr);
+      setTempEndDate('');
+    } else if (tempStartDate && !tempEndDate) {
+      if (dateStr >= tempStartDate) {
+        setTempEndDate(dateStr);
+      } else {
+        setTempStartDate(dateStr);
+        setTempEndDate('');
+      }
+    }
+  };
+
+  const applyCalendarRange = () => {
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate || tempStartDate);
+    setShowCalendarModal(false);
+  };
+
+  const clearDateRange = () => {
+    setStartDate('');
+    setEndDate('');
+    setTempStartDate('');
+    setTempEndDate('');
+  };
+
+  const getCalendarDays = () => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days: ({ dayNum: number; dateStr: string } | null)[] = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(year, month, d);
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      days.push({ dayNum: d, dateStr: `${yyyy}-${mm}-${dd}` });
+    }
+    return days;
+  };
 
   const handleOpenOrderPlacedPage = (order: any) => {
     localStorage.setItem('emenu_last_order', JSON.stringify({
@@ -406,15 +470,6 @@ ${400 + contentStream.length}
     }
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    const s = (status || '').toUpperCase();
-    if (s === 'PAID' || s === 'COMPLETED' || s === 'CONFIRMED') return 'bg-emerald-50 text-emerald-600 border border-emerald-200/50';
-    if (s === 'CANCELLED') return 'bg-rose-50 text-rose-600 border border-rose-200/50';
-    if (s === 'PENDING') return 'bg-amber-50 text-amber-600 border border-amber-200/50';
-    if (s === 'PREPARING' || s === 'SERVED') return 'bg-sky-50 text-sky-600 border border-sky-200/50';
-    return 'bg-gray-50 text-gray-500 border border-gray-200';
-  };
-
   const filteredOrders = orders.filter((order: any) => {
     const orderType = (order.order_meta?.order_type || order.order_type || '').toUpperCase();
     const tableNum = String(order.order_meta?.table_number || order.table_name || '').toLowerCase();
@@ -456,26 +511,49 @@ ${400 + contentStream.length}
         if (!isSameDay) return false;
       }
 
+      if (dateFilter === 'YESTERDAY') {
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+        const isYesterday = 
+          orderDate.getDate() === yesterday.getDate() &&
+          orderDate.getMonth() === yesterday.getMonth() &&
+          orderDate.getFullYear() === yesterday.getFullYear();
+        if (!isYesterday) return false;
+      }
+
       if (dateFilter === 'THIS_WEEK') {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(today.getDate() - 7);
         if (orderDate < oneWeekAgo) return false;
       }
+
+      if (dateFilter === 'THIS_MONTH') {
+        const isThisMonth = 
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getFullYear() === today.getFullYear();
+        if (!isThisMonth) return false;
+      }
     }
 
-    // 2. Status Filter
+    // 3. Status Filter
     if (statusFilter !== 'ALL') {
       const status = (order.resolved_status || order.order_status || '').toUpperCase();
       const paymentStatus = (order.bill?.payment_status || '').toUpperCase();
 
-      if (statusFilter === 'PAID') {
+      if (statusFilter === 'PAID' || statusFilter === 'COMPLETED') {
         const isPaid = status === 'PAID' || status === 'COMPLETED' || paymentStatus === 'PAID';
         if (!isPaid) return false;
       }
 
       if (statusFilter === 'PENDING') {
         const isPaid = status === 'PAID' || status === 'COMPLETED' || paymentStatus === 'PAID';
-        if (isPaid) return false;
+        const isCancelled = status === 'CANCELLED' || status === 'REJECTED';
+        if (isPaid || isCancelled) return false;
+      }
+
+      if (statusFilter === 'CANCELLED') {
+        const isCancelled = status === 'CANCELLED' || status === 'REJECTED';
+        if (!isCancelled) return false;
       }
     }
 
@@ -508,9 +586,9 @@ ${400 + contentStream.length}
         </div>
 
         {/* Mobile & Desktop Responsive Date Filter Toolbar */}
-        <div className="flex flex-col gap-2.5 mb-5 select-none">
-          {/* Top Row: Scrollable Quick Presets */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 min-w-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 mb-5 select-none">
+          {/* Scrollable Quick Presets (Left Side) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 min-w-0 flex-1">
             <button
               onClick={() => { setDateFilter('ALL'); setStatusFilter('ALL'); setStartDate(''); setEndDate(''); }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
@@ -534,6 +612,17 @@ ${400 + contentStream.length}
             </button>
 
             <button
+              onClick={() => { setDateFilter(dateFilter === 'YESTERDAY' ? 'ALL' : 'YESTERDAY'); setStartDate(''); setEndDate(''); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'YESTERDAY' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              📆 Yesterday
+            </button>
+
+            <button
               onClick={() => { setDateFilter(dateFilter === 'THIS_WEEK' ? 'ALL' : 'THIS_WEEK'); setStartDate(''); setEndDate(''); }}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
                 dateFilter === 'THIS_WEEK' && !startDate && !endDate
@@ -541,7 +630,18 @@ ${400 + contentStream.length}
                   : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
               }`}
             >
-              📆 This Week
+              📊 This Week
+            </button>
+
+            <button
+              onClick={() => { setDateFilter(dateFilter === 'THIS_MONTH' ? 'ALL' : 'THIS_MONTH'); setStartDate(''); setEndDate(''); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'THIS_MONTH' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              🗓️ This Month
             </button>
 
             <div className="h-4 w-[1px] bg-gray-300 mx-0.5 flex-shrink-0"></div>
@@ -554,7 +654,7 @@ ${400 + contentStream.length}
                   : 'bg-white text-emerald-700 border-emerald-200/80 hover:bg-emerald-50'
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Paid
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed
             </button>
 
             <button
@@ -567,47 +667,48 @@ ${400 + contentStream.length}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pending
             </button>
+
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'CANCELLED' ? 'ALL' : 'CANCELLED')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                statusFilter === 'CANCELLED'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  : 'bg-white text-rose-700 border-rose-200/80 hover:bg-rose-50'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Cancelled
+            </button>
           </div>
 
-          {/* Custom Date Range Pill Bar (Fits 100% width on Mobile without clipping) */}
-          <div className="flex items-center gap-1.5 w-full bg-white p-1.5 rounded-xl border border-gray-200 shadow-2xs">
-            <div className="flex-1 min-w-0 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/60 focus-within:border-[#0077b6] transition-colors">
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase">From</span>
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (e.target.value) setDateFilter('ALL');
-                }}
-                className="w-full bg-transparent text-[11px] sm:text-xs font-semibold text-gray-800 outline-none cursor-pointer p-0"
-              />
-            </div>
-
-            <span className="text-gray-300 font-extrabold text-xs px-0.5">→</span>
-
-            <div className="flex-1 min-w-0 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/60 focus-within:border-[#0077b6] transition-colors">
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase">To</span>
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  if (e.target.value) setDateFilter('ALL');
-                }}
-                className="w-full bg-transparent text-[11px] sm:text-xs font-semibold text-gray-800 outline-none cursor-pointer p-0"
-              />
-            </div>
-
-            {(startDate || endDate) && (
-              <button 
-                onClick={() => { setStartDate(''); setEndDate(''); }}
-                className="p-1 px-2 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer flex-shrink-0"
-                title="Clear date filter"
-              >
-                Clear ✕
-              </button>
-            )}
+          {/* Single Unified Calendar Range Button (Right Side on Desktop / Same Line) */}
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <button
+              type="button"
+              onClick={openCalendarModal}
+              className="w-full md:w-auto flex items-center justify-between gap-3 px-3.5 py-1.5 bg-white hover:bg-gray-50 text-gray-800 font-bold rounded-xl border border-gray-200 shadow-2xs hover:border-[#0077b6] transition-all cursor-pointer min-w-[200px]"
+            >
+              <span className="flex items-center gap-2 truncate">
+                <span className="text-[#0077b6] text-xs">📅</span>
+                {startDate ? (
+                  <span className="text-xs font-black text-gray-900">
+                    {startDate} {endDate && endDate !== startDate ? `→ ${endDate}` : ''}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-500 font-semibold">Select Date Range...</span>
+                )}
+              </span>
+              {(startDate || endDate) ? (
+                <span
+                  onClick={(e) => { e.stopPropagation(); clearDateRange(); }}
+                  className="text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-1.5 py-0.5 rounded-md ml-1 border border-rose-200 cursor-pointer"
+                  title="Clear Date Filter"
+                >
+                  ✕
+                </span>
+              ) : (
+                <ChevronDown size={14} className="text-gray-400 ml-1 shrink-0" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -684,10 +785,10 @@ ${400 + contentStream.length}
                               </span>
                             </td>
                           )}
-                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-[11px] sm:text-xs text-gray-500 font-medium whitespace-nowrap">
+                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-[11px] sm:text-xs text-gray-800 font-bold whitespace-nowrap">
                             {cleanDate}
                           </td>
-                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs text-gray-600 font-medium max-w-[130px] sm:max-w-xs truncate" title={itemsSummary}>
+                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs text-gray-900 font-bold max-w-[130px] sm:max-w-xs truncate" title={itemsSummary}>
                             {itemsSummary}
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-black text-gray-900 whitespace-nowrap">
@@ -742,17 +843,17 @@ ${400 + contentStream.length}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 items-start w-full">
                                 {/* Left Side: Items Detail */}
                                 <div className="w-full">
-                                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 sm:mb-3 flex items-center gap-1.5">
+                                  <h4 className="text-[11px] font-extrabold text-gray-700 uppercase tracking-widest mb-2 sm:mb-3 flex items-center gap-1.5">
                                     <Receipt size={13} /> Ordered Items List
                                   </h4>
                                   <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-2.5 shadow-inner">
                                     {(order.items || []).map((item, idx) => (
                                       <div key={idx} className="flex justify-between items-center text-xs sm:text-sm">
                                         <div className="flex flex-col min-w-0 pr-2">
-                                          <span className="font-semibold text-gray-800 truncate">{item.name}</span>
-                                          <span className="text-[11px] sm:text-xs text-gray-400">Price: ₹{Number(item.unit_price).toFixed(2)}</span>
+                                          <span className="font-bold text-gray-900 truncate">{item.name}</span>
+                                          <span className="text-[11px] sm:text-xs text-gray-700 font-semibold">Price: ₹{Number(item.unit_price).toFixed(2)}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 sm:gap-4 font-bold text-gray-700 flex-shrink-0">
+                                        <div className="flex items-center gap-2 sm:gap-4 font-bold text-gray-900 flex-shrink-0">
                                           <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">x{item.quantity}</span>
                                           <span>₹{(Number(item.total_price || item.unit_price * item.quantity)).toFixed(2)}</span>
                                         </div>
@@ -764,30 +865,30 @@ ${400 + contentStream.length}
                 {/* Right Side: Billing Breakdown */}
                                 {order.bill && (
                                   <div className="bg-white border border-dashed border-gray-300 rounded-xl p-3.5 sm:p-5 shadow-sm w-full md:max-w-sm md:ml-auto">
-                                    <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b pb-2 mb-3 text-center">
+                                    <h4 className="text-[11px] font-extrabold text-gray-700 uppercase tracking-widest border-b pb-2 mb-3 text-center">
                                       Billing breakdown
                                     </h4>
-                                    <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                                    <div className="space-y-2 text-xs sm:text-sm text-gray-900">
                                       <div className="flex justify-between">
-                                        <span>Subtotal</span>
-                                        <span className="font-medium text-gray-800">₹{Number(order.bill.subtotal).toFixed(2)}</span>
+                                        <span className="font-bold text-gray-900">Subtotal</span>
+                                        <span className="font-bold text-gray-900">₹{Number(order.bill.subtotal).toFixed(2)}</span>
                                       </div>
-                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-500 pl-2">
+                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-800 font-semibold pl-2">
                                         <span>CGST ({((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}%)</span>
                                         <span>+₹{(Number(order.bill.tax_amount || 0) / 2).toFixed(2)}</span>
                                       </div>
-                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-500 pl-2">
+                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-800 font-semibold pl-2">
                                         <span>SGST ({((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}%)</span>
                                         <span>+₹{(Number(order.bill.tax_amount || 0) / 2).toFixed(2)}</span>
                                       </div>
                                       {Number(order.bill.service_charge) > 0 && (
-                                        <div className="flex justify-between text-[11px] sm:text-xs text-gray-500">
+                                        <div className="flex justify-between text-[11px] sm:text-xs text-gray-800 font-semibold">
                                           <span>Service Charge ({posSettings?.financials?.service_charge_percentage || posSettings?.serviceCharge || 5}%)</span>
                                           <span>+₹{Number(order.bill.service_charge).toFixed(2)}</span>
                                         </div>
                                       )}
                                       {order.bill.discount_amount > 0 && (
-                                        <div className="flex justify-between text-[11px] sm:text-xs text-red-500">
+                                        <div className="flex justify-between text-[11px] sm:text-xs text-red-600 font-bold">
                                           <span>Discount</span>
                                           <span>-₹{Number(order.bill.discount_amount).toFixed(2)}</span>
                                         </div>
@@ -796,9 +897,7 @@ ${400 + contentStream.length}
                                         <span>Grand Total</span>
                                         <span className="text-[#0077b6]">₹{Number(order.bill.grand_total).toFixed(2)}</span>
                                       </div>
-                                      <div className="text-[9px] text-center text-gray-400 font-bold tracking-wide uppercase pt-2">
-                                        Payment state: {isSelfPosBilling ? 'PAID' : order.bill.payment_status} | Bill: {isSelfPosBilling ? 'COMPLETED' : order.bill.bill_status}
-                                      </div>
+
 
                                       {/* Print & Download Action Buttons (Hidden for self-pos-billing) */}
                                       {!isSelfPosBilling && (
@@ -837,6 +936,127 @@ ${400 + contentStream.length}
           </div>
         )}
       </main>
+
+      {/* ── Single Unified Range Calendar Modal (Matches restaurant_pos 1-to-1) ── */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-3">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-150 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+              <h3 className="font-extrabold text-sm flex items-center gap-2">
+                <span>📅</span>
+                <span>Select Date Range</span>
+              </h3>
+              <button
+                onClick={() => setShowCalendarModal(false)}
+                className="text-gray-400 hover:text-white font-black text-lg p-1 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Calendar Controls & Grid */}
+            <div className="p-4 space-y-3">
+              {/* Month Header Navigation */}
+              <div className="flex items-center justify-between px-1">
+                <button
+                  type="button"
+                  onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all"
+                >
+                  ‹
+                </button>
+                <span className="font-extrabold text-gray-900 text-sm">
+                  {calendarViewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* Weekday Labels */}
+              <div className="grid grid-cols-7 text-center gap-1">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d, i) => (
+                  <span key={i} className="text-[11px] font-extrabold text-gray-400 uppercase">{d}</span>
+                ))}
+              </div>
+
+              {/* Calendar Days Grid */}
+              <div className="grid grid-cols-7 text-center gap-1">
+                {getCalendarDays().map((item, idx) => {
+                  if (!item) return <div key={idx} />;
+                  const isStart = tempStartDate === item.dateStr;
+                  const isEnd = tempEndDate === item.dateStr;
+                  const inRange = tempStartDate && tempEndDate && item.dateStr > tempStartDate && item.dateStr < tempEndDate;
+                  const isSelected = isStart || isEnd;
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => handleDateClick(item.dateStr)}
+                      className={`h-9 flex items-center justify-center cursor-pointer transition-all ${
+                        inRange ? 'bg-slate-100' : ''
+                      } ${
+                        isStart ? 'rounded-l-full' : ''
+                      } ${
+                        isEnd ? 'rounded-r-full' : ''
+                      } ${
+                        !inRange && !isSelected ? 'rounded-full' : ''
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 flex items-center justify-center font-bold text-xs rounded-full transition-all ${
+                          isSelected ? 'bg-slate-900 text-white shadow-sm' : inRange ? 'text-slate-900 font-black' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {item.dayNum}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Selected Info Summary */}
+              <div className="p-2.5 rounded-xl text-center border bg-slate-50 border-slate-200/80">
+                <span className="text-xs font-semibold text-slate-800">
+                  {tempStartDate ? (
+                    <>
+                      Selected: <strong className="text-slate-950 font-black">{tempStartDate}</strong> {tempEndDate ? `to ${tempEndDate}` : '(Select End Date)'}
+                    </>
+                  ) : (
+                    'Click a date to select Start Date'
+                  )}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempStartDate('');
+                    setTempEndDate('');
+                  }}
+                  className="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl border border-gray-200 transition-all cursor-pointer"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={applyCalendarRange}
+                  className="flex-1 py-2 px-3 bg-[#0077b6] hover:bg-[#005f92] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                >
+                  Apply Range
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
