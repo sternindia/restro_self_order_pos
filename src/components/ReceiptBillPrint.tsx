@@ -66,24 +66,38 @@ const ReceiptBillPrint: React.FC<ReceiptBillProps> = ({
 
   return (
     <div className="receipt-print-wrapper font-mono text-[12px] text-black bg-white p-4 max-w-[320px] mx-auto border border-dashed border-gray-300 rounded-lg shadow-xs">
-      {/* Thermal Printer CSS Rule */}
+      {/* Thermal Printer Direct 80mm CSS Rule */}
       <style>{`
         @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0mm;
+          }
+          html, body {
+            width: 80mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           body * {
-            visibility: hidden;
+            visibility: hidden !important;
           }
           .receipt-print-wrapper, .receipt-print-wrapper * {
-            visibility: visible;
+            visibility: visible !important;
           }
           .receipt-print-wrapper {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            max-w: 80mm;
-            padding: 0;
-            border: none;
-            box-shadow: none;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            padding: 4mm 2mm !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
           }
         }
       `}</style>
