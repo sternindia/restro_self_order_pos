@@ -217,7 +217,6 @@ const CartPage: React.FC = () => {
     setSubmittingBilling(true);
     try {
       const storedTable = sessionStorage.getItem('emenu_table') || '';
-      const cleanTableNum = String(storedTable).replace(/[^0-9]/g, '') || '1';
       const restaurantId = getRestaurantId();
 
       const payloadItems = cartItems.map(item => ({
@@ -351,7 +350,7 @@ const CartPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const [isServiceChargeIncluded, setIsServiceChargeIncluded] = useState(true);
+  const [isServiceChargeIncluded] = useState(true);
   const cartItems = Object.values(cart);
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const serviceChargeRate = posSettings.serviceCharge || 0.0;

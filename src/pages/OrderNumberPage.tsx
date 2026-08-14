@@ -104,31 +104,6 @@ const OrderNumberPage: React.FC = () => {
 
   const { order_id, table, guest_name, phone, items = [], subTotal = 0, tax = 0, total = 0, created_at } = orderInfo;
 
-  const handlePrint = () => {
-    printThermalReceiptDirect({
-      orderId: order_id,
-      dateStr: cleanDate,
-      tableName: table || 'Walk-In',
-      staffName: staff_name || 'Staff',
-      guestName: guest_name,
-      items: items.map((item: any) => ({
-        name: item.name,
-        quantity: parseInt(item.quantity || item.qty) || 1,
-        price: Number(item.unit_price || item.price || 0),
-        total_price: Number(item.total_price || ((item.unit_price || item.price || 0) * (item.quantity || 1)))
-      })),
-      subtotal: subTotalNum,
-      taxRate: taxRate,
-      cgstAmt: cgstAmt,
-      sgstAmt: sgstAmt,
-      serviceChargeRate: serviceChargeRate,
-      serviceChargeAmt: serviceAmt,
-      grandTotal: grandTotalNum,
-      restaurantInfo: restaurantInfo
-    });
-    window.print();
-  };
-
   const handleTakeNewOrder = () => {
     sessionStorage.removeItem('emenu_table');
     localStorage.removeItem('emenu_cart');
@@ -166,103 +141,29 @@ const OrderNumberPage: React.FC = () => {
   const sgstAmt = taxTotal / 2;
   const grandTotalNum = parseFloat(total) > 0 ? parseFloat(total) : (subTotalNum + serviceAmt + taxTotal);
 
-  const handleDownloadBill = () => {
-    const subtotal = subTotalNum;
-    const taxTotal = subtotal * (taxRate / 100);
-    const halfTaxRate = (taxRate / 2).toFixed(1);
-    const cgstAmt = taxTotal / 2;
-    const sgstAmt = taxTotal / 2;
-    const serviceAmt = subtotal * (serviceChargeRate / 100);
-    const grandTotal = grandTotalNum || (subtotal + taxTotal + serviceAmt);
-
-    const restaurantNameStr = posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant';
-    const addressStr = posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel';
-    const cityStateStr = [posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057';
-    const gstinStr = posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5';
-    const fssaiStr = posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876';
-
-    const lines = [
-      restaurantNameStr,
-      addressStr,
-      cityStateStr,
-      `GSTIN: ${gstinStr}`,
-      `FSSAI NO: ${fssaiStr}`,
-      "--------------------------------------------------",
-      `Bill No: ${order_id}                   Date: ${cleanDate}`,
-      `${table ? `Dine In: ${String(table).includes('Table') ? table : `Table #${table}`}` : 'Type: DINE-IN'}                  Waiter: Ravi`,
-      "--------------------------------------------------",
-      "Item                             Qty.   Price   Amount",
-      "--------------------------------------------------"
-    ];
-
-    (items || []).forEach((item: any) => {
-      const name = (item.name || 'Item').padEnd(28, ' ').substring(0, 28);
-      const qty = String(item.quantity || item.qty || 1).padStart(3, ' ');
-      const price = Number(item.price || item.unit_price || 0).toFixed(2).padStart(7, ' ');
-      const amt = (Number(item.price || item.unit_price || 0) * Number(item.quantity || item.qty || 1)).toFixed(2).padStart(7, ' ');
-      lines.push(`${name} ${qty} ${price} ${amt}`);
+  const handlePrint = () => {
+    printThermalReceiptDirect({
+      orderId: order_id,
+      dateStr: cleanDate,
+      tableName: table || 'Walk-In',
+      staffName: orderInfo?.staff_name || orderInfo?.order_meta?.staff_name || 'Staff',
+      guestName: guest_name,
+      items: items.map((item: any) => ({
+        name: item.name,
+        quantity: parseInt(item.quantity || item.qty) || 1,
+        price: Number(item.unit_price || item.price || 0),
+        total_price: Number(item.total_price || ((item.unit_price || item.price || 0) * (item.quantity || 1)))
+      })),
+      subtotal: subTotalNum,
+      taxRate: taxRate,
+      cgstAmt: cgstAmt,
+      sgstAmt: sgstAmt,
+      serviceChargeRate: serviceChargeRate,
+      serviceChargeAmt: serviceAmt,
+      grandTotal: grandTotalNum,
+      restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info
     });
-
-    lines.push("--------------------------------------------------");
-    lines.push(`Total Qty: ${totalQty}               Sub Total  ${subtotal.toFixed(2)}`);
-    lines.push(`                                    CGST ${halfTaxRate}%   ${cgstAmt.toFixed(2)}`);
-    lines.push(`                                    SGST ${halfTaxRate}%   ${sgstAmt.toFixed(2)}`);
-    if (serviceAmt > 0) {
-      lines.push(`                          Service Charge ${serviceChargeRate}%   ${serviceAmt.toFixed(2)}`);
-    }
-    lines.push("--------------------------------------------------");
-    lines.push(`Grand Total (INR)                         ${grandTotal.toFixed(2)}`);
-    lines.push("--------------------------------------------------");
-    lines.push("");
-    lines.push("             Thank you & Visit Again              ");
-    lines.push("--------------------------------------------------");
-
-    let contentStream = `BT /F1 10 Tf 20 760 Td 14 TL\n`;
-    lines.forEach((line) => {
-      const safeLine = line.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-      contentStream += `(${safeLine}) Tj T*\n`;
-    });
-    contentStream += `ET`;
-
-    const pdfRaw = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 450 800] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
-endobj
-4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
-endobj
-5 0 obj
-<< /Length ${contentStream.length} >>
-stream
-${contentStream}
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000246 00000 n 
-0000000318 00000 n 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-${400 + contentStream.length}
-%%EOF`;
-
-    const blob = new Blob([pdfRaw], { type: 'application/pdf' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Bill_Receipt_${order_id}.pdf`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    window.print();
   };
    const handleOrderMore = () => {
     if (table) {
