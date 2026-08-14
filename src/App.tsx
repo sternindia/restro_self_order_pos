@@ -8,6 +8,7 @@ const MenuPage = lazy(() => import('./pages/MenuPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const OrderInfoPage = lazy(() => import('./pages/OrderInfoPage'));
 const OrderNumberPage = lazy(() => import('./pages/OrderNumberPage'));
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const Login = lazy(() => import('./pages/Login'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
@@ -133,6 +134,10 @@ function App() {
           <Route 
             path="/order-number" 
             element={<OrderNumberPage />} 
+          />
+          <Route 
+            path="/track-order" 
+            element={<TrackOrderPage />} 
           />
           <Route 
             path="/tables" 

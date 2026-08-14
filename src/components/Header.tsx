@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
     const cleanId = trackInputId.replace(/^#/i, '').trim();
     setIsTrackModalOpen(false);
     setTrackInputId('');
-    navigate(`/order-number?id=${cleanId}`);
+    navigate(`/track-order?id=${cleanId}`);
   };
 
   const [restaurantName, setRestaurantName] = useState<string>('RESTAURANT');
