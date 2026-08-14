@@ -633,14 +633,7 @@ ${400 + contentStream.length}
               return null;
             })()}
 
-            {/* Download Tab */}
-            <button 
-              onClick={handleDownloadBill}
-              className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-emerald-600 transition-colors cursor-pointer group"
-            >
-              <Download size={20} className="group-hover:scale-110 transition-transform text-emerald-600" />
-              <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Download</span>
-            </button>
+
 
             {/* MENU TAB (Always visible for Guest Customers on mobile; responsive for staff) */}
             <button 
