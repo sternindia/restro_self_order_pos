@@ -676,9 +676,16 @@ const CartPage: React.FC = () => {
           {/* Desktop Bottom Footer */}
           {isSelfPosBilling ? (
             <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-emerald-600 p-[15px] shadow-md">
-              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
+              <div 
+                onClick={() => setIsBillSheetOpen(true)}
+                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view detailed Bill Summary"
+              >
                 <span>Self POS Billing - Total {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Direct Bill Generation</span>
+                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                  <FileText size={13} />
+                  <span>Bill Summary</span>
+                </span>
               </div>
               <button 
                 onClick={handleSelfPosPlaceOrder}
@@ -690,9 +697,16 @@ const CartPage: React.FC = () => {
             </div>
           ) : !isGuestCustomer && existingOrderId ? (
             <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md">
-              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
+              <div 
+                onClick={() => setIsBillSheetOpen(true)}
+                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view detailed Bill Summary"
+              >
                 <span>Update Order - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Plus Taxes ({taxRate}% GST)</span>
+                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                  <FileText size={13} />
+                  <span>Bill Summary ({taxRate}% GST)</span>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <button 
@@ -711,24 +725,36 @@ const CartPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <Link 
-              to="/order-info" 
-              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] no-underline shadow-md"
+            <div 
+              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md"
             >
-              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
+              <div 
+                onClick={() => setIsBillSheetOpen(true)}
+                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view detailed Bill Summary"
+              >
                 <span>Confirm Order - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Plus Taxes ({taxRate}% GST)</span>
+                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                  <FileText size={13} />
+                  <span>Bill Summary ({taxRate}% GST)</span>
+                </span>
               </div>
-              <span className="text-white text-lg font-bold">→</span>
-            </Link>
+              <Link 
+                to="/order-info" 
+                className="bg-white text-[#0077b6] hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all no-underline shadow-md border border-white/40 flex items-center gap-1.5"
+              >
+                <span>Confirm Order</span>
+                <span className="text-lg font-bold">→</span>
+              </Link>
+            </div>
           )}
         </>
       )}
 
       {/* Modal / Bottom Sheet for Bill Breakdown */}
       {isBillSheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 animate-fade-in" onClick={() => setIsBillSheetOpen(false)}>
-          <div className="w-full sm:max-w-[360px] rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setIsBillSheetOpen(false)}>
+          <div className="w-full max-w-[380px] rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0077b6]">
