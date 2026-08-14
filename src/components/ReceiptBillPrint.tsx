@@ -33,6 +33,154 @@ export interface ReceiptBillProps {
   };
 }
 
+export const printThermalReceiptDirect = (props: ReceiptBillProps) => {
+  const cleanOrderId = String(props.orderId).replace(/^#/i, '');
+  const displayDate = props.dateStr || new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  const taxRate = props.taxRate ?? 5.0;
+  const halfTaxRate = (taxRate / 2).toFixed(1);
+  const subtotal = Number(props.subtotal || 0);
+  const calculatedCgst = props.cgstAmt !== undefined ? props.cgstAmt : (subtotal * (taxRate / 2)) / 100;
+  const calculatedSgst = props.sgstAmt !== undefined ? props.sgstAmt : (subtotal * (taxRate / 2)) / 100;
+  const serviceChargeRate = props.serviceChargeRate || 0;
+  const serviceChargeAmt = props.serviceChargeAmt || 0;
+  const grandTotal = Number(props.grandTotal || 0);
+  const items = props.items || [];
+  const totalQty = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+
+  const restaurantInfo = props.restaurantInfo;
+  const resName = restaurantInfo?.name || 'BIG BEN RESTAURANT';
+  const resAddr = restaurantInfo?.address || '1st Flr, Sun Mill Compound, Lower Parel (West)';
+  const resCityState = [restaurantInfo?.city, restaurantInfo?.state, restaurantInfo?.pincode].filter(Boolean).join(', ') || 'Mumbai, MH';
+  const gstin = restaurantInfo?.gstin || '27AAAAA0000A1Z5';
+  const fssai = restaurantInfo?.fssai || '10019022009876';
+
+  const itemsHtml = items.map((item) => {
+    const qty = Number(item.quantity) || 1;
+    const price = Number(item.price) || 0;
+    const lineTotal = item.total_price !== undefined ? Number(item.total_price) : price * qty;
+    return `
+      <div style="display:flex; justify-content:space-between; font-size:10.5px; padding:1.5px 0;">
+        <span style="width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">${item.name}</span>
+        <span style="width:16.66%; text-align:center;">${qty}</span>
+        <span style="width:16.66%; text-align:right;">${price.toFixed(2)}</span>
+        <span style="width:16.66%; text-align:right; font-weight:bold;">${lineTotal.toFixed(2)}</span>
+      </div>
+    `;
+  }).join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>Bill #${cleanOrderId}</title>
+      <style>
+        @page { size: 80mm auto; margin: 0mm; }
+        html, body {
+          width: 80mm;
+          margin: 0;
+          padding: 0;
+          background: #ffffff;
+          font-family: monospace, Courier, monospace;
+          color: #000000;
+          font-size: 11px;
+        }
+        .wrapper {
+          width: 80mm;
+          padding: 4mm 3mm;
+          box-sizing: border-box;
+        }
+        .divider {
+          border-bottom: 1px dashed #444;
+          margin: 4px 0;
+        }
+        .flex-between {
+          display: flex;
+          justify-content: space-between;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="wrapper">
+        <div style="text-align:center;">
+          <div style="font-size:13px; font-weight:bold; text-transform:uppercase;">${resName}</div>
+          <div style="font-size:9.5px; line-height:1.2;">${resAddr}</div>
+          <div style="font-size:9.5px;">${resCityState}</div>
+          <div style="font-size:9.5px; font-weight:bold;">GSTIN: ${gstin}</div>
+          <div style="font-size:9.5px;">FSSAI NO: ${fssai}</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="font-size:10px;">
+          <div class="flex-between"><span>Bill No: <strong>#${cleanOrderId}</strong></span><span>Date: ${displayDate}</span></div>
+          <div class="flex-between"><span>Table: <strong>${props.tableName || 'DINE-IN'}</strong></span><span>Staff: ${props.staffName || 'Staff'}</span></div>
+          ${props.guestName ? `<div>Customer: ${props.guestName}</div>` : ''}
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="flex-between" style="font-size:10.5px; font-weight:bold; border-bottom:1px solid #333; padding-bottom:2px;">
+          <span style="width:50%;">Item</span>
+          <span style="width:16.66%; text-align:center;">Qty</span>
+          <span style="width:16.66%; text-align:right;">Price</span>
+          <span style="width:16.66%; text-align:right;">Amt</span>
+        </div>
+
+        <div>${itemsHtml}</div>
+
+        <div class="divider"></div>
+
+        <div style="font-size:10.5px;">
+          <div class="flex-between"><span>Total Qty: ${totalQty}</span><span style="font-weight:bold;">Sub Total: ₹${subtotal.toFixed(2)}</span></div>
+          ${serviceChargeRate > 0 && serviceChargeAmt > 0 ? `<div class="flex-between"><span>Service Charge (${serviceChargeRate}%)</span><span>+₹${serviceChargeAmt.toFixed(2)}</span></div>` : ''}
+          ${taxRate > 0 ? `
+            <div class="flex-between"><span>CGST (${halfTaxRate}%)</span><span>+₹${calculatedCgst.toFixed(2)}</span></div>
+            <div class="flex-between"><span>SGST (${halfTaxRate}%)</span><span>+₹${calculatedSgst.toFixed(2)}</span></div>
+          ` : ''}
+          <div class="divider"></div>
+          <div class="flex-between" style="font-size:12px; font-weight:bold;">
+            <span>Grand Total (INR)</span>
+            <span>₹${grandTotal.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="text-align:center; font-size:9.5px; font-weight:bold; margin-top:4px;">
+          Thank you & Visit Again!
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  let iframe = document.getElementById('silent-thermal-print-frame') as HTMLIFrameElement;
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.id = 'silent-thermal-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+  }
+
+  const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
+  if (iframeDoc) {
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    }, 100);
+  }
+};
+
 const ReceiptBillPrint: React.FC<ReceiptBillProps> = ({
   orderId,
   dateStr,

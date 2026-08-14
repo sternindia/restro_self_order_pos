@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
 import OrderStatusBadge from '../components/OrderStatusBadge';
-import ReceiptBillPrint from '../components/ReceiptBillPrint';
+import ReceiptBillPrint, { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 
 interface OrderHistoryItem {
   order_id: string;
@@ -373,9 +373,7 @@ ${400 + contentStream.length}
     };
 
     setPrintOrderData(printData);
-    setTimeout(() => {
-      window.print();
-    }, 150);
+    printThermalReceiptDirect(printData);
   };
 
   const filteredOrders = orders.filter((order: any) => {
