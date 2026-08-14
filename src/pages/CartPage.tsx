@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, getRestaurantId } from '../config';
 import BillSummaryModal from '../components/BillSummaryModal';
+import { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -279,131 +280,36 @@ const CartPage: React.FC = () => {
         created_at: new Date().toISOString()
       }));
 
-      // Trigger instant real-time thermal receipt print matching exact POS standard format
-      const printWindow = window.open('', '_blank', 'width=420,height=600');
-      if (printWindow) {
-        const totalQty = cartItems.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
-        const cgstAmt = taxAmt / 2;
-        const sgstAmt = taxAmt / 2;
-        const cleanDate = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-
-        const itemsRowsHtml = cartItems.map((item: any) => {
-          const unitPrice = parseFloat(item.price || 0);
-          const itemAmount = unitPrice * (item.quantity || 1);
-          return `
-            <div style="margin-bottom: 3px;">
-              <div style="display: flex; justify-content: space-between; font-size: 10px;">
-                <span style="flex: 1; text-align: left; word-break: break-word;">${item.name}</span>
-                <span style="width: 32px; text-align: center;">${item.quantity || 1}</span>
-                <span style="width: 55px; text-align: right;">${unitPrice.toFixed(2)}</span>
-                <span style="width: 60px; text-align: right;">${itemAmount.toFixed(2)}</span>
-              </div>
-              ${item.notes ? `<div style="font-size: 9px; color: #333; font-style: italic; padding-left: 4px;">* ${item.notes}</div>` : ''}
-            </div>
-          `;
-        }).join('');
-
-        const receiptHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>POS Receipt #${orderNum}</title>
-            <style>
-              @page { size: 80mm auto; margin: 0; }
-              body {
-                font-family: monospace, sans-serif;
-                width: 80mm;
-                max-width: 100%;
-                margin: 0 auto;
-                padding: 8px;
-                color: #000;
-                background: #fff;
-                font-size: 11px;
-                line-height: 1.3;
-              }
-            </style>
-          </head>
-          <body>
-            <div style="text-align: center; margin-bottom: 6px;">
-              <div style="font-size: 14px; font-weight: bold;">${posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
-              <div style="font-size: 10px;">${posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
-              <div style="font-size: 10px;">
-                ${[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
-              </div>
-              <div style="font-size: 10px;">GSTIN: ${posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
-              <div style="font-size: 10px;">FSSAI NO: ${posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            <div style="display: flex; justify-content: space-between; font-size: 10px;">
-              <span>Bill No: ${orderNum}</span>
-              <span>Date: ${cleanDate}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 10px;">
-              <span>Type: COUNTER BILLING</span>
-              <span>Staff: ${userObj?.name || 'Counter'}</span>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
-              <span style="flex: 1; text-align: left;">Item</span>
-              <span style="width: 32px; text-align: center;">Qty.</span>
-              <span style="width: 55px; text-align: right;">Price</span>
-              <span style="width: 60px; text-align: right;">Amount</span>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            ${itemsRowsHtml}
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            <div style="font-size: 10px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                <span>Total Qty: ${totalQty}</span>
-                <span>Sub Total &nbsp;&nbsp;${subtotal.toFixed(2)}</span>
-              </div>
-              ${taxRate > 0 ? `
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-                  <span>CGST ${(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;${cgstAmt.toFixed(2)}</span>
-                </div>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-                  <span>SGST ${(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;${sgstAmt.toFixed(2)}</span>
-                </div>
-              ` : ''}
-              ${serviceChargeAmt > 0 ? `
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-                  <span>Service Charge ${serviceChargeRate}% &nbsp;&nbsp;${serviceChargeAmt.toFixed(2)}</span>
-                </div>
-              ` : ''}
-              <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 4px;">
-                <span>Grand Total (INR)</span>
-                <span>${grandTotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0 4px 0;"></div>
-
-            <div style="text-align: center; font-size: 11px; font-weight: 500; padding: 2px 0;">
-              Thank you & Visit Again
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-
-            <script>
-              window.onload = function() {
-                window.print();
-                setTimeout(function() { window.close(); }, 500);
-              };
-            </script>
-          </body>
-          </html>
-        `;
-        printWindow.document.write(receiptHtml);
-        printWindow.document.close();
-      }
+      // Trigger instant real-time silent thermal receipt print matching exact POS standard format
+      printThermalReceiptDirect({
+        orderId: orderNum,
+        dateStr: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+        tableName: 'Counter Billing',
+        staffName: userObj?.name || 'Counter Staff',
+        guestName: userObj?.name || 'Self POS Counter',
+        items: cartItems.map((item: any) => ({
+          name: item.name,
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || 0),
+          total_price: parseFloat(item.price || 0) * (item.quantity || 1)
+        })),
+        subtotal: subtotal,
+        taxRate: taxRate,
+        cgstAmt: taxAmt / 2,
+        sgstAmt: taxAmt / 2,
+        serviceChargeRate: serviceChargeRate,
+        serviceChargeAmt: serviceChargeAmt,
+        grandTotal: grandTotal,
+        restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info || {
+          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT',
+          address: posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel',
+          city: posSettings?.city || posSettings?.restaurant_info?.city || 'Mumbai',
+          state: posSettings?.state || posSettings?.restaurant_info?.state || 'MH',
+          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode || '',
+          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || '27AAAAA0000A1Z5',
+          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || '10019022009876'
+        }
+      });
 
       saveCart({});
       toast.success("Bill Printed & Order Placed!");

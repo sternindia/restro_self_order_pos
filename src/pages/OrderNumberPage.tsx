@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Printer, ShoppingBag, Clock, UtensilsCrossed, Grid } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
-import ReceiptBillPrint from '../components/ReceiptBillPrint';
+import ReceiptBillPrint, { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 import OrderStatusBadge from '../components/OrderStatusBadge';
 
 const OrderNumberPage: React.FC = () => {
@@ -105,6 +105,27 @@ const OrderNumberPage: React.FC = () => {
   const { order_id, table, guest_name, phone, items = [], subTotal = 0, tax = 0, total = 0, created_at } = orderInfo;
 
   const handlePrint = () => {
+    printThermalReceiptDirect({
+      orderId: order_id,
+      dateStr: cleanDate,
+      tableName: table || 'Walk-In',
+      staffName: staff_name || 'Staff',
+      guestName: guest_name,
+      items: items.map((item: any) => ({
+        name: item.name,
+        quantity: parseInt(item.quantity || item.qty) || 1,
+        price: Number(item.unit_price || item.price || 0),
+        total_price: Number(item.total_price || ((item.unit_price || item.price || 0) * (item.quantity || 1)))
+      })),
+      subtotal: subTotalNum,
+      taxRate: taxRate,
+      cgstAmt: cgstAmt,
+      sgstAmt: sgstAmt,
+      serviceChargeRate: serviceChargeRate,
+      serviceChargeAmt: serviceAmt,
+      grandTotal: grandTotalNum,
+      restaurantInfo: restaurantInfo
+    });
     window.print();
   };
 
