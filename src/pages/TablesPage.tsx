@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RotateCw, Receipt, Plus, CreditCard, Check, Clock } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
+import TableStatusBadge from '../components/TableStatusBadge';
 
 interface TableSession {
   active_order_id?: string;
@@ -333,23 +334,14 @@ const TablesPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 py-3 sm:py-5">
             {tables.map((table) => {
-              // Map badge color based on exact requested status colors:
-              // Available: Green | Busy: Amber Yellow | Occupied: Red | Dirty: Slate | Reserved: Purple
-              let badgeColor = 'bg-emerald-600';
-              if (table.status === 'Occupied') badgeColor = 'bg-rose-600';
-              else if (table.status === 'Busy') badgeColor = 'bg-amber-500 text-slate-900';
-              else if (table.status === 'Dirty') badgeColor = 'bg-slate-500';
-              else if (table.status === 'Reserved') badgeColor = 'bg-purple-600';
-
               return (
                 <div 
                   key={table.table_id} 
                   className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-gray-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
                   onClick={() => handleTableSelect(table.table_number)}
                 >
-                  {/* Top-Right Modern Corner Tag (Mobile: top-right corner tag, Desktop: pill badge) */}
-                  <div className={`absolute top-0 right-0 px-2 py-0.5 sm:px-3 sm:py-1 rounded-bl-xl sm:rounded-bl-none sm:rounded-full sm:top-3 sm:right-3 text-[9px] sm:text-[10px] font-extrabold text-white uppercase tracking-wider ${badgeColor}`}>
-                    {table.status}
+                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+                    <TableStatusBadge status={table.status} />
                   </div>
 
                   {/* Table Header */}

@@ -3,6 +3,7 @@ import { Trash2, ShoppingBag, ArrowLeft, Info, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, getRestaurantId } from '../config';
+import BillSummaryModal from '../components/BillSummaryModal';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -751,68 +752,18 @@ const CartPage: React.FC = () => {
         </>
       )}
 
-      {/* Modal / Bottom Sheet for Bill Breakdown */}
-      {isBillSheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setIsBillSheetOpen(false)}>
-          <div className="w-full max-w-[380px] rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0077b6]">
-                  <FileText size={16} />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 tracking-tight">Bill Summary</h3>
-              </div>
-              <button 
-                onClick={() => setIsBillSheetOpen(false)} 
-                className="text-gray-400 hover:text-gray-700 text-lg font-bold p-1 cursor-pointer transition-colors"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs text-slate-800 py-1">
-              {/* Subtotal */}
-              <div className="flex justify-between items-center text-slate-800 font-semibold text-xs pb-2 border-b border-gray-100">
-                <span className="text-slate-800 font-semibold">Subtotal</span>
-                <span className="text-slate-900 font-bold">{subtotal.toFixed(2)} Rs</span>
-              </div>
-
-              {/* Service Charge formatted like CGST & SGST (no remove button, normal font) */}
-              {serviceChargeRate > 0 && (
-                <div className="flex justify-between items-center text-slate-800 font-semibold text-xs">
-                  <span className="text-slate-800 font-semibold">Service Charge ({serviceChargeRate}%)</span>
-                  <span className="text-slate-900 font-bold">+{serviceChargeAmt.toFixed(2)} Rs</span>
-                </div>
-              )}
-
-              {taxRate > 0 && (
-                <>
-                  <div className="flex justify-between items-center text-slate-800 font-semibold text-xs">
-                    <span className="text-slate-800 font-semibold">CGST ({(taxRate / 2).toFixed(1)}%)</span>
-                    <span className="text-slate-900 font-bold">+{cgstAmt.toFixed(2)} Rs</span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-800 font-semibold text-xs">
-                    <span className="text-slate-800 font-semibold">SGST ({(taxRate / 2).toFixed(1)}%)</span>
-                    <span className="text-slate-900 font-bold">+{sgstAmt.toFixed(2)} Rs</span>
-                  </div>
-                </>
-              )}
-
-              <div className="border-t border-dashed border-gray-300 pt-2.5 flex justify-between items-center text-sm font-extrabold text-slate-900">
-                <span className="text-slate-900 font-extrabold">To Pay (Grand Total)</span>
-                <span className="text-[#0077b6] text-lg font-black">{grandTotal.toFixed(2)} Rs</span>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setIsBillSheetOpen(false)}
-              className="w-full py-2.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md"
-            >
-              Got It
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Unified Bill Summary Modal Component */}
+      <BillSummaryModal 
+        isOpen={isBillSheetOpen}
+        onClose={() => setIsBillSheetOpen(false)}
+        subtotal={subtotal}
+        taxRate={taxRate}
+        cgstAmt={cgstAmt}
+        sgstAmt={sgstAmt}
+        serviceChargeRate={serviceChargeRate}
+        serviceChargeAmt={serviceChargeAmt}
+        grandTotal={grandTotal}
+      />
 
       {/* Modal */}
       {isModalOpen && (

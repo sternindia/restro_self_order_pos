@@ -3,6 +3,7 @@ import { ArrowLeft, Receipt, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Pri
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
+import OrderStatusBadge from '../components/OrderStatusBadge';
 
 interface OrderHistoryItem {
   order_id: string;
@@ -693,9 +694,7 @@ ${400 + contentStream.length}
                             ₹{Number(order.bill?.grand_total || 0).toFixed(2)}
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4">
-                            <span className={`text-[9px] sm:text-[10px] font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider border whitespace-nowrap ${getStatusBadgeClass(isSelfPosBilling ? 'COMPLETED' : order.resolved_status)}`}>
-                              {isSelfPosBilling ? 'COMPLETED' : (order.resolved_status || 'N/A')}
-                            </span>
+                            <OrderStatusBadge status={isSelfPosBilling ? 'COMPLETED' : order.resolved_status} />
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">

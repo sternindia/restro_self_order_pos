@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Printer, ShoppingBag, Clock, UtensilsCrossed, Grid } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import ReceiptBillPrint from '../components/ReceiptBillPrint';
+import OrderStatusBadge from '../components/OrderStatusBadge';
 
 const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
@@ -331,9 +333,8 @@ ${400 + contentStream.length}
             if (isCancelled) {
               return (
                 <div className="relative overflow-hidden bg-gradient-to-br from-rose-50/90 via-red-50/40 to-white border border-rose-200/70 rounded-2xl p-3 sm:p-6 text-center space-y-2 shadow-xs">
-                  <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-rose-200 text-rose-700 text-[11px] sm:text-xs font-bold shadow-2xs mb-1 max-w-full">
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600 flex-shrink-0"></span>
-                    <span>Order Cancelled</span>
+                  <div className="flex justify-center mb-1">
+                    <OrderStatusBadge status={currentStatus} />
                   </div>
 
                   <h3 className="text-base sm:text-xl font-black text-rose-950 tracking-tight">
@@ -506,111 +507,31 @@ ${400 + contentStream.length}
         </div>
       </div>
 
-      {/* DEDICATED THERMAL POS RECEIPT (Exact POS Receipt template & logic from restaurant_pos_react) */}
-      <div id="thermal-pos-receipt" className="hidden font-mono text-black text-[11px] leading-[1.3] w-[80mm] max-w-full mx-auto p-2 bg-white">
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '6px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
-          <div style={{ fontSize: '10px' }}>{posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
-          <div style={{ fontSize: '10px' }}>
-            {[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
-          </div>
-          <div style={{ fontSize: '10px' }}>GSTIN: {posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
-          <div style={{ fontSize: '10px' }}>FSSAI NO: {posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Customer Info */}
-        {guest_name && (
-          <>
-            <div style={{ fontSize: '10px' }}>
-              Customer Name: {guest_name} {phone ? `(${phone})` : ''}
-            </div>
-            <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-          </>
-        )}
-
-        {/* Bill Meta */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-          <span>Bill No: {order_id}</span>
-          <span>Date: {cleanDate}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-          <span>{table ? `Dine In: ${String(table).includes('Table') ? table : `Table #${table}`}` : 'Type: DINE-IN'}</span>
-          <span>Waiter: Staff</span>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Table Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px' }}>
-          <span style={{ flex: 1, textAlign: 'left' }}>Item</span>
-          <span style={{ width: '32px', textAlign: 'center' }}>Qty.</span>
-          <span style={{ width: '55px', textAlign: 'right' }}>Price</span>
-          <span style={{ width: '60px', textAlign: 'right' }}>Amount</span>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Items List */}
-        {items.map((item: any, idx: number) => {
-          const qty = parseInt(item.quantity || item.qty) || 1;
-          const unitPrice = parseFloat(item.price || item.unit_price || 0);
-          const itemAmount = unitPrice * qty;
-          return (
-            <div key={idx} style={{ marginBottom: '3px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-                <span style={{ flex: 1, textAlign: 'left', wordBreak: 'break-word' }}>{item.name}</span>
-                <span style={{ width: '32px', textAlign: 'center' }}>{qty}</span>
-                <span style={{ width: '55px', textAlign: 'right' }}>{unitPrice.toFixed(2)}</span>
-                <span style={{ width: '60px', textAlign: 'right' }}>{itemAmount.toFixed(2)}</span>
-              </div>
-              {item.notes && !item.notes.includes('Session Order') && (
-                <div style={{ fontSize: '9px', color: '#333', fontStyle: 'italic', paddingLeft: '4px' }}>* {item.notes}</div>
-              )}
-            </div>
-          );
-        })}
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Totals Section */}
-        <div style={{ fontSize: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span>Total Qty: {totalQty}</span>
-            <span>Sub Total &nbsp;&nbsp;{subTotalNum.toFixed(2)}</span>
-          </div>
-          {taxTotal > 0 && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
-                <span>CGST {(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;{cgstAmt.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
-                <span>SGST {(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;{sgstAmt.toFixed(2)}</span>
-              </div>
-            </>
-          )}
-          {serviceAmt > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
-              <span>Service Charge {serviceChargeRate}% &nbsp;&nbsp;{serviceAmt.toFixed(2)}</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '11px', marginTop: '4px' }}>
-            <span>Grand Total (INR)</span>
-            <span>{grandTotalNum.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0 4px 0' }}></div>
-
-        {/* Footer Greeting */}
-        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: '500', padding: '2px 0' }}>
-          Thank you & Visit Again
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
-      </div>
+      {/* Unified Receipt Bill Print Component */}
+      <ReceiptBillPrint
+        orderId={order_id}
+        dateStr={cleanDate}
+        tableName={table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'DINE-IN'}
+        staffName="Staff"
+        guestName={guest_name}
+        items={items}
+        subtotal={subTotalNum}
+        taxRate={taxRate}
+        cgstAmt={cgstAmt}
+        sgstAmt={sgstAmt}
+        serviceChargeRate={serviceChargeRate}
+        serviceChargeAmt={serviceAmt}
+        grandTotal={grandTotalNum}
+        restaurantInfo={{
+          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name,
+          address: posSettings?.address || posSettings?.restaurant_info?.address,
+          city: posSettings?.city || posSettings?.restaurant_info?.city,
+          state: posSettings?.state || posSettings?.restaurant_info?.state,
+          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode,
+          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number,
+          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number
+        }}
+      />
 
       {/* Curved Center-Raised FAB Bottom Navigation Bar (Hidden for self-pos-billing) */}
       {!isSelfPosBilling && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Search, Clock, ChefHat, CheckCircle2, Utensils, AlertTriangle, ArrowLeft, RefreshCw, XCircle } from 'lucide-react';
 import Header from '../components/Header';
+import OrderStatusBadge from '../components/OrderStatusBadge';
 import { API_BASE_URL } from '../config';
 
 const TrackOrderPage: React.FC = () => {
@@ -224,15 +225,7 @@ const TrackOrderPage: React.FC = () => {
                   <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                   <span>Sync</span>
                 </button>
-                <span className={`px-3 py-1 rounded-full text-xs font-extrabold shadow-2xs ${
-                  isCancelled ? 'bg-rose-100 text-rose-700 border border-rose-300' :
-                  currentStep === 3 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                  currentStep === 2 ? 'bg-sky-100 text-sky-800 border border-sky-300' :
-                  currentStep === 1 ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                  'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                }`}>
-                  {isCancelled ? 'CANCELLED' : currentStep === 3 ? 'COMPLETED' : currentStep === 2 ? 'READY TO SERVE' : currentStep === 1 ? 'PREPARING' : 'PLACED'}
-                </span>
+                <OrderStatusBadge status={order.order_status || order.status} />
               </div>
             </div>
 
