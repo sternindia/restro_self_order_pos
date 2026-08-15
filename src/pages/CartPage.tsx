@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ShoppingBag, ArrowLeft, Info, FileText } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Info, FileText, Pencil } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, getRestaurantId } from '../config';
@@ -362,8 +362,8 @@ const CartPage: React.FC = () => {
   const grandTotal = subtotal + serviceChargeAmt + taxAmt;
 
   return (
-    <div className="cart-body min-h-screen bg-[#f8f8f8] pb-24 md:pb-8">
-      <div className="header-cart sticky top-0 z-50 flex h-11 md:h-[10vh] w-full items-center justify-between bg-white px-3 md:px-[3%] py-1 md:py-[1.5%] shadow-sm border-b border-gray-100">
+    <div className="cart-body min-h-screen bg-[#FAF6F0] pb-24 md:pb-8">
+      <div className="header-cart sticky top-0 z-50 flex h-11 md:h-[10vh] w-full items-center justify-between bg-[#FFFBF8] px-3 md:px-[3%] py-1 md:py-[1.5%] shadow-xs border-b border-[#F0E6DF]">
         <div className="backpluscart flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="back-arrow text-gray-700 hover:text-black cursor-pointer p-1 rounded-full hover:bg-gray-100 transition-all">
             <ArrowLeft size={22} />
@@ -389,7 +389,7 @@ const CartPage: React.FC = () => {
               <ShoppingBag size={22} />
             </button>
             {cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#0077b6] text-white text-[10px] font-extrabold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-xs">
+              <span className="absolute -top-1 -right-1 bg-[#f05a24] text-white text-[10px] font-extrabold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-xs">
                 {cartItems.length}
               </span>
             )}
@@ -397,11 +397,11 @@ const CartPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="cart-container mx-2 my-3.5 md:m-[3%_2.5%] md:w-[95%] rounded-2xl bg-white p-3.5 md:p-5 shadow-xs border border-gray-100/90">
+      <div className="cart-container mx-2 my-3.5 md:m-[3%_2.5%] md:w-[95%] rounded-2xl bg-white p-3.5 md:p-5 shadow-xs border border-[#F0E6DF]">
         {cartItems.length === 0 ? (
           <div className="text-center py-12 md:py-16 text-gray-500 space-y-3 flex flex-col items-center animate-slide-up">
-            <div className="w-16 h-16 bg-blue-50 border border-blue-100/80 rounded-full flex items-center justify-center shadow-2xs animate-pop-in animate-pulse-glow">
-              <ShoppingBag size={28} className="text-[#0077b6]" />
+            <div className="w-16 h-16 bg-[#FFF0E6] border border-[#f05a24]/20 rounded-full flex items-center justify-center shadow-2xs animate-pop-in animate-pulse-glow">
+              <ShoppingBag size={28} className="text-[#f05a24]" />
             </div>
             <div>
               <p className="text-base font-extrabold text-gray-900">Your cart is empty</p>
@@ -409,7 +409,7 @@ const CartPage: React.FC = () => {
             </div>
             <Link 
               to="/" 
-              className="inline-flex items-center gap-2 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all no-underline mt-1"
+              className="inline-flex items-center gap-2 bg-[#f05a24] hover:bg-[#d94815] active:scale-95 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all no-underline mt-1"
             >
               <span>Explore Menu</span>
               <span>→</span>
@@ -433,14 +433,14 @@ const CartPage: React.FC = () => {
                         <div className="nameCart text-sm md:text-[16px] font-semibold md:font-bold text-gray-900 leading-snug break-words md:max-w-[40vw]">
                           {item.name}
                         </div>
-                        <div className="price text-xs md:text-[15px] font-semibold text-gray-600 md:text-[#555] mt-0.5">
+                        <div className="price text-xs md:text-[15px] font-bold text-[#f05a24] mt-0.5">
                           {item.price.toFixed(2)} Rs
                         </div>
                       </div>
                     </div>
 
                     {/* Mobile Stepper */}
-                    <div className="quantity flex md:hidden items-center rounded-xl border border-blue-100 bg-blue-50/60 px-2 py-1 shadow-2xs">
+                    <div className="quantity flex md:hidden items-center rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/50 px-2 py-1 shadow-2xs">
                       <button 
                         onClick={() => removeItem(item.id)}
                         className="delete p-1 text-red-500 hover:text-red-700 cursor-pointer active:scale-95 transition-transform"
@@ -457,7 +457,7 @@ const CartPage: React.FC = () => {
                       <span className="text-xs font-bold px-1.5 min-w-[16px] text-center text-gray-900">{item.quantity}</span>
                       <button 
                         onClick={() => updateQty(item.id, 1)}
-                        className="add px-1 text-sm font-bold text-[#0077b6] hover:text-[#005f92] cursor-pointer active:scale-95"
+                        className="add px-1 text-sm font-bold text-[#f05a24] hover:text-[#d94815] cursor-pointer active:scale-95"
                       >
                         +
                       </button>
@@ -473,14 +473,15 @@ const CartPage: React.FC = () => {
 
                   <button 
                     onClick={() => openModal(item.id)}
-                    className="write-instruction mt-2 md:mt-[2vh] cursor-pointer text-xs md:text-[14px] text-[#0077b6] md:text-[#777] hover:underline flex items-center gap-1 font-medium"
+                    className="write-instruction mt-1.5 cursor-pointer text-xs font-semibold text-gray-600 hover:text-[#f05a24] flex items-center gap-1.5 transition-colors group"
                   >
-                    ✏️ {item.notes ? 'Edit' : 'Write'} instruction on item.
+                    <Pencil size={13} className="text-gray-500 group-hover:text-[#f05a24] transition-colors flex-shrink-0" />
+                    <span className="underline decoration-gray-300 group-hover:decoration-[#f05a24] underline-offset-2">{item.notes ? 'Edit instruction' : 'Write instruction on item.'}</span>
                   </button>
                 </div>
 
                 {/* Desktop Stepper */}
-                <div className="quantity hidden md:flex items-center rounded-[10px] border border-[#0077b6] p-[10px_5px]">
+                <div className="quantity hidden md:flex items-center rounded-[10px] border border-[#f05a24]/40 bg-[#FFF0E6]/30 p-[10px_5px]">
                   <button 
                     onClick={() => removeItem(item.id)}
                     className="delete mx-[10px] text-[15px] text-red-600 cursor-pointer"
@@ -496,7 +497,7 @@ const CartPage: React.FC = () => {
                   <span className="text-[16px] font-bold px-[5px]">{item.quantity}</span>
                   <button 
                     onClick={() => updateQty(item.id, 1)}
-                    className="add mx-[10px] text-[20px] font-bold text-[#0077b6] cursor-pointer"
+                    className="add mx-[10px] text-[20px] font-bold text-[#f05a24] cursor-pointer"
                   >
                     +
                   </button>
@@ -517,11 +518,11 @@ const CartPage: React.FC = () => {
               title="Click to view detailed bill breakdown"
             >
               <div className="flex items-center gap-1">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider group-hover:text-[#0077b6] transition-colors">TOTAL</span>
-                <Info size={11} className="text-[#0077b6] group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-extrabold text-slate-900 uppercase tracking-wider group-hover:text-[#f05a24] transition-colors">TOTAL</span>
+                <Info size={11} className="text-[#f05a24] group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-sm sm:text-base font-black text-[#0077b6] whitespace-nowrap">
+                <span className="text-sm sm:text-base font-black text-[#f05a24] whitespace-nowrap">
                   ₹{grandTotal.toFixed(2)}
                 </span>
                 <span className="text-[9px] font-medium text-gray-400 whitespace-nowrap hidden xs:inline">
@@ -556,7 +557,7 @@ const CartPage: React.FC = () => {
                 <button 
                   onClick={handleDirectUpdateOrderInCart}
                   disabled={updating}
-                  className="bg-[#0077b6] hover:bg-[#005f92] active:scale-98 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-xs flex items-center justify-center gap-1 text-xs whitespace-nowrap transition-all border border-[#005f92]/20 cursor-pointer disabled:opacity-50"
+                  className="bg-[#f05a24] hover:bg-[#d94815] active:scale-98 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-xs flex items-center justify-center gap-1 text-xs whitespace-nowrap transition-all border border-[#f05a24]/20 cursor-pointer disabled:opacity-50"
                 >
                   {updating ? (
                     <span>Updating...</span>
@@ -571,7 +572,7 @@ const CartPage: React.FC = () => {
             ) : (
               <Link 
                 to="/order-info" 
-                className="bg-[#0077b6] hover:bg-[#005f92] active:scale-98 text-white font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap transition-all no-underline"
+                className="bg-[#f05a24] hover:bg-[#d94815] active:scale-98 text-white font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap transition-all no-underline"
               >
                 <span>Confirm Order</span>
                 <span>→</span>
@@ -602,7 +603,7 @@ const CartPage: React.FC = () => {
               </button>
             </div>
           ) : !isGuestCustomer && existingOrderId ? (
-            <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md">
+            <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#f05a24] p-[15px] shadow-md">
               <div 
                 onClick={() => setIsBillSheetOpen(true)}
                 className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
@@ -624,7 +625,7 @@ const CartPage: React.FC = () => {
                 <button 
                   onClick={handleDirectUpdateOrderInCart}
                   disabled={updating}
-                  className="bg-white text-[#0077b6] hover:bg-gray-100 font-bold px-4 py-1.5 rounded-lg text-xs transition-all cursor-pointer border border-white/40 disabled:opacity-50"
+                  className="bg-white text-[#f05a24] hover:bg-gray-100 font-bold px-4 py-1.5 rounded-lg text-xs transition-all cursor-pointer border border-white/40 disabled:opacity-50"
                 >
                   {updating ? 'Updating...' : 'Update Order →'}
                 </button>
@@ -632,7 +633,7 @@ const CartPage: React.FC = () => {
             </div>
           ) : (
             <div 
-              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md"
+              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#f05a24] p-[15px] shadow-md"
             >
               <div 
                 onClick={() => setIsBillSheetOpen(true)}
@@ -647,7 +648,7 @@ const CartPage: React.FC = () => {
               </div>
               <Link 
                 to="/order-info" 
-                className="bg-white text-[#0077b6] hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all no-underline shadow-md border border-white/40 flex items-center gap-1.5"
+                className="bg-white text-[#f05a24] hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all no-underline shadow-md border border-white/40 flex items-center gap-1.5"
               >
                 <span>Confirm Order</span>
                 <span className="text-lg font-bold">→</span>
@@ -684,11 +685,11 @@ const CartPage: React.FC = () => {
             <textarea 
               id="notes-textarea"
               defaultValue={cart[selectedItemId]?.notes || ''}
-              className="modalinput mt-[2vh] h-[20vh] w-full rounded-[5px] border border-[#ccc] p-[8px] outline-none focus:border-[#0077b6]" 
+              className="modalinput mt-[2vh] h-[20vh] w-full rounded-[5px] border border-[#ccc] p-[8px] outline-none focus:border-[#f05a24]" 
               placeholder="Enter your instruction"
             ></textarea>
             <button 
-              className="submit-btn mt-[2vh] w-full rounded-[5px] bg-[#0077b6] p-[8px_12px] text-white hover:opacity-90"
+              className="submit-btn mt-[2vh] w-full rounded-[5px] bg-[#f05a24] hover:bg-[#d94815] p-[8px_12px] text-white transition-colors"
               onClick={() => {
                 const el = document.getElementById('notes-textarea') as HTMLTextAreaElement;
                 setItemNotes(selectedItemId, el?.value || '');

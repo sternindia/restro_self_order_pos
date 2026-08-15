@@ -38,7 +38,7 @@ const BillSummaryModal: React.FC<BillSummaryModalProps> = ({
       <div className="w-full max-w-[380px] rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0077b6]">
+            <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#f05a24]">
               <FileText size={16} />
             </div>
             <h3 className="text-sm font-bold text-gray-900 tracking-tight">{title}</h3>
@@ -84,14 +84,14 @@ const BillSummaryModal: React.FC<BillSummaryModalProps> = ({
           {/* Grand Total */}
           <div className="border-t border-dashed border-gray-300 pt-2.5 flex justify-between items-center text-sm font-extrabold text-slate-900">
             <span className="text-slate-900 font-extrabold">To Pay (Grand Total)</span>
-            <span className="text-[#0077b6] text-lg font-black">{grandTotal.toFixed(2)} Rs</span>
+            <span className="text-[#f05a24] text-lg font-black">{grandTotal.toFixed(2)} Rs</span>
           </div>
         </div>
 
         <button 
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md"
+          className="w-full py-2.5 bg-[#f05a24] hover:bg-[#d94815] active:scale-95 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md"
         >
           Got It
         </button>

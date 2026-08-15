@@ -65,8 +65,8 @@ const OrderNumberPage: React.FC = () => {
               items: freshOrder.items || [],
               subTotal: freshOrder.bill?.subtotal || freshOrder.subtotal || 0,
               tax: freshOrder.bill?.tax_amount || freshOrder.tax_amount || 0,
-              serviceCharge: freshOrder.bill?.service_charge !== undefined 
-                ? parseFloat(freshOrder.bill.service_charge) 
+              serviceCharge: freshOrder.bill?.service_charge !== undefined
+                ? parseFloat(freshOrder.bill.service_charge)
                 : (orderInfo?.serviceCharge ?? 0),
               total: freshOrder.bill?.grand_total || freshOrder.total || 0,
               order_status: freshOrder.order_status || freshOrder.status || 'PENDING',
@@ -91,8 +91,8 @@ const OrderNumberPage: React.FC = () => {
           <div className="text-5xl mb-4">🍽️</div>
           <h2 className="text-lg font-bold text-gray-800 mb-1">No active order found</h2>
           <p className="text-xs text-gray-500 mb-6">You haven't placed any order yet in this session.</p>
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="inline-block bg-[#0077b6] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
           >
             Go to Menu
@@ -115,7 +115,7 @@ const OrderNumberPage: React.FC = () => {
     }
   };
 
-  const cleanDate = created_at 
+  const cleanDate = created_at
     ? new Date(created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
     : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -131,10 +131,10 @@ const OrderNumberPage: React.FC = () => {
   const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
 
   const subTotalNum = parseFloat(subTotal) > 0 ? parseFloat(subTotal) : itemsSubtotal;
-  const serviceAmt = orderInfo?.serviceCharge !== undefined 
+  const serviceAmt = orderInfo?.serviceCharge !== undefined
     ? parseFloat(orderInfo.serviceCharge)
-    : (orderInfo?.totals?.service_charge !== undefined 
-      ? parseFloat(orderInfo.totals.service_charge) 
+    : (orderInfo?.totals?.service_charge !== undefined
+      ? parseFloat(orderInfo.totals.service_charge)
       : (orderInfo?.service_charge !== undefined ? parseFloat(orderInfo.service_charge) : 0));
   const taxTotal = parseFloat(tax) > 0 ? parseFloat(tax) : ((subTotalNum * taxRate) / 100);
   const cgstAmt = taxTotal / 2;
@@ -165,7 +165,7 @@ const OrderNumberPage: React.FC = () => {
     });
     window.print();
   };
-   const handleOrderMore = () => {
+  const handleOrderMore = () => {
     if (table) {
       const activeTableNum = String(table).replace(/Table\s*#/i, '').replace(/Table\s*/i, '').trim();
       sessionStorage.setItem('emenu_table', activeTableNum);
@@ -212,8 +212,8 @@ const OrderNumberPage: React.FC = () => {
       {/* Header (Hidden on print) */}
       <div className="header-number sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white px-4 md:px-8 shadow-sm border-b border-gray-150 no-print">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/')} 
+          <button
+            onClick={() => navigate('/')}
             className="back-arrow p-2 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
             title="Back to menu"
           >
@@ -230,7 +230,7 @@ const OrderNumberPage: React.FC = () => {
           const isOrderCancelled = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
           if (!isGuestCustomer && !isSelfPosBilling && !isOrderCancelled) {
             return (
-              <button 
+              <button
                 onClick={handlePrint}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
               >
@@ -287,7 +287,7 @@ const OrderNumberPage: React.FC = () => {
                     Order Completed!
                   </h3>
                   <p className="text-[11px] sm:text-sm text-emerald-700 font-medium max-w-sm mx-auto leading-relaxed">
-                    {isSelfPosBilling 
+                    {isSelfPosBilling
                       ? `Counter order #${order_id} has been billed successfully.`
                       : `Your order #${order_id} has been completed. Thank you!`}
                   </p>
@@ -354,7 +354,7 @@ const OrderNumberPage: React.FC = () => {
               <span>Ordered Items</span>
               <span className="text-gray-500 font-semibold">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
             </h4>
-            
+
             <div className="divide-y divide-gray-100">
               {items.map((item: any, idx: number) => {
                 const itemTotal = (parseFloat(item.price || item.unit_price || 0) * (parseInt(item.quantity || item.qty) || 1)).toFixed(2);
@@ -465,7 +465,7 @@ const OrderNumberPage: React.FC = () => {
               const isOrderCancelled = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
               if (!isGuestCustomer && !isOrderCancelled) {
                 return (
-                  <button 
+                  <button
                     onClick={handlePrint}
                     className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-amber-600 transition-colors cursor-pointer group"
                   >
@@ -480,7 +480,7 @@ const OrderNumberPage: React.FC = () => {
 
 
             {/* MENU TAB (Always visible for Guest Customers on mobile; responsive for staff) */}
-            <button 
+            <button
               onClick={handleOrderMore}
               className={`${isGuestCustomer ? 'flex' : 'hidden md:flex'} flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors cursor-pointer group`}
             >
@@ -490,7 +490,7 @@ const OrderNumberPage: React.FC = () => {
 
             {/* CENTER RAISED FAB BUTTON - TAKE NEW ORDER FOR WAITERS / ADD MORE FOR GUESTS */}
             <div className="relative -top-3.5 flex flex-col items-center justify-center">
-              <button 
+              <button
                 onClick={handleTakeNewOrder}
                 className="bg-gradient-to-tr from-[#0077b6] to-[#0284c7] hover:from-[#005f92] hover:to-[#0284c7] text-white p-3 rounded-full shadow-lg shadow-sky-500/35 border-4 border-white active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                 title="Start Fresh New Order"
@@ -504,7 +504,7 @@ const OrderNumberPage: React.FC = () => {
 
             {/* TABLES TAB FOR WAITERS (Only on Tablet & Desktop to avoid crowding mobile bar) */}
             {!isGuestCustomer && (
-              <button 
+              <button
                 onClick={() => {
                   sessionStorage.removeItem('emenu_table');
                   localStorage.removeItem('emenu_cart');
@@ -519,7 +519,7 @@ const OrderNumberPage: React.FC = () => {
 
             {/* HISTORY TAB FOR WAITERS/STAFF */}
             {!isGuestCustomer && (
-              <Link 
+              <Link
                 to="/history"
                 className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors no-underline group"
               >

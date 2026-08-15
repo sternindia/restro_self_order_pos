@@ -96,29 +96,36 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const isStaffUser = user && !user.isGuest;
 
   return (
-    <nav className="navbar sticky top-0 z-50 bg-white shadow-sm border-b border-gray-150">
-      <div className="flex min-h-[54px] md:min-h-[60px] w-full items-center justify-between px-3 sm:px-6 py-1 md:py-2">
+    <nav className="navbar sticky top-0 z-50 bg-[#FFFBF8] border-b border-[#F0E6DF]/60">
+      <div className="flex min-h-[58px] md:min-h-[64px] w-full items-center justify-between px-4 sm:px-6 py-2">
         {/* LEFT: Logo & Restaurant Title */}
         <div className="logo-section flex items-center min-w-0">
-          <span className="logo text-lg sm:text-xl mr-1.5 flex-shrink-0">🏠</span>
-          <div className="shop-name text-sm sm:text-base md:text-lg font-extrabold text-[#0077b6] flex items-center gap-1.5 min-w-0 truncate">
-            <span className="truncate uppercase">{restaurantName}</span>
-            {displayTable && !isSelfPosBilling && isEnableTables && (
-              <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
-                {displayTable}
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xl sm:text-2xl flex-shrink-0">🧑‍🍳</span>
+              <span className="text-lg sm:text-xl font-black text-black tracking-tight truncate uppercase">
+                {restaurantName}
               </span>
-            )}
+              {displayTable && !isSelfPosBilling && isEnableTables && (
+                <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
+                  {displayTable}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-gray-400 font-semibold tracking-wide ml-7 -mt-0.5">
+              Smart Restaurant Management
+            </span>
           </div>
         </div>
 
         {/* CENTER: Desktop Navigation Tabs */}
         {isStaffUser && (
-          <div className="hidden lg:flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+          <div className="hidden lg:flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl border border-gray-200/50">
             <Link
               to="/"
-              className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/'
-                  ? 'bg-white text-[#0077b6] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-800'
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
+                  ? 'bg-white text-[#f05a24] shadow-2xs'
+                  : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               🍔 Menu
@@ -126,9 +133,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             {!isSelfPosBilling && isEnableTables && (
               <Link
                 to="/tables"
-                className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/tables'
-                    ? 'bg-white text-[#0077b6] shadow-[#0077b6]/20'
-                    : 'text-gray-600 hover:text-gray-800'
+                className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 📋 Tables
@@ -136,9 +143,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             )}
             <Link
               to="/history"
-              className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/history'
-                  ? 'bg-white text-[#0077b6] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-800'
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
+                  ? 'bg-white text-[#f05a24] shadow-2xs'
+                  : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               ⏳ History
@@ -146,53 +153,44 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           </div>
         )}
 
-        {/* RIGHT: User Profile, Logout Icon, Notifications & 3-Bar Toggle */}
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+        {/* RIGHT: Action Icons & Menu Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {/* User Profile Badge */}
           {isStaffUser && !isSelfPosBilling && (
             <div 
-              className="relative group hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200/80 px-2.5 py-1 rounded-full border border-gray-200/60 transition-all cursor-pointer"
+              className="relative group hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200/80 transition-all cursor-pointer shadow-2xs"
               title={`Logged in as: ${user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}`}
             >
-              <User size={15} className="text-[#0077b6]" />
+              <User size={15} className="text-[#f05a24]" />
               <span className="max-w-[120px] truncate">{user?.username || user?.name || user?.phone || user?.user_name || 'Profile'}</span>
-
-              {/* Hover Tooltip Popup */}
-              <div className="absolute top-full right-0 mt-2 hidden group-hover:flex flex-col bg-slate-900 text-white text-[11px] font-medium py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap z-50 pointer-events-none border border-slate-800">
-                <span className="font-bold text-amber-400">Logged in User</span>
-                <span className="text-white fw-bold">{user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}</span>
-                {user?.role && <span className="text-[10px] text-slate-400 capitalize">Role: {user.role}</span>}
-              </div>
             </div>
           )}
-
-
 
           {/* Track Order Button (Visible ONLY for Guest Customers) */}
           {!isStaffUser && (
             <button
               onClick={() => setIsTrackModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#0077b6] bg-[#0077b6]/10 hover:bg-[#0077b6]/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#0077b6]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
+              className="flex items-center gap-1.5 text-xs font-bold text-[#f05a24] bg-[#f05a24]/10 hover:bg-[#f05a24]/20 px-3 py-1.5 rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
               title="Track your order status"
             >
-              <Search size={14} className="text-[#0077b6]" />
-              <span>Track Order</span>
+              <Search size={14} className="text-[#f05a24]" />
+              <span className="hidden xs:inline">Track Order</span>
             </button>
           )}
 
-          <button id="notification-btn" className="text-gray-700 hover:text-[#0077b6] transition-colors cursor-pointer p-1" title="Notifications">
-            <Bell size={18} />
+          <button id="notification-btn" className="p-2 text-gray-700 hover:text-[#f05a24] hover:bg-gray-100 rounded-xl transition-colors cursor-pointer" title="Notifications">
+            <Bell size={20} />
           </button>
 
-          {/* Logout Button (Visible ONLY for Staff/Logged-in Users) */}
+          {/* Logout Button */}
           {isStaffUser && onLogout && (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-full border border-rose-200/80 transition-all cursor-pointer shadow-xs active:scale-95"
+              className="p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
               title="Logout Account"
             >
-              <LogOut size={15} className="text-rose-600" />
-              <span className="hidden sm:inline">Logout</span>
+              <LogOut size={18} />
+              <span className="hidden sm:inline text-xs">Logout</span>
             </button>
           )}
 
@@ -200,7 +198,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           {isStaffUser && (
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="flex lg:hidden p-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition-all cursor-pointer"
+              className="flex lg:hidden p-2 rounded-xl border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 transition-all cursor-pointer"
               title="Toggle Menu"
             >
               {isMobileMenuOpen ? <X size={20} /> : <MenuIcon size={20} />}
@@ -225,7 +223,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
               <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🏠</span>
-                  <span className="text-sm font-extrabold text-[#0077b6]">Navigation</span>
+                  <span className="text-sm font-extrabold text-[#f05a24]">Navigation</span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -241,7 +239,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/'
-                      ? 'bg-[#0077b6] text-white shadow-md'
+                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -253,7 +251,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                     to="/tables"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/tables'
-                        ? 'bg-[#0077b6] text-white shadow-md'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
                         : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
@@ -265,7 +263,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/history"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/history'
-                      ? 'bg-[#0077b6] text-white shadow-md'
+                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
@@ -300,7 +298,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#0077b6]/10 flex items-center justify-center text-[#0077b6]">
+                <div className="w-8 h-8 rounded-full bg-[#f05a24]/10 flex items-center justify-center text-[#f05a24]">
                   <Search size={16} />
                 </div>
                 <h3 className="text-sm font-bold text-gray-900">Track Order Status</h3>
@@ -326,7 +324,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   placeholder="e.g. 107 or #107"
                   value={trackInputId}
                   onChange={(e) => setTrackInputId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0077b6]/40 focus:border-[#0077b6]"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/40 focus:border-[#f05a24]"
                 />
               </div>
 
@@ -340,7 +338,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 text-xs font-bold text-white bg-[#0077b6] hover:bg-[#005f92] rounded-xl shadow-md transition-all cursor-pointer"
+                  className="flex-1 py-2 text-xs font-bold text-white bg-[#f05a24] hover:bg-[#d94815] rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer"
                 >
                   Track Order →
                 </button>
