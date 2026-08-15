@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut, Search, UtensilsCrossed, Utensils, Grid, Clock, Settings, Compass } from 'lucide-react';
+import { Bell, Menu as MenuIcon, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
 
@@ -177,16 +177,28 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
               <span>History</span>
             </Link>
             {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
-              <Link
-                to="/settings"
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
-                    ? 'bg-white text-[#f05a24] shadow-2xs'
-                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
-                  }`}
-              >
-                <Settings size={14} />
-                <span>Settings</span>
-              </Link>
+              <>
+                <Link
+                  to="/manage-menu"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/manage-menu'
+                      ? 'bg-white text-[#f05a24] shadow-2xs'
+                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <Edit3 size={14} />
+                  <span>Manage Menu</span>
+                </Link>
+                <Link
+                  to="/settings"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
+                      ? 'bg-white text-[#f05a24] shadow-2xs'
+                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <Settings size={14} />
+                  <span>Settings</span>
+                </Link>
+              </>
             )}
           </div>
         )}
@@ -315,17 +327,30 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </Link>
 
                 {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
-                  <Link
-                    to="/settings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/settings'
-                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                        : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                  >
-                    <Settings size={18} />
-                    <span>Settings</span>
-                  </Link>
+                  <>
+                    <Link
+                      to="/manage-menu"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/manage-menu'
+                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                          : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <Edit3 size={18} />
+                      <span>Manage Menu</span>
+                    </Link>
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/settings'
+                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                          : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <Settings size={18} />
+                      <span>Settings</span>
+                    </Link>
+                  </>
                 )}
               </div>
             </div>

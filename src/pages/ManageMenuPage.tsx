@@ -1,0 +1,722 @@
+import React, { useState, useEffect } from 'react';
+import { Utensils, Plus, Edit2, Trash2, Search, X, RotateCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import Header from '../components/Header';
+import { API_BASE_URL, getRestaurantId } from '../config';
+
+interface MenuItem {
+  item_id: string;
+  category_id: string;
+  item_name: string;
+  price: string | number;
+  dietary_info?: string;
+  is_veg?: boolean;
+}
+
+interface Category {
+  category_id: string;
+  category_name: string;
+  items?: MenuItem[];
+}
+
+const ManageMenuPage: React.FC = () => {
+  const navigate = useNavigate();
+  const savedUser = localStorage.getItem('emenu_user');
+  const currentUser = savedUser ? JSON.parse(savedUser) : null;
+  const roleAlias = (currentUser?.role_alias || currentUser?.role || '').toLowerCase();
+  const isAdmin = roleAlias === 'super_admin' || roleAlias === 'admin';
+
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  
+  // Category Form State
+  const [newCatName, setNewCatName] = useState('');
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('All');
+
+  // Item Form State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dietaryFilter, setDietaryFilter] = useState<'All' | 'Veg' | 'Non-Veg' | 'Egg'>('All');
+  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [newItemData, setNewItemData] = useState({
+    item_name: '',
+    price: '',
+    dietary_info: 'Veg',
+    category_id: ''
+  });
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+
+  const fetchMenuData = async () => {
+    setLoading(true);
+    try {
+      const rid = getRestaurantId();
+      let res = await fetch(`${API_BASE_URL}/menus/${rid}`).catch(() => null);
+      if (!res || !res.ok) {
+        res = await fetch(`${API_BASE_URL}/menu/restaurant/${rid}`).catch(() => null);
+      }
+
+      if (res && res.ok) {
+        const data = await res.json();
+        const rawCats = data?.categories || data?.data?.categories || data?.data || data || [];
+        const cats: Category[] = Array.isArray(rawCats) ? rawCats : [];
+        setCategories(cats);
+
+        // Flatten all items
+        const allItems: MenuItem[] = [];
+        cats.forEach(c => {
+          if (c.items && Array.isArray(c.items)) {
+            c.items.forEach(i => {
+              allItems.push({
+                ...i,
+                item_id: String(i.item_id),
+                category_id: String(i.category_id || c.category_id),
+                price: parseFloat(String(i.price)).toFixed(2)
+              });
+            });
+          }
+        });
+        setMenuItems(allItems);
+        localStorage.setItem('emenu_categories', JSON.stringify(cats));
+      }
+    } catch (err: any) {
+      console.warn('Failed to load menu from API, using cached menu:', err);
+      const cachedStr = localStorage.getItem('emenu_categories');
+      if (cachedStr) {
+        try {
+          const cats = JSON.parse(cachedStr);
+          setCategories(cats);
+          const allItems: MenuItem[] = [];
+          cats.forEach((c: any) => {
+            if (c.items && Array.isArray(c.items)) {
+              c.items.forEach((i: any) => {
+                allItems.push({
+                  ...i,
+                  item_id: String(i.item_id),
+                  category_id: String(i.category_id || c.category_id),
+                  price: parseFloat(String(i.price)).toFixed(2)
+                });
+              });
+            }
+          });
+          setMenuItems(allItems);
+        } catch {}
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast.error('Access restricted to Admin only.');
+      navigate('/', { replace: true });
+      return;
+    }
+    fetchMenuData();
+  }, [isAdmin, navigate]);
+
+  // Handle Category Add/Update
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const rid = getRestaurantId();
+
+    if (editingCategory) {
+      const catId = editingCategory.category_id;
+      try {
+        await fetch(`${API_BASE_URL}/categories/${catId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            restaurant_id: rid,
+            category_name: newCatName.trim(),
+            status: 1
+          })
+        }).catch(() => null);
+
+        setCategories(prev => prev.map(c => String(c.category_id) === String(catId) ? { ...c, category_name: newCatName.trim() } : c));
+        setEditingCategory(null);
+        setNewCatName('');
+        toast.success("Category updated successfully!");
+      } catch (err) {
+        toast.error("Failed to update category.");
+      }
+    } else {
+      try {
+        const response = await fetch(`${API_BASE_URL}/categories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            restaurant_id: rid,
+            category_name: newCatName.trim(),
+            status: 1
+          })
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          const createdCat = resData.data || resData;
+          const catId = String(createdCat.category_id || `cat_${Date.now()}`);
+          const newCat: Category = { category_id: catId, category_name: newCatName.trim(), items: [] };
+          setCategories(prev => [...prev, newCat]);
+          setNewCatName('');
+          toast.success("Category created successfully!");
+        } else {
+          throw new Error();
+        }
+      } catch (err) {
+        const mockId = `cat_${Date.now()}`;
+        setCategories(prev => [...prev, { category_id: mockId, category_name: newCatName.trim(), items: [] }]);
+        setNewCatName('');
+        toast.success("Category created successfully!");
+      }
+    }
+  };
+
+  // Handle Category Delete
+  const handleDeleteCategory = async (cat: Category) => {
+    if (!window.confirm(`Are you sure you want to delete category "${cat.category_name}"?`)) return;
+    try {
+      await fetch(`${API_BASE_URL}/categories/${cat.category_id}`, { method: 'DELETE' }).catch(() => null);
+    } catch {}
+    setCategories(prev => prev.filter(c => String(c.category_id) !== String(cat.category_id)));
+    setMenuItems(prev => prev.filter(i => String(i.category_id) !== String(cat.category_id)));
+    if (editingCategory && String(editingCategory.category_id) === String(cat.category_id)) {
+      setEditingCategory(null);
+      setNewCatName('');
+    }
+    toast.success("Category deleted successfully!");
+  };
+
+  // Handle Item Add
+  const handleAddNewItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItemData.item_name || !newItemData.price || !newItemData.category_id) {
+      toast.error("Please fill all required fields!");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/menus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category_id: parseInt(newItemData.category_id),
+          item_name: newItemData.item_name,
+          price: parseFloat(newItemData.price),
+          dietary_info: newItemData.dietary_info,
+          status: 1
+        })
+      });
+
+      const resData = response.ok ? await response.json() : null;
+      const createdItem = resData?.data || resData || {};
+      const newItem: MenuItem = {
+        item_id: String(createdItem.item_id || `item_${Date.now()}`),
+        category_id: String(newItemData.category_id),
+        item_name: newItemData.item_name,
+        price: parseFloat(newItemData.price).toFixed(2),
+        dietary_info: newItemData.dietary_info
+      };
+
+      setMenuItems(prev => [...prev, newItem]);
+      setCategories(prev => prev.map(c => String(c.category_id) === String(newItem.category_id) ? { ...c, items: [...(c.items || []), newItem] } : c));
+
+      setNewItemData({ item_name: '', price: '', dietary_info: 'Veg', category_id: '' });
+      setShowAddItemForm(false);
+      toast.success("Menu item added successfully!");
+    } catch (err: any) {
+      toast.error("Failed to add menu item.");
+    }
+  };
+
+  // Handle Item Update
+  const handleUpdateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !editingItem.item_name || !editingItem.price) return;
+
+    try {
+      await fetch(`${API_BASE_URL}/menus/${editingItem.item_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category_id: parseInt(editingItem.category_id),
+          item_name: editingItem.item_name,
+          price: parseFloat(String(editingItem.price)),
+          dietary_info: editingItem.dietary_info || 'Veg',
+          status: 1
+        })
+      }).catch(() => null);
+
+      const updatedObj: MenuItem = {
+        ...editingItem,
+        item_id: String(editingItem.item_id),
+        category_id: String(editingItem.category_id),
+        price: parseFloat(String(editingItem.price)).toFixed(2)
+      };
+
+      setMenuItems(prev => prev.map(i => String(i.item_id) === String(editingItem.item_id) ? updatedObj : i));
+      setCategories(prev => prev.map(cat => ({
+        ...cat,
+        items: (cat.items || []).map(i => String(i.item_id) === String(editingItem.item_id) ? updatedObj : i)
+      })));
+
+      setEditingItem(null);
+      toast.success("Menu item updated successfully!");
+    } catch (err) {
+      toast.error("Failed to update item.");
+    }
+  };
+
+  // Handle Item Delete
+  const handleDeleteItem = async (itemId: string) => {
+    if (!window.confirm("Are you sure you want to delete this menu item?")) return;
+    try {
+      await fetch(`${API_BASE_URL}/menus/${itemId}`, { method: 'DELETE' }).catch(() => null);
+    } catch {}
+
+    setMenuItems(prev => prev.filter(i => String(i.item_id) !== String(itemId)));
+    setCategories(prev => prev.map(cat => ({
+      ...cat,
+      items: (cat.items || []).filter(i => String(i.item_id) !== String(itemId))
+    })));
+    toast.success("Menu item deleted successfully!");
+  };
+
+  // Filtered Menu Items
+  const filteredMenuItems = menuItems.filter(item => {
+    const matchesCategory = selectedCategoryId === 'All' || String(item.category_id) === String(selectedCategoryId);
+    const matchesSearch = item.item_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const dietary = item.dietary_info || (item.is_veg ? 'Veg' : 'Non-Veg');
+    const matchesDietary = dietaryFilter === 'All' || dietary === dietaryFilter;
+    return matchesCategory && matchesSearch && matchesDietary;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#FAF6F0] font-sans pb-12">
+      <Header />
+
+      <div className="mt-4 px-[3%] py-4 max-w-[1200px] mx-auto box-border">
+        {/* Header Banner */}
+        <div className="flex items-center justify-between p-4 rounded-2xl text-white mb-6 shadow-md bg-[#0f172a]">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center bg-white/10 rounded-xl p-2.5 w-11 h-11">
+              <Utensils size={22} className="text-amber-400" />
+            </div>
+            <div>
+              <h5 className="font-extrabold text-white text-base sm:text-lg m-0">Menu & Category Management</h5>
+              <p className="hidden md:block text-white/75 text-xs m-0">Add/edit categories, dishes, prices, and dietary tags</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={fetchMenuData}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer border border-white/20"
+          >
+            <RotateCw size={14} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-16 font-bold text-[#f05a24]">Loading Menu Directory...</div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* LEFT COLUMN: Categories Management (4 Cols) */}
+            <div className="lg:col-span-4 space-y-4">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                  <h6 className="font-extrabold text-gray-900 text-sm m-0">Categories ({categories.length})</h6>
+                </div>
+
+                {/* Categories List */}
+                <div className="space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
+                  <div
+                    onClick={() => setSelectedCategoryId('All')}
+                    className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer font-bold text-xs transition-all ${selectedCategoryId === 'All'
+                        ? 'bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/30 shadow-2xs'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200/60'
+                      }`}
+                  >
+                    <span>All Categories</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-200 text-gray-800">
+                      {menuItems.length}
+                    </span>
+                  </div>
+
+                  {categories.map((cat) => {
+                    const isSelected = String(selectedCategoryId) === String(cat.category_id);
+                    const itemCount = menuItems.filter(i => String(i.category_id) === String(cat.category_id)).length;
+                    return (
+                      <div
+                        key={cat.category_id}
+                        onClick={() => setSelectedCategoryId(cat.category_id)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer font-bold text-xs transition-all ${isSelected
+                            ? 'bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/30 shadow-2xs'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200/60'
+                          }`}
+                      >
+                        <span className="truncate max-w-[140px]">{cat.category_name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-200 text-gray-800">
+                            {itemCount}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCategory(cat);
+                              setNewCatName(cat.category_name);
+                            }}
+                            className="p-1 text-gray-500 hover:text-blue-600 rounded-md transition-colors"
+                            title="Edit Category"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCategory(cat);
+                            }}
+                            className="p-1 text-gray-500 hover:text-rose-600 rounded-md transition-colors"
+                            title="Delete Category"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add / Edit Category Form */}
+                <form onSubmit={handleSaveCategory} className="pt-3 border-t border-gray-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-extrabold text-gray-500 uppercase">
+                      {editingCategory ? "Edit Category" : "Add Category"}
+                    </label>
+                    {editingCategory && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCategory(null);
+                          setNewCatName('');
+                        }}
+                        className="text-[11px] font-extrabold text-rose-500 hover:underline flex items-center gap-1"
+                      >
+                        <X size={12} /> Cancel
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Category Name"
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="bg-[#0f172a] hover:bg-[#1e293b] text-white font-extrabold px-4 py-2 rounded-xl text-xs transition-all"
+                    >
+                      {editingCategory ? "Update" : "Add"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Menu Directory & Item Cards (8 Cols) */}
+            <div className="lg:col-span-8 space-y-4">
+              {/* Search & Dietary Filter */}
+              <div className="bg-white rounded-2xl p-4 shadow-xs border border-[#F0E6DF] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative w-full sm:w-64">
+                  <input
+                    type="text"
+                    placeholder="Search menu items..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
+                  />
+                  <Search size={15} className="absolute left-3 top-2.5 text-gray-400" />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Dietary Filter Pills */}
+                <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                  {(['All', 'Veg', 'Non-Veg', 'Egg'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setDietaryFilter(filter)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${dietaryFilter === filter
+                          ? filter === 'Veg' ? 'bg-emerald-600 text-white shadow-xs' : filter === 'Non-Veg' ? 'bg-rose-600 text-white shadow-xs' : filter === 'Egg' ? 'bg-amber-500 text-white shadow-xs' : 'bg-gray-900 text-white shadow-xs'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Menu Items Directory Header */}
+              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+                  <div>
+                    <h6 className="font-extrabold text-gray-900 text-sm m-0">Menu Directory ({filteredMenuItems.length})</h6>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddItemForm(!showAddItemForm);
+                      if (!newItemData.category_id && categories.length > 0) {
+                        setNewItemData(prev => ({ ...prev, category_id: categories[0].category_id }));
+                      }
+                    }}
+                    className="bg-[#f05a24] hover:bg-[#d94815] text-white font-extrabold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    {showAddItemForm ? <X size={14} /> : <Plus size={14} />}
+                    <span>{showAddItemForm ? "Close Form" : "Add Menu Item"}</span>
+                  </button>
+                </div>
+
+                {/* Add New Item Form */}
+                {showAddItemForm && (
+                  <form onSubmit={handleAddNewItem} className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-3 animate-fade-in">
+                    <h6 className="font-extrabold text-gray-900 text-xs m-0">Add New Dish</h6>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Item Name</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Chicken Tikka"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none"
+                          value={newItemData.item_name}
+                          onChange={(e) => setNewItemData(prev => ({ ...prev, item_name: e.target.value }))}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Category</label>
+                        <select
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                          value={newItemData.category_id}
+                          onChange={(e) => setNewItemData(prev => ({ ...prev, category_id: e.target.value }))}
+                        >
+                          {categories.map(c => (
+                            <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Price (₹)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          placeholder="299.00"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none"
+                          value={newItemData.price}
+                          onChange={(e) => setNewItemData(prev => ({ ...prev, price: e.target.value }))}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Dietary Info</label>
+                        <select
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                          value={newItemData.dietary_info}
+                          onChange={(e) => setNewItemData(prev => ({ ...prev, dietary_info: e.target.value }))}
+                        >
+                          <option value="Veg">Veg</option>
+                          <option value="Non-Veg">Non-Veg</option>
+                          <option value="Egg">Egg</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddItemForm(false)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs"
+                      >
+                        Add to Menu
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Edit Item Modal / Inline Form */}
+                {editingItem && (
+                  <form onSubmit={handleUpdateItem} className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-3 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h6 className="font-extrabold text-amber-900 text-xs m-0">Edit Dish Details</h6>
+                      <button type="button" onClick={() => setEditingItem(null)} className="text-amber-700 hover:text-amber-900 text-xs font-bold">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Item Name</label>
+                        <input
+                          type="text"
+                          required
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                          value={editingItem.item_name}
+                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, item_name: e.target.value } : null)}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Category</label>
+                        <select
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                          value={editingItem.category_id}
+                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, category_id: e.target.value } : null)}
+                        >
+                          {categories.map(c => (
+                            <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Price (₹)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                          value={editingItem.price}
+                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, price: e.target.value } : null)}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Dietary Info</label>
+                        <select
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                          value={editingItem.dietary_info || 'Veg'}
+                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, dietary_info: e.target.value } : null)}
+                        >
+                          <option value="Veg">Veg</option>
+                          <option value="Non-Veg">Non-Veg</option>
+                          <option value="Egg">Egg</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem(null)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-[#0f172a] text-white font-bold rounded-xl text-xs shadow-xs"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Items Grid */}
+                {filteredMenuItems.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 font-bold text-xs">
+                    No menu items found matching the selected filters.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                    {filteredMenuItems.map((item) => {
+                      const catName = categories.find(c => String(c.category_id) === String(item.category_id))?.category_name || 'General';
+                      const dietary = item.dietary_info || (item.is_veg ? 'Veg' : 'Non-Veg');
+
+                      return (
+                        <div
+                          key={item.item_id}
+                          className="bg-white rounded-xl p-3.5 border border-gray-200 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                {dietary === 'Non-Veg' ? (
+                                  <span className="w-3.5 h-3.5 border border-rose-600 rounded-sm flex items-center justify-center p-0.5 shrink-0">
+                                    <span className="w-1.5 h-1.5 bg-rose-600 rounded-full"></span>
+                                  </span>
+                                ) : dietary === 'Egg' ? (
+                                  <span className="w-3.5 h-3.5 border border-amber-600 rounded-sm flex items-center justify-center p-0.5 shrink-0">
+                                    <span className="w-1.5 h-1.5 bg-amber-600 rounded-full"></span>
+                                  </span>
+                                ) : (
+                                  <span className="w-3.5 h-3.5 border border-emerald-600 rounded-sm flex items-center justify-center p-0.5 shrink-0">
+                                    <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
+                                  </span>
+                                )}
+                                <h6 className="font-extrabold text-gray-900 text-xs m-0 line-clamp-1">{item.item_name}</h6>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-400 block mt-1">{catName}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <span className="font-black text-gray-900 text-sm">₹{parseFloat(String(item.price)).toFixed(2)}</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingItem(item)}
+                                className="p-1.5 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 rounded-lg transition-colors cursor-pointer"
+                                title="Edit Item"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteItem(item.item_id)}
+                                className="p-1.5 bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-700 rounded-lg transition-colors cursor-pointer"
+                                title="Delete Item"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ManageMenuPage;

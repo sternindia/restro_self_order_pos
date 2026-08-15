@@ -13,6 +13,7 @@ const Login = lazy(() => import('./pages/Login'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ManageMenuPage = lazy(() => import('./pages/ManageMenuPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -154,6 +155,10 @@ function App() {
           <Route 
             path="/settings" 
             element={user && !user.isGuest ? <SettingsPage /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/manage-menu" 
+            element={user && !user.isGuest ? <ManageMenuPage /> : <Navigate to="/" replace />} 
           />
         </Routes>
       </Suspense>
