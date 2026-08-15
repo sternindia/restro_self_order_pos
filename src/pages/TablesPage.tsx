@@ -394,7 +394,7 @@ const TablesPage: React.FC = () => {
                   {/* Action Buttons with Compact Height & Modern Radius for Mobile */}
                   <div className="flex gap-1.5 sm:gap-2 mt-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
                     {table.status === 'Available' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
                         <Receipt size={12} /> OPEN TAB
                       </button>
                     )}
@@ -404,8 +404,8 @@ const TablesPage: React.FC = () => {
                         <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
                           <Plus size={11} /> <span className="truncate">ADD</span>
                         </button>
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
-                          <CreditCard size={11} /> <span className="truncate">PAID</span>
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
+                          <CreditCard size={11} className="text-emerald-700" /> <span className="truncate">PAID</span>
                         </button>
                       </div>
                     )}
