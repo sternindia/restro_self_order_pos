@@ -112,7 +112,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </span>
               )}
             </div>
-            <span className="text-[10px] text-gray-400 font-semibold tracking-wide ml-7 -mt-0.5">
+            <span className="text-[10px] text-gray-700 font-bold tracking-wide ml-7 -mt-0.5">
               Smart Restaurant Management
             </span>
           </div>
@@ -120,12 +120,12 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
         {/* CENTER: Desktop Navigation Tabs */}
         {isStaffUser && (
-          <div className="hidden lg:flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl border border-gray-200/50">
+          <div className="hidden lg:flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200">
             <Link
               to="/"
               className={`text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
                   ? 'bg-white text-[#f05a24] shadow-2xs'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
               🍔 Menu
@@ -135,7 +135,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 to="/tables"
                 className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
                     ? 'bg-white text-[#f05a24] shadow-2xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
                   }`}
               >
                 📋 Tables
@@ -145,7 +145,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
               to="/history"
               className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
                   ? 'bg-white text-[#f05a24] shadow-2xs'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
               ⏳ History

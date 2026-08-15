@@ -336,23 +336,23 @@ const OrderNumberPage: React.FC = () => {
           })()}
 
           {/* Customer & Timestamp Info */}
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-600 bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 gap-2">
+          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-800 bg-gray-50 p-3.5 sm:p-4 rounded-xl border border-gray-200/80 gap-2">
             <div>
-              <span className="text-gray-400 font-medium">Customer: </span>
-              <span className="font-bold text-gray-900">{guest_name || 'Guest Customer'}</span>
-              {phone && <span className="text-gray-500 font-medium ml-1">({phone})</span>}
+              <span className="text-gray-700 font-bold">Customer: </span>
+              <span className="font-extrabold text-gray-900">{guest_name || 'Guest Customer'}</span>
+              {phone && <span className="text-gray-700 font-bold ml-1">({phone})</span>}
             </div>
-            <div className="flex items-center gap-1 text-gray-500 font-medium">
-              <Clock size={14} />
+            <div className="flex items-center gap-1 text-gray-800 font-bold">
+              <Clock size={14} className="text-gray-700" />
               <span>{cleanDate}</span>
             </div>
           </div>
 
           {/* Items Ordered List */}
           <div>
-            <h4 className="text-xs sm:text-sm font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between border-b pb-2">
+            <h4 className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wider mb-3 flex items-center justify-between border-b pb-2">
               <span>Ordered Items</span>
-              <span className="text-gray-500 font-semibold">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+              <span className="text-gray-800 font-extrabold">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
             </h4>
 
             <div className="divide-y divide-gray-100">
@@ -361,16 +361,16 @@ const OrderNumberPage: React.FC = () => {
                 return (
                   <div key={idx} className="py-3 flex items-start justify-between gap-3 first:pt-0 last:pb-0">
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <span className="text-xs sm:text-sm font-bold text-gray-400 min-w-[16px]">{idx + 1}.</span>
+                      <span className="text-xs sm:text-sm font-black text-gray-700 min-w-[16px]">{idx + 1}.</span>
                       <div className="min-w-0">
                         <p className="font-bold text-gray-900 text-xs sm:text-base leading-snug break-words">
                           {item.name}
                         </p>
-                        <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
+                        <p className="text-xs sm:text-sm text-gray-800 font-bold mt-0.5">
                           ₹{parseFloat(item.price || item.unit_price || 0).toFixed(2)} × {item.quantity || item.qty}
                         </p>
                         {item.notes && (
-                          <p className="text-[11px] sm:text-xs text-amber-800 italic bg-amber-50 rounded px-2 py-0.5 mt-1 inline-block border border-amber-200/50">
+                          <p className="text-[11px] sm:text-xs text-amber-900 font-semibold italic bg-amber-50 rounded px-2 py-0.5 mt-1 inline-block border border-amber-200">
                             Note: "{item.notes}"
                           </p>
                         )}
@@ -387,31 +387,31 @@ const OrderNumberPage: React.FC = () => {
 
           {/* Bill Summary */}
           <div className="bill-details border-t border-dashed border-gray-300 pt-4 space-y-2.5">
-            <h4 className="text-xs sm:text-sm font-black text-gray-400 uppercase tracking-wider mb-2">
+            <h4 className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wider mb-2">
               Bill Breakdown
             </h4>
 
-            <div className="flex justify-between text-xs sm:text-sm text-gray-600">
+            <div className="flex justify-between text-xs sm:text-sm text-gray-800 font-bold">
               <span>Subtotal</span>
-              <span className="font-semibold text-gray-900">₹{subTotalNum.toFixed(2)}</span>
+              <span className="font-extrabold text-gray-900">₹{subTotalNum.toFixed(2)}</span>
             </div>
 
             {serviceAmt > 0 && (
-              <div className="flex justify-between text-xs sm:text-sm text-gray-600">
+              <div className="flex justify-between text-xs sm:text-sm text-gray-800 font-bold">
                 <span>Service Charge ({serviceChargeRate}%)</span>
-                <span className="font-semibold text-gray-900">+₹{serviceAmt.toFixed(2)}</span>
+                <span className="font-extrabold text-gray-900">+₹{serviceAmt.toFixed(2)}</span>
               </div>
             )}
 
             {taxTotal > 0 && (
               <>
-                <div className="flex justify-between text-xs text-gray-500 pl-2">
+                <div className="flex justify-between text-xs text-gray-800 font-bold pl-2">
                   <span>CGST ({(posSettings?.financials?.cgst || 2.5)}%)</span>
-                  <span>+₹{cgstAmt.toFixed(2)}</span>
+                  <span className="font-black">+₹{cgstAmt.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 pl-2">
+                <div className="flex justify-between text-xs text-gray-800 font-bold pl-2">
                   <span>SGST ({(posSettings?.financials?.sgst || 2.5)}%)</span>
-                  <span>+₹{sgstAmt.toFixed(2)}</span>
+                  <span className="font-black">+₹{sgstAmt.toFixed(2)}</span>
                 </div>
               </>
             )}
@@ -423,37 +423,39 @@ const OrderNumberPage: React.FC = () => {
           </div>
 
           {/* Footer Note */}
-          <div className="text-center text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider pt-3 border-t border-gray-100">
+          <div className="text-center text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider pt-3 border-t border-gray-100">
             Thank you for dining with Big Ben Restaurant!
           </div>
         </div>
       </div>
 
-      {/* Unified Receipt Bill Print Component */}
-      <ReceiptBillPrint
-        orderId={order_id}
-        dateStr={cleanDate}
-        tableName={table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'DINE-IN'}
-        staffName="Staff"
-        guestName={guest_name}
-        items={items}
-        subtotal={subTotalNum}
-        taxRate={taxRate}
-        cgstAmt={cgstAmt}
-        sgstAmt={sgstAmt}
-        serviceChargeRate={serviceChargeRate}
-        serviceChargeAmt={serviceAmt}
-        grandTotal={grandTotalNum}
-        restaurantInfo={{
-          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name,
-          address: posSettings?.address || posSettings?.restaurant_info?.address,
-          city: posSettings?.city || posSettings?.restaurant_info?.city,
-          state: posSettings?.state || posSettings?.restaurant_info?.state,
-          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode,
-          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number,
-          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number
-        }}
-      />
+      {/* Unified Receipt Bill Print Component (Hidden on screen, active only for printing) */}
+      <div className="hidden print:block">
+        <ReceiptBillPrint
+          orderId={order_id}
+          dateStr={cleanDate}
+          tableName={table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'DINE-IN'}
+          staffName="Staff"
+          guestName={guest_name}
+          items={items}
+          subtotal={subTotalNum}
+          taxRate={taxRate}
+          cgstAmt={cgstAmt}
+          sgstAmt={sgstAmt}
+          serviceChargeRate={serviceChargeRate}
+          serviceChargeAmt={serviceAmt}
+          grandTotal={grandTotalNum}
+          restaurantInfo={{
+            name: posSettings?.restaurantName || posSettings?.restaurant_info?.name,
+            address: posSettings?.address || posSettings?.restaurant_info?.address,
+            city: posSettings?.city || posSettings?.restaurant_info?.city,
+            state: posSettings?.state || posSettings?.restaurant_info?.state,
+            pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode,
+            gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number,
+            fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number
+          }}
+        />
+      </div>
 
       {/* Curved Center-Raised FAB Bottom Navigation Bar (Hidden for self-pos-billing) */}
       {!isSelfPosBilling && (

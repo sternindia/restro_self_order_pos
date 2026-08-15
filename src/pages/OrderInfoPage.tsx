@@ -598,7 +598,7 @@ const OrderInfoPage: React.FC = () => {
           <div className="summary bg-[#FAF6F0]/60 rounded-xl p-3.5 sm:p-4 border border-[#F0E6DF] text-xs sm:text-sm space-y-2.5">
             <div className="flex items-center justify-between border-b border-gray-200/80 pb-2">
               <span className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] sm:text-xs">Order Summary</span>
-              <span className="text-[11px] font-semibold text-gray-500">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
+              <span className="text-[11px] font-bold text-gray-800">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
             </div>
 
             {/* Itemized List of Cart Dishes */}
@@ -608,7 +608,7 @@ const OrderInfoPage: React.FC = () => {
                 return (
                   <div key={item.id} className="flex justify-between items-center text-gray-800 text-xs">
                     <span className="font-semibold truncate max-w-[220px]">
-                      {item.name} <span className="text-gray-500 font-normal">× {item.quantity}</span>
+                      {item.name} <span className="text-gray-700 font-bold">× {item.quantity}</span>
                     </span>
                     <span className="font-bold text-gray-900">₹{itemLineTotal}</span>
                   </div>
@@ -616,9 +616,9 @@ const OrderInfoPage: React.FC = () => {
               })}
             </div>
 
-            <div className="flex justify-between text-gray-600 font-medium pt-0.5">
+            <div className="flex justify-between text-gray-800 font-bold pt-0.5">
               <span>Items Subtotal</span>
-              <span className="font-semibold text-gray-900">₹{subTotal.toFixed(2)}</span>
+              <span className="font-extrabold text-gray-900">₹{subTotal.toFixed(2)}</span>
             </div>
 
             {serviceChargeRate > 0 && (
