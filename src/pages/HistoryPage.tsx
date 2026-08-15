@@ -508,27 +508,31 @@ const HistoryPage: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed
             </button>
 
-            <button
-              onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-                statusFilter === 'PENDING'
-                  ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
-                  : 'bg-white text-amber-700 border-amber-200/80 hover:bg-amber-50'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pending
-            </button>
+            {!isSuperAdmin && !isSelfPosBilling && (
+              <>
+                <button
+                  onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                    statusFilter === 'PENDING'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
+                      : 'bg-white text-amber-700 border-amber-200/80 hover:bg-amber-50'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pending
+                </button>
 
-            <button
-              onClick={() => setStatusFilter(statusFilter === 'CANCELLED' ? 'ALL' : 'CANCELLED')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-                statusFilter === 'CANCELLED'
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
-                  : 'bg-white text-rose-700 border-rose-200/80 hover:bg-rose-50'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Cancelled
-            </button>
+                <button
+                  onClick={() => setStatusFilter(statusFilter === 'CANCELLED' ? 'ALL' : 'CANCELLED')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                    statusFilter === 'CANCELLED'
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                      : 'bg-white text-rose-700 border-rose-200/80 hover:bg-rose-50'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Cancelled
+                </button>
+              </>
+            )}
           </div>
 
           {/* Single Unified Calendar Range Button (Right Side on Desktop / Same Line) */}
