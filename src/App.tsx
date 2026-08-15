@@ -12,6 +12,7 @@ const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const Login = lazy(() => import('./pages/Login'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -149,6 +150,10 @@ function App() {
           <Route 
             path="/history" 
             element={user && !user.isGuest ? <HistoryPage /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/settings" 
+            element={user && !user.isGuest ? <SettingsPage /> : <Navigate to="/" replace />} 
           />
         </Routes>
       </Suspense>

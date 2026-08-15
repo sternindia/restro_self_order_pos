@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut, Search } from 'lucide-react';
+import { Bell, Menu as MenuIcon, X, User, LogOut, Search, UtensilsCrossed, Utensils, Grid, Clock, Settings, Compass } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { API_BASE_URL, getRestaurantId, parseBool, getStoredPOSSettings } from '../config';
+import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -42,7 +42,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         setIsEnableTables(parseBool(enableTablesVal, false));
       };
 
-      // 1. Initial render from local cache if available
       try {
         const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
         if (savedSettingsStr) {
@@ -52,7 +51,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         console.warn('Failed to parse cached POS settings in Header:', e);
       }
 
-      // 2. Always fetch fresh settings from backend API
       try {
         const rid = getRestaurantId();
         const res = await fetch(`${API_BASE_URL}/settings/pos/${rid}`);
@@ -118,10 +116,13 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   };
 
   return (
-    <nav className="navbar sticky top-0 z-50 bg-[#FFFBF8] border-b border-[#F0E6DF]/60">
-      <div className="flex min-h-[58px] md:min-h-[64px] w-full items-center justify-between px-4 sm:px-6 py-2">
-        {/* LEFT: Logo & Restaurant Title */}
-        <div className="logo-section flex items-center min-w-0">
+    <>
+      <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-[#FFFBF8] px-3 sm:px-8 shadow-xs border-b border-[#F0E6DF] select-none">
+        {/* LEFT: Restaurant Logo & Table Status */}
+        <div 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity min-w-0"
+        >
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-xl sm:text-2xl flex-shrink-0">🧑‍🍳</span>
@@ -140,38 +141,53 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* CENTER: Desktop Navigation Tabs */}
+        {/* CENTER: Desktop Navigation Tabs with real SVG icons */}
         {isStaffUser && (
           <div className="hidden lg:flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200">
             <Link
               to="/"
-              className={`text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
+              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
                   ? 'bg-white text-[#f05a24] shadow-2xs'
                   : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
-              🍔 Menu
+              <Utensils size={14} />
+              <span>Menu</span>
             </Link>
             {isWaiter && isEnableTables && (
               <Link
                 to="/tables"
-                className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
                     ? 'bg-white text-[#f05a24] shadow-2xs'
                     : 'text-gray-800 hover:text-gray-950 font-extrabold'
                   }`}
               >
-                📋 Tables
+                <Grid size={14} />
+                <span>Tables</span>
               </Link>
             )}
             <Link
               to="/history"
-              className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
+              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
                   ? 'bg-white text-[#f05a24] shadow-2xs'
                   : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
-              ⏳ History
+              <Clock size={14} />
+              <span>History</span>
             </Link>
+            {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
+              <Link
+                to="/settings"
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                  }`}
+              >
+                <Settings size={14} />
+                <span>Settings</span>
+              </Link>
+            )}
           </div>
         )}
 
@@ -247,7 +263,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🏠</span>
+                  <Compass size={18} className="text-[#f05a24]" />
                   <span className="text-sm font-extrabold text-[#f05a24]">Navigation</span>
                 </div>
                 <button
@@ -258,7 +274,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </button>
               </div>
 
-              {/* Navigation Links */}
+              {/* Navigation Links with real Lucide React SVG Icons */}
               <div className="py-4 space-y-2">
                 <Link
                   to="/"
@@ -268,7 +284,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  <span className="text-base">🍔</span> Menu
+                  <Utensils size={18} />
+                  <span>Menu</span>
                 </Link>
 
                 {isWaiter && isEnableTables && (
@@ -280,7 +297,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                         : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
-                    <span className="text-base">📋</span> Tables
+                    <Grid size={18} />
+                    <span>Tables</span>
                   </Link>
                 )}
 
@@ -292,8 +310,23 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  <span className="text-base">⏳</span> History
+                  <Clock size={18} />
+                  <span>History</span>
                 </Link>
+
+                {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
+                  <Link
+                    to="/settings"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/settings'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                  >
+                    <Settings size={18} />
+                    <span>Settings</span>
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -337,6 +370,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           </div>
         </div>
       )}
+
       {/* TRACK ORDER MODAL FOR GUEST CUSTOMERS */}
       {isTrackModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setIsTrackModalOpen(false)}>
@@ -359,14 +393,12 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
             <form onSubmit={handleTrackSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 mb-1">
                   Enter Order ID
                 </label>
-                <input
+                <input 
                   type="text"
-                  required
-                  autoFocus
-                  placeholder="e.g. 107 or #107"
+                  placeholder="e.g. 1042 or 987654"
                   value={trackInputId}
                   onChange={(e) => setTrackInputId(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/40 focus:border-[#f05a24]"
@@ -392,7 +424,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 
