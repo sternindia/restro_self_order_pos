@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Utensils, Plus, Edit2, Trash2, Search, X, RotateCw } from 'lucide-react';
+import { Utensils, Plus, Edit2, Trash2, Search, X, RotateCw, BarChart2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Header from '../components/Header';
@@ -20,6 +20,34 @@ interface Category {
   items?: MenuItem[];
 }
 
+const getDietaryType = (item: any): 'Veg' | 'Non-Veg' | 'Egg' => {
+  const info = (item.dietary_info || '').toLowerCase();
+  const nameLower = (item.item_name || '').toLowerCase();
+
+  if (info === 'egg' || nameLower.includes('egg')) {
+    return 'Egg';
+  }
+  if (
+    info === 'non-veg' ||
+    info === 'non veg' ||
+    nameLower.includes('non veg') ||
+    nameLower.includes('non-veg') ||
+    nameLower.includes('chicken') ||
+    nameLower.includes('mutton') ||
+    nameLower.includes('fish') ||
+    nameLower.includes('prawn') ||
+    nameLower.includes('meat') ||
+    nameLower.includes('kabab') ||
+    nameLower.includes('kebab')
+  ) {
+    return 'Non-Veg';
+  }
+  if (item.is_veg === false) {
+    return 'Non-Veg';
+  }
+  return 'Veg';
+};
+
 const ManageMenuPage: React.FC = () => {
   const navigate = useNavigate();
   const savedUser = localStorage.getItem('emenu_user');
@@ -31,12 +59,16 @@ const ManageMenuPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   
+  // Mobile Tab State
+  const [activeMobileTab, setActiveMobileTab] = useState<'categories' | 'items'>('items');
+
   // Category Form State
   const [newCatName, setNewCatName] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('All');
 
   // Item Form State
+  const [showStats, setShowStats] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dietaryFilter, setDietaryFilter] = useState<'All' | 'Veg' | 'Non-Veg' | 'Egg'>('All');
   const [showAddItemForm, setShowAddItemForm] = useState(false);
@@ -47,6 +79,11 @@ const ManageMenuPage: React.FC = () => {
     category_id: ''
   });
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+
+  const totalItemsCount = menuItems.length;
+  const vegItemsCount = menuItems.filter(item => getDietaryType(item) === 'Veg').length;
+  const nonVegItemsCount = menuItems.filter(item => getDietaryType(item) === 'Non-Veg').length;
+  const eggItemsCount = menuItems.filter(item => getDietaryType(item) === 'Egg').length;
 
   const fetchMenuData = async () => {
     setLoading(true);
@@ -289,7 +326,7 @@ const ManageMenuPage: React.FC = () => {
   const filteredMenuItems = menuItems.filter(item => {
     const matchesCategory = selectedCategoryId === 'All' || String(item.category_id) === String(selectedCategoryId);
     const matchesSearch = item.item_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const dietary = item.dietary_info || (item.is_veg ? 'Veg' : 'Non-Veg');
+    const dietary = getDietaryType(item);
     const matchesDietary = dietaryFilter === 'All' || dietary === dietaryFilter;
     return matchesCategory && matchesSearch && matchesDietary;
   });
@@ -299,24 +336,166 @@ const ManageMenuPage: React.FC = () => {
       <Header />
 
       <div className="mt-4 px-[3%] py-4 max-w-[1200px] mx-auto box-border">
-        {/* Header Banner */}
-        <div className="flex items-center justify-between p-4 rounded-2xl text-white mb-6 shadow-md bg-[#0f172a]">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center bg-white/10 rounded-xl p-2.5 w-11 h-11">
-              <Utensils size={22} className="text-amber-400" />
-            </div>
-            <div>
-              <h5 className="font-extrabold text-white text-base sm:text-lg m-0">Menu & Category Management</h5>
-              <p className="hidden md:block text-white/75 text-xs m-0">Add/edit categories, dishes, prices, and dietary tags</p>
+        {/* Clean Open Header Title */}
+        <div className="flex items-center justify-between mb-5 px-1">
+          <div>
+            <h1 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">Menu & Category Management</h1>
+            <p className="text-[11px] sm:text-xs text-gray-500 font-medium hidden sm:block">Add/edit categories, dishes, prices, and dietary tags</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowStats(!showStats)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs sm:text-sm font-extrabold transition-all cursor-pointer border ${
+                showStats
+                  ? 'bg-[#0f172a] text-white border-[#0f172a] shadow-xs'
+                  : 'bg-white text-gray-700 border-[#F0E6DF] hover:bg-gray-50 shadow-2xs'
+              }`}
+            >
+              <BarChart2 size={14} className={showStats ? 'text-amber-400' : 'text-gray-500'} />
+              <span>{showStats ? 'Close Stats' : 'Stats'}</span>
+            </button>
+            <button 
+              type="button"
+              onClick={fetchMenuData}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F0E6DF] rounded-[8px] shadow-2xs hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold transition-all active:scale-95 cursor-pointer"
+            >
+              <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : ''} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Overlay Pop-up Modal for Summary Stats */}
+        {showStats && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in"
+            onClick={() => setShowStats(false)}
+          >
+            <div 
+              className="w-full max-w-[480px] bg-white rounded-3xl p-5 shadow-2xl space-y-4 border border-gray-100 animate-scale-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h6 className="font-extrabold text-gray-900 text-base flex items-center gap-2 m-0">
+                  <BarChart2 size={20} className="text-[#f05a24]" /> Menu Summary Stats
+                </h6>
+                <button
+                  type="button"
+                  onClick={() => setShowStats(false)}
+                  className="text-gray-400 hover:text-gray-600 text-lg font-bold p-1 cursor-pointer transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between shadow-2xs">
+                  <div>
+                    <span className="text-[11px] font-extrabold text-slate-500 block uppercase">Total Dishes</span>
+                    <strong className="text-slate-900 text-lg font-black">{totalItemsCount}</strong>
+                  </div>
+                  <span className="text-2xl">📦</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 flex items-center justify-between shadow-2xs">
+                  <div>
+                    <span className="text-[11px] font-extrabold text-emerald-700 block uppercase">Pure Veg</span>
+                    <strong className="text-emerald-900 text-lg font-black">{vegItemsCount}</strong>
+                  </div>
+                  <span className="w-5 h-5 border-2 border-[#00B074] flex items-center justify-center p-0.5 rounded-sm bg-white">
+                    <span className="w-2 h-2 rounded-full bg-[#00B074]"></span>
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 flex items-center justify-between shadow-2xs">
+                  <div>
+                    <span className="text-[11px] font-extrabold text-rose-700 block uppercase">Non-Veg</span>
+                    <strong className="text-rose-900 text-lg font-black">{nonVegItemsCount}</strong>
+                  </div>
+                  <span className="w-5 h-5 border-2 border-[#E53935] flex items-center justify-center p-0.5 rounded-sm bg-white">
+                    <span className="w-2 h-2 rounded-full bg-[#E53935]"></span>
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between shadow-2xs">
+                  <div>
+                    <span className="text-[11px] font-extrabold text-amber-700 block uppercase">Egg Dishes</span>
+                    <strong className="text-amber-900 text-lg font-black">{eggItemsCount}</strong>
+                  </div>
+                  <span className="w-5 h-5 border-2 border-[#FFB300] flex items-center justify-center p-0.5 rounded-sm bg-white">
+                    <span className="w-2 h-2 rounded-full bg-[#FFB300]"></span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Dietary Ratio Progress Bar */}
+              {totalItemsCount > 0 && (
+                <div className="pt-3 border-t border-gray-100 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-gray-600">
+                    <span>Dietary Ratio Breakdown</span>
+                    <span className="text-emerald-600">
+                      {((vegItemsCount / totalItemsCount) * 100).toFixed(0)}% Pure Veg
+                    </span>
+                  </div>
+                  <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden flex shadow-2xs">
+                    <div
+                      className="bg-emerald-500 h-full transition-all"
+                      style={{ width: `${(vegItemsCount / totalItemsCount) * 100}%` }}
+                      title={`Veg: ${vegItemsCount}`}
+                    />
+                    <div
+                      className="bg-rose-500 h-full transition-all"
+                      style={{ width: `${(nonVegItemsCount / totalItemsCount) * 100}%` }}
+                      title={`Non-Veg: ${nonVegItemsCount}`}
+                    />
+                    <div
+                      className="bg-amber-500 h-full transition-all"
+                      style={{ width: `${(eggItemsCount / totalItemsCount) * 100}%` }}
+                      title={`Egg: ${eggItemsCount}`}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowStats(false)}
+                  className="w-full py-2.5 bg-[#0f172a] hover:bg-[#1e293b] text-white font-extrabold rounded-xl text-xs transition-all cursor-pointer shadow-xs"
+                >
+                  Close Stats
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Mobile Segmented Control Bar (Only rendered on small screens) */}
+        <div className="flex lg:hidden items-center bg-gray-200/80 p-1 rounded-2xl mb-5 border border-gray-300/60 shadow-2xs">
           <button
             type="button"
-            onClick={fetchMenuData}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer border border-white/20"
+            onClick={() => setActiveMobileTab('items')}
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeMobileTab === 'items'
+                ? 'bg-white text-[#f05a24] shadow-xs'
+                : 'text-gray-700 hover:text-gray-900'
+            }`}
           >
-            <RotateCw size={14} className={loading ? 'animate-spin' : ''} />
-            Refresh
+            <Utensils size={14} />
+            <span>Dishes ({menuItems.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMobileTab('categories')}
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeMobileTab === 'categories'
+                ? 'bg-white text-[#f05a24] shadow-xs'
+                : 'text-gray-700 hover:text-gray-900'
+            }`}
+          >
+            <Plus size={14} />
+            <span>Categories ({categories.length})</span>
           </button>
         </div>
 
@@ -324,24 +503,63 @@ const ManageMenuPage: React.FC = () => {
           <div className="text-center py-16 font-bold text-[#f05a24]">Loading Menu Directory...</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* LEFT COLUMN: Categories Management (4 Cols) */}
-            <div className="lg:col-span-4 space-y-4">
+            {/* LEFT COLUMN: Categories Management (4 Cols desktop, Mobile Segmented Tab controlled) */}
+            <div className={`lg:col-span-4 space-y-4 ${activeMobileTab === 'categories' ? 'block' : 'hidden lg:block'}`}>
               <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <h6 className="font-extrabold text-gray-900 text-sm m-0">Categories ({categories.length})</h6>
                 </div>
 
+                {/* Add / Edit Category Form (Positioned at TOP for fast mobile access) */}
+                <form onSubmit={handleSaveCategory} className="pb-3 border-b border-gray-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-extrabold text-gray-500 uppercase">
+                      {editingCategory ? "Edit Category" : "Add Category"}
+                    </label>
+                    {editingCategory && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCategory(null);
+                          setNewCatName('');
+                        }}
+                        className="text-[11px] font-extrabold text-rose-500 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <X size={12} /> Cancel
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Category Name"
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="bg-[#f05a24] hover:bg-[#d94815] text-white font-extrabold px-4 py-2 rounded-xl text-xs transition-all cursor-pointer shadow-xs"
+                    >
+                      {editingCategory ? "Update" : "Add"}
+                    </button>
+                  </div>
+                </form>
+
                 {/* Categories List */}
                 <div className="space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
                   <div
-                    onClick={() => setSelectedCategoryId('All')}
+                    onClick={() => {
+                      setSelectedCategoryId('All');
+                      setActiveMobileTab('items');
+                    }}
                     className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer font-bold text-xs transition-all ${selectedCategoryId === 'All'
                         ? 'bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/30 shadow-2xs'
                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200/60'
                       }`}
                   >
                     <span>All Categories</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-200 text-gray-800">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/20">
                       {menuItems.length}
                     </span>
                   </div>
@@ -352,7 +570,10 @@ const ManageMenuPage: React.FC = () => {
                     return (
                       <div
                         key={cat.category_id}
-                        onClick={() => setSelectedCategoryId(cat.category_id)}
+                        onClick={() => {
+                          setSelectedCategoryId(cat.category_id);
+                          setActiveMobileTab('items');
+                        }}
                         className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer font-bold text-xs transition-all ${isSelected
                             ? 'bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/30 shadow-2xs'
                             : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200/60'
@@ -360,7 +581,7 @@ const ManageMenuPage: React.FC = () => {
                       >
                         <span className="truncate max-w-[140px]">{cat.category_name}</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-200 text-gray-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/20">
                             {itemCount}
                           </span>
                           <button
@@ -370,7 +591,7 @@ const ManageMenuPage: React.FC = () => {
                               setEditingCategory(cat);
                               setNewCatName(cat.category_name);
                             }}
-                            className="p-1 text-gray-500 hover:text-blue-600 rounded-md transition-colors"
+                            className="p-1 text-gray-500 hover:text-[#f05a24] rounded-md transition-colors"
                             title="Edit Category"
                           >
                             <Edit2 size={13} />
@@ -391,47 +612,11 @@ const ManageMenuPage: React.FC = () => {
                     );
                   })}
                 </div>
-
-                {/* Add / Edit Category Form */}
-                <form onSubmit={handleSaveCategory} className="pt-3 border-t border-gray-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-extrabold text-gray-500 uppercase">
-                      {editingCategory ? "Edit Category" : "Add Category"}
-                    </label>
-                    {editingCategory && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingCategory(null);
-                          setNewCatName('');
-                        }}
-                        className="text-[11px] font-extrabold text-rose-500 hover:underline flex items-center gap-1"
-                      >
-                        <X size={12} /> Cancel
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Category Name"
-                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
-                      value={newCatName}
-                      onChange={(e) => setNewCatName(e.target.value)}
-                    />
-                    <button
-                      type="submit"
-                      className="bg-[#0f172a] hover:bg-[#1e293b] text-white font-extrabold px-4 py-2 rounded-xl text-xs transition-all"
-                    >
-                      {editingCategory ? "Update" : "Add"}
-                    </button>
-                  </div>
-                </form>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Menu Directory & Item Cards (8 Cols) */}
-            <div className="lg:col-span-8 space-y-4">
+            {/* RIGHT COLUMN: Menu Directory & Item Cards (8 Cols desktop, Mobile Segmented Tab controlled) */}
+            <div className={`lg:col-span-8 space-y-4 ${activeMobileTab === 'items' ? 'block' : 'hidden lg:block'}`}>
               {/* Search & Dietary Filter */}
               <div className="bg-white rounded-2xl p-4 shadow-xs border border-[#F0E6DF] flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="relative w-full sm:w-64">
@@ -462,7 +647,7 @@ const ManageMenuPage: React.FC = () => {
                       type="button"
                       onClick={() => setDietaryFilter(filter)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${dietaryFilter === filter
-                          ? filter === 'Veg' ? 'bg-emerald-600 text-white shadow-xs' : filter === 'Non-Veg' ? 'bg-rose-600 text-white shadow-xs' : filter === 'Egg' ? 'bg-amber-500 text-white shadow-xs' : 'bg-gray-900 text-white shadow-xs'
+                          ? filter === 'Veg' ? 'bg-emerald-600 text-white shadow-xs' : filter === 'Non-Veg' ? 'bg-rose-600 text-white shadow-xs' : filter === 'Egg' ? 'bg-amber-500 text-white shadow-xs' : 'bg-[#1E1F24] text-white shadow-xs'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                     >
@@ -472,9 +657,9 @@ const ManageMenuPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Menu Items Directory Header */}
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+              {/* Menu Items Directory Header (Full width -mx-3 on mobile) */}
+              <div className="bg-white -mx-3 sm:mx-0 rounded-none sm:rounded-2xl p-3 sm:p-5 shadow-xs border-y sm:border border-[#F0E6DF] space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100 px-1 sm:px-0">
                   <div>
                     <h6 className="font-extrabold text-gray-900 text-sm m-0">Menu Directory ({filteredMenuItems.length})</h6>
                   </div>
@@ -486,7 +671,7 @@ const ManageMenuPage: React.FC = () => {
                         setNewItemData(prev => ({ ...prev, category_id: categories[0].category_id }));
                       }
                     }}
-                    className="bg-[#f05a24] hover:bg-[#d94815] text-white font-extrabold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="bg-[#f05a24] hover:bg-[#d94815] text-white font-extrabold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     {showAddItemForm ? <X size={14} /> : <Plus size={14} />}
                     <span>{showAddItemForm ? "Close Form" : "Add Menu Item"}</span>
@@ -495,8 +680,8 @@ const ManageMenuPage: React.FC = () => {
 
                 {/* Add New Item Form */}
                 {showAddItemForm && (
-                  <form onSubmit={handleAddNewItem} className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-3 animate-fade-in">
-                    <h6 className="font-extrabold text-gray-900 text-xs m-0">Add New Dish</h6>
+                  <form onSubmit={handleAddNewItem} className="p-3 sm:p-4 bg-[#FFF0E6]/50 rounded-2xl border border-[#f05a24]/20 space-y-3 animate-fade-in">
+                    <h6 className="font-extrabold text-[#f05a24] text-xs m-0">Add New Dish</h6>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       <div>
                         <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Item Name</label>
@@ -504,7 +689,7 @@ const ManageMenuPage: React.FC = () => {
                           type="text"
                           required
                           placeholder="e.g. Chicken Tikka"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
                           value={newItemData.item_name}
                           onChange={(e) => setNewItemData(prev => ({ ...prev, item_name: e.target.value }))}
                         />
@@ -530,7 +715,7 @@ const ManageMenuPage: React.FC = () => {
                           step="0.01"
                           required
                           placeholder="299.00"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
                           value={newItemData.price}
                           onChange={(e) => setNewItemData(prev => ({ ...prev, price: e.target.value }))}
                         />
@@ -560,7 +745,7 @@ const ManageMenuPage: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs"
+                        className="px-5 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
                       >
                         Add to Menu
                       </button>
@@ -570,10 +755,10 @@ const ManageMenuPage: React.FC = () => {
 
                 {/* Edit Item Modal / Inline Form */}
                 {editingItem && (
-                  <form onSubmit={handleUpdateItem} className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-3 animate-fade-in">
+                  <form onSubmit={handleUpdateItem} className="p-3 sm:p-4 bg-[#FFF0E6]/60 rounded-2xl border border-[#f05a24]/30 space-y-3 animate-fade-in">
                     <div className="flex items-center justify-between">
-                      <h6 className="font-extrabold text-amber-900 text-xs m-0">Edit Dish Details</h6>
-                      <button type="button" onClick={() => setEditingItem(null)} className="text-amber-700 hover:text-amber-900 text-xs font-bold">
+                      <h6 className="font-extrabold text-[#f05a24] text-xs m-0">Edit Dish Details</h6>
+                      <button type="button" onClick={() => setEditingItem(null)} className="text-gray-500 hover:text-gray-900 text-xs font-bold cursor-pointer">
                         <X size={14} />
                       </button>
                     </div>
@@ -638,7 +823,7 @@ const ManageMenuPage: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2 bg-[#0f172a] text-white font-bold rounded-xl text-xs shadow-xs"
+                        className="px-5 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
                       >
                         Save Changes
                       </button>
@@ -646,51 +831,54 @@ const ManageMenuPage: React.FC = () => {
                   </form>
                 )}
 
-                {/* Items Grid */}
+                {/* Items Grid (2 Columns on mobile, 3 Columns on desktop) */}
                 {filteredMenuItems.length === 0 ? (
                   <div className="text-center py-12 text-gray-400 font-bold text-xs">
                     No menu items found matching the selected filters.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3.5">
                     {filteredMenuItems.map((item) => {
                       const catName = categories.find(c => String(c.category_id) === String(item.category_id))?.category_name || 'General';
-                      const dietary = item.dietary_info || (item.is_veg ? 'Veg' : 'Non-Veg');
+                      const dietary = getDietaryType(item);
 
                       return (
                         <div
                           key={item.item_id}
-                          className="bg-white rounded-xl p-3.5 border border-gray-200 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
+                          className="bg-white rounded-2xl p-2.5 sm:p-3.5 border border-[#F0E6DF] hover:border-[#f05a24]/50 hover:shadow-[0_4px_16px_rgba(240,90,36,0.06)] transition-all flex flex-col justify-between space-y-2 sm:space-y-3 group"
                         >
                           <div>
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-1.5">
-                                {dietary === 'Non-Veg' ? (
-                                  <span className="w-3.5 h-3.5 border border-rose-600 rounded-sm flex items-center justify-center p-0.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 bg-rose-600 rounded-full"></span>
-                                  </span>
-                                ) : dietary === 'Egg' ? (
-                                  <span className="w-3.5 h-3.5 border border-amber-600 rounded-sm flex items-center justify-center p-0.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 bg-amber-600 rounded-full"></span>
-                                  </span>
-                                ) : (
-                                  <span className="w-3.5 h-3.5 border border-emerald-600 rounded-sm flex items-center justify-center p-0.5 shrink-0">
-                                    <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
-                                  </span>
-                                )}
-                                <h6 className="font-extrabold text-gray-900 text-xs m-0 line-clamp-1">{item.item_name}</h6>
-                              </div>
+                            <div className="flex items-center justify-between gap-1 mb-1.5">
+                              <span className="text-[10px] font-extrabold text-[#f05a24] bg-[#FFF0E6] px-2 py-0.5 rounded-md border border-[#f05a24]/15 truncate max-w-[100px]">
+                                {catName}
+                              </span>
+                              {dietary === 'Non-Veg' ? (
+                                <span className="w-3.5 h-3.5 border border-rose-500 rounded-sm flex items-center justify-center p-0.5 shrink-0 bg-white" title="Non-Veg">
+                                  <span className="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
+                                </span>
+                              ) : dietary === 'Egg' ? (
+                                <span className="w-3.5 h-3.5 border border-amber-500 rounded-sm flex items-center justify-center p-0.5 shrink-0 bg-white" title="Egg">
+                                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                                </span>
+                              ) : (
+                                <span className="w-3.5 h-3.5 border border-emerald-500 rounded-sm flex items-center justify-center p-0.5 shrink-0 bg-white" title="Veg">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                </span>
+                              )}
                             </div>
-                            <span className="text-[10px] font-bold text-gray-400 block mt-1">{catName}</span>
+
+                            <h6 className="font-extrabold text-gray-900 text-xs sm:text-sm m-0 line-clamp-1 group-hover:text-[#f05a24] transition-colors">
+                              {item.item_name}
+                            </h6>
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                            <span className="font-black text-gray-900 text-sm">₹{parseFloat(String(item.price)).toFixed(2)}</span>
+                          <div className="flex items-center justify-between pt-2 border-t border-[#F0E6DF]/60">
+                            <span className="font-black text-gray-900 text-xs sm:text-sm tracking-tight">₹{parseFloat(String(item.price)).toFixed(2)}</span>
                             <div className="flex items-center gap-1">
                               <button
                                 type="button"
                                 onClick={() => setEditingItem(item)}
-                                className="p-1.5 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white rounded-lg transition-colors cursor-pointer border border-[#f05a24]/20"
                                 title="Edit Item"
                               >
                                 <Edit2 size={13} />
@@ -698,7 +886,7 @@ const ManageMenuPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteItem(item.item_id)}
-                                className="p-1.5 bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-700 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition-colors cursor-pointer border border-rose-200/60"
                                 title="Delete Item"
                               >
                                 <Trash2 size={13} />
