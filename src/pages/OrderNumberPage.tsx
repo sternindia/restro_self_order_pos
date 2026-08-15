@@ -8,6 +8,8 @@ import OrderStatusBadge from '../components/OrderStatusBadge';
 const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const urlOrderId = queryParams.get('id') || queryParams.get('order_id') || queryParams.get('track_id');
 
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
@@ -119,7 +121,6 @@ const OrderNumberPage: React.FC = () => {
     : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
   // Calculations matching POS Receipt logic with fallbacks
-  const totalQty = items.reduce((sum: number, item: any) => sum + (parseInt(item.quantity || item.qty) || 1), 0);
   const itemsSubtotal = items.reduce((sum: number, item: any) => {
     const q = parseInt(item.quantity || item.qty) || 1;
     const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
