@@ -94,6 +94,21 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
   const isSelfPosBilling = user?.role === 'self-pos-billing' || user?.role === 'self_pos_billing';
   const isStaffUser = user && !user.isGuest;
+  const displayRole = user?.role && !user.role.toLowerCase().includes('self-pos') && !user.role.toLowerCase().includes('self_pos')
+    ? (user.role.toLowerCase() === 'admin' ? 'Admin' : user.role)
+    : '';
+
+  const handleLogoutClick = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem('emenu_user');
+      localStorage.removeItem('emenu_cart');
+      localStorage.removeItem('emenu_last_order');
+      sessionStorage.clear();
+      navigate('/login');
+    }
+  };
 
   return (
     <nav className="navbar sticky top-0 z-50 bg-[#FFFBF8] border-b border-[#F0E6DF]/60">
@@ -156,13 +171,18 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         {/* RIGHT: Action Icons & Menu Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {/* User Profile Badge */}
-          {isStaffUser && !isSelfPosBilling && (
+          {isStaffUser && (
             <div 
-              className="relative group hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200/80 transition-all cursor-pointer shadow-2xs"
-              title={`Logged in as: ${user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}`}
+              className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-gray-800 bg-[#FAF6F0] hover:bg-[#FFF0E6] px-3 py-1.5 rounded-xl border border-[#F0E6DF] transition-all cursor-pointer shadow-2xs"
+              title={`Logged in as: ${user?.username || user?.name || user?.user_name || 'Staff User'}`}
             >
               <User size={15} className="text-[#f05a24]" />
-              <span className="max-w-[120px] truncate">{user?.username || user?.name || user?.phone || user?.user_name || 'Profile'}</span>
+              <span className="max-w-[110px] truncate font-extrabold">{user?.username || user?.name || user?.user_name || 'Staff'}</span>
+              {displayRole && (
+                <span className="bg-[#f05a24] text-white text-[9px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">
+                  {displayRole}
+                </span>
+              )}
             </div>
           )}
 
@@ -182,17 +202,15 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             <Bell size={20} />
           </button>
 
-          {/* Logout Button */}
-          {isStaffUser && onLogout && (
-            <button
-              onClick={onLogout}
-              className="p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
-              title="Logout Account"
-            >
-              <LogOut size={18} />
-              <span className="hidden sm:inline text-xs">Logout</span>
-            </button>
-          )}
+          {/* Logout Button (Hidden on small mobile screens, visible on desktop/sm+) */}
+          <button
+            onClick={handleLogoutClick}
+            className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
+            title="Logout Account"
+          >
+            <LogOut size={18} />
+            <span className="text-xs">Logout</span>
+          </button>
 
           {/* 3-BAR HAMBURGER TOGGLE BUTTON */}
           {isStaffUser && (
@@ -274,20 +292,40 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
             {/* Drawer Footer */}
             <div className="pt-4 border-t border-gray-100 space-y-3">
-              {user.phone && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                  <span>📱</span> Phone: <span className="text-gray-800 font-bold">{user.phone}</span>
+              {/* User Profile Card */}
+              <div className="bg-[#FAF6F0] p-3 rounded-2xl border border-[#F0E6DF] space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#f05a24] text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
+                    <User size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-black text-gray-900 truncate">
+                        {user?.username || user?.name || user?.user_name || 'Admin'}
+                      </p>
+                      {displayRole && (
+                        <span className="bg-[#f05a24]/10 text-[#f05a24] border border-[#f05a24]/20 text-[9px] px-1.5 py-0.2 rounded-md font-extrabold uppercase shrink-0">
+                          {displayRole}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-semibold text-gray-600 truncate mt-0.5">
+                      {user?.phone ? `📱 ${user.phone}` : (user?.email || 'Logged In')}
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {onLogout && (
-                <button
-                  onClick={() => { setIsMobileMenuOpen(false); onLogout(); }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl border border-red-200 transition-all cursor-pointer"
-                >
-                  🚪 Logout Account
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogoutClick();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white font-extrabold text-xs rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-98 group"
+              >
+                <LogOut size={16} className="text-[#f05a24] group-hover:text-white transition-colors" />
+                <span>Logout Account</span>
+              </button>
             </div>
           </div>
         </div>

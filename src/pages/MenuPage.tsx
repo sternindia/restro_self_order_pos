@@ -574,10 +574,10 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#f05a24]/10 border border-[#f05a24]/20 flex items-center justify-center text-[#f05a24] font-bold">
-                  📋
+            <div className="flex items-center justify-between border-b border-[#F0E6DF] pb-3 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#FFF0E6] border border-[#f05a24]/20 flex items-center justify-center text-[#f05a24] shadow-2xs">
+                  <SteamingPotSVG />
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">Menu Categories</h3>
@@ -609,19 +609,21 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
                         }
                       }, 100);
                     }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-[#f05a24]/10 hover:border-[#f05a24]/30 border border-gray-100 transition-all cursor-pointer group text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white hover:bg-[#FFF0E6]/60 border border-[#F0E6DF] hover:border-[#f05a24]/40 transition-all cursor-pointer group text-left shadow-2xs active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-base group-hover:scale-110 transition-transform">🍽️</span>
-                      <span className="text-xs sm:text-sm font-bold text-gray-800 group-hover:text-[#f05a24]">
+                      <div className="w-8 h-8 rounded-lg bg-[#FFF0E6] flex items-center justify-center shrink-0 group-hover:bg-[#f05a24] transition-colors">
+                        {getCategoryIcon(category.category_name)}
+                      </div>
+                      <span className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">
                         {category.category_name}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200 shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-extrabold text-[#f05a24] bg-[#FFF0E6] px-2.5 py-0.5 rounded-full border border-[#f05a24]/20 shadow-2xs">
                         {count} {count === 1 ? 'item' : 'items'}
                       </span>
-                      <span className="text-gray-400 text-xs font-bold group-hover:text-[#f05a24]">→</span>
+                      <span className="text-[#f05a24] text-xs font-bold group-hover:translate-x-0.5 transition-transform">→</span>
                     </div>
                   </button>
                 );

@@ -86,14 +86,14 @@ const OrderNumberPage: React.FC = () => {
 
   if (!orderInfo) {
     return (
-      <div className="numberBody min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-4">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-200 max-w-sm w-full">
+      <div className="numberBody min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-[#F0E6DF] max-w-sm w-full">
           <div className="text-5xl mb-4">🍽️</div>
           <h2 className="text-lg font-bold text-gray-800 mb-1">No active order found</h2>
           <p className="text-xs text-gray-500 mb-6">You haven't placed any order yet in this session.</p>
           <Link
             to="/"
-            className="inline-block bg-[#0077b6] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
+            className="inline-block bg-[#f05a24] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-[#d94815] transition-colors shadow-sm"
           >
             Go to Menu
           </Link>
@@ -174,7 +174,7 @@ const OrderNumberPage: React.FC = () => {
   };
 
   return (
-    <div className="numberBody min-h-screen bg-[#f8f9fa] font-sans pb-32">
+    <div className="numberBody min-h-screen bg-[#FAF6F0] font-sans pb-32">
       {/* Thermal POS Receipt Print Styles */}
       <style>{`
         @media print {
@@ -210,7 +210,7 @@ const OrderNumberPage: React.FC = () => {
       `}</style>
 
       {/* Header (Hidden on print) */}
-      <div className="header-number sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white px-4 md:px-8 shadow-sm border-b border-gray-150 no-print">
+      <div className="header-number sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-[#FFFBF8] px-4 md:px-8 shadow-xs border-b border-[#F0E6DF] no-print">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/')}
@@ -232,7 +232,7 @@ const OrderNumberPage: React.FC = () => {
             return (
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
               >
                 <Printer size={16} />
                 <span className="hidden xs:inline">Print POS Bill</span>
@@ -245,7 +245,7 @@ const OrderNumberPage: React.FC = () => {
 
       {/* Web View Order Review Card */}
       <div className="numbermiddle flex justify-center w-full px-2 sm:px-6 md:px-12 py-3 sm:py-6 no-print">
-        <div className="number-container w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 md:p-10 shadow-sm border border-gray-200 space-y-4 sm:space-y-7">
+        <div className="number-container w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 md:p-10 shadow-xs border border-[#F0E6DF] space-y-4 sm:space-y-7">
           {/* Order Status Banner */}
           {(() => {
             const currentStatus = String(orderInfo?.order_status || orderInfo?.status || 'PENDING').toUpperCase();
@@ -296,7 +296,7 @@ const OrderNumberPage: React.FC = () => {
                     <span className="bg-white text-emerald-900 font-extrabold text-[11px] sm:text-xs px-2.5 py-1 rounded-lg border border-emerald-200/80 shadow-2xs">
                       Order ID: #{order_id}
                     </span>
-                    <span className="bg-white text-[#0077b6] font-extrabold text-[11px] sm:text-xs px-2.5 py-1 rounded-lg border border-[#0077b6]/20 shadow-2xs">
+                    <span className="bg-white text-[#f05a24] font-extrabold text-[11px] sm:text-xs px-2.5 py-1 rounded-lg border border-[#f05a24]/20 shadow-2xs">
                       {isSelfPosBilling ? 'Type: Counter Billing' : (table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'Walk-In')}
                     </span>
                   </div>
@@ -326,7 +326,7 @@ const OrderNumberPage: React.FC = () => {
                     Order ID: #{order_id}
                   </span>
                   {table && (
-                    <span className="bg-white text-[#0077b6] font-black text-xs px-3 py-1.5 rounded-xl border border-[#0077b6]/20 shadow-2xs">
+                    <span className="bg-white text-[#f05a24] font-black text-xs px-3 py-1.5 rounded-xl border border-[#f05a24]/20 shadow-2xs">
                       {String(table).includes('Table') ? table : `Table #${table}`}
                     </span>
                   )}
@@ -336,7 +336,7 @@ const OrderNumberPage: React.FC = () => {
           })()}
 
           {/* Customer & Timestamp Info */}
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-800 bg-gray-50 p-3.5 sm:p-4 rounded-xl border border-gray-200/80 gap-2">
+          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-800 bg-[#FAF6F0]/70 p-3.5 sm:p-4 rounded-xl border border-[#F0E6DF] gap-2">
             <div>
               <span className="text-gray-700 font-bold">Customer: </span>
               <span className="font-extrabold text-gray-900">{guest_name || 'Guest Customer'}</span>
@@ -418,7 +418,7 @@ const OrderNumberPage: React.FC = () => {
 
             <div className="border-t border-gray-200 pt-3 flex justify-between font-black text-base sm:text-lg text-gray-900">
               <span>Grand Total</span>
-              <span className="text-[#0077b6]">₹{grandTotalNum.toFixed(2)}</span>
+              <span className="text-[#f05a24]">₹{grandTotalNum.toFixed(2)}</span>
             </div>
           </div>
 
@@ -469,9 +469,9 @@ const OrderNumberPage: React.FC = () => {
                 return (
                   <button
                     onClick={handlePrint}
-                    className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-amber-600 transition-colors cursor-pointer group"
+                    className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors cursor-pointer group"
                   >
-                    <Printer size={20} className="group-hover:scale-110 transition-transform text-amber-500" />
+                    <Printer size={20} className="group-hover:scale-110 transition-transform text-[#f05a24]" />
                     <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Print</span>
                   </button>
                 );
@@ -484,9 +484,9 @@ const OrderNumberPage: React.FC = () => {
             {/* MENU TAB (Always visible for Guest Customers on mobile; responsive for staff) */}
             <button
               onClick={handleOrderMore}
-              className={`${isGuestCustomer ? 'flex' : 'hidden md:flex'} flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors cursor-pointer group`}
+              className={`${isGuestCustomer ? 'flex' : 'hidden md:flex'} flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors cursor-pointer group`}
             >
-              <UtensilsCrossed size={20} className="group-hover:scale-110 transition-transform text-[#0077b6]" />
+              <UtensilsCrossed size={20} className="group-hover:scale-110 transition-transform text-[#f05a24]" />
               <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Menu</span>
             </button>
 
@@ -494,12 +494,12 @@ const OrderNumberPage: React.FC = () => {
             <div className="relative -top-3.5 flex flex-col items-center justify-center">
               <button
                 onClick={handleTakeNewOrder}
-                className="bg-gradient-to-tr from-[#0077b6] to-[#0284c7] hover:from-[#005f92] hover:to-[#0284c7] text-white p-3 rounded-full shadow-lg shadow-sky-500/35 border-4 border-white active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                className="bg-gradient-to-tr from-[#f05a24] to-[#d94815] hover:from-[#d94815] hover:to-[#f05a24] text-white p-3 rounded-full shadow-lg shadow-[#f05a24]/35 border-4 border-white active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                 title="Start Fresh New Order"
               >
                 <ShoppingBag size={20} className="text-white" />
               </button>
-              <span className="text-[10px] font-black tracking-wider uppercase text-[#0077b6] mt-0.5">
+              <span className="text-[10px] font-black tracking-wider uppercase text-[#f05a24] mt-0.5">
                 {isGuestCustomer ? 'Order' : 'New'}
               </span>
             </div>
@@ -512,9 +512,9 @@ const OrderNumberPage: React.FC = () => {
                   localStorage.removeItem('emenu_cart');
                   navigate('/tables');
                 }}
-                className="hidden md:flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors cursor-pointer group"
+                className="hidden md:flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors cursor-pointer group"
               >
-                <Grid size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#0077b6]" />
+                <Grid size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#f05a24]" />
                 <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Tables</span>
               </button>
             )}
@@ -523,9 +523,9 @@ const OrderNumberPage: React.FC = () => {
             {!isGuestCustomer && (
               <Link
                 to="/history"
-                className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors no-underline group"
+                className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors no-underline group"
               >
-                <Clock size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#0077b6]" />
+                <Clock size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#f05a24]" />
                 <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">History</span>
               </Link>
             )}
