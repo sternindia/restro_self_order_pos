@@ -9,13 +9,12 @@ const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const queryParams = new URLSearchParams(location.search);
-  const urlOrderId = queryParams.get('id') || queryParams.get('order_id') || queryParams.get('track_id');
-
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
-  const isGuestCustomer = !userObj || userObj.isGuest || userObj.role?.toLowerCase() === 'guest';
-  const isSelfPosBilling = userObj?.role === 'self-pos-billing' || userObj?.role === 'self_pos_billing';
+  const roleAlias = (userObj?.role_alias || userObj?.role || '').toLowerCase();
+  const isWaiter = roleAlias === 'waiter';
+  const isGuestCustomer = !userObj || userObj.isGuest || roleAlias === 'guest' || roleAlias === 'guest_user';
+  const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || roleAlias === 'super_admin' || roleAlias === 'admin';
 
   const [orderInfo, setOrderInfo] = useState<any>(() => {
     const saved = localStorage.getItem('emenu_last_order');
@@ -504,8 +503,8 @@ const OrderNumberPage: React.FC = () => {
               </span>
             </div>
 
-            {/* TABLES TAB FOR WAITERS (Only on Tablet & Desktop to avoid crowding mobile bar) */}
-            {!isGuestCustomer && (
+            {/* TABLES TAB FOR WAITERS ONLY */}
+            {isWaiter && (
               <button
                 onClick={() => {
                   sessionStorage.removeItem('emenu_table');

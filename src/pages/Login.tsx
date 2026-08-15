@@ -13,10 +13,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSuccessfulLogin = (userData: any) => {
-    onLogin(userData);
-    const role = (userData?.role || '').toLowerCase();
-    if (role === 'waiter') {
+  const handleSuccessfulLogin = (rawUserData: any) => {
+    const roleAlias = (rawUserData?.role_alias || rawUserData?.role || '').toLowerCase();
+    const normalizedUser = {
+      ...rawUserData,
+      role_alias: roleAlias,
+      role_name: rawUserData?.role_name || (roleAlias === 'super_admin' ? 'Super Admin' : (roleAlias === 'admin' ? 'Admin' : (roleAlias === 'waiter' ? 'Waiter' : 'Staff'))),
+      role: roleAlias,
+      name: rawUserData?.name || rawUserData?.username || 'Staff User',
+      phone: rawUserData?.phone || ''
+    };
+    onLogin(normalizedUser);
+
+    if (roleAlias === 'waiter') {
       navigate('/tables', { replace: true });
     } else {
       navigate('/', { replace: true });
@@ -39,35 +48,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return;
     }
 
-    // 1. Direct local role handling for staff credentials
-    if (trimmedPhone === '8965984722' && password === '12345678') {
-      handleSuccessfulLogin({ phone: '8965984722', restaurant_id: 9, role: 'self-pos-billing', name: 'Admin' });
-      return;
-    }
-    if (trimmedPhone === '7878787878' && password === '12345678') {
-      handleSuccessfulLogin({ phone: '7878787878', restaurant_id: 9, role: 'self-pos-billing', name: 'Cashier' });
-      return;
-    }
-    if (trimmedPhone === '8965984720' && password === '12345678') {
-      handleSuccessfulLogin({ phone: '8965984720', restaurant_id: 9, role: 'self-pos-billing', name: 'Manager' });
-      return;
-    }
-    if (trimmedPhone === '8989898989' && password === '12345678') {
-      handleSuccessfulLogin({ phone: '8989898989', restaurant_id: 9, role: 'waiter', name: 'Waiter' });
-      return;
-    }
-    if (trimmedPhone === '9876543210' && password === 'password') {
-      handleSuccessfulLogin({ phone: '9876543210', restaurant_id: 9, role: 'waiter', name: 'Staff Waiter' });
-      return;
-    }
-    if (trimmedPhone === '9999999999' && password === 'password') {
-      handleSuccessfulLogin({ phone: '9999999999', restaurant_id: 9, role: 'self-pos-billing', name: 'Self POS Billing Counter' });
-      return;
-    }
-
     setLoading(true);
 
     try {
+      // Always trigger backend API call first
       const response = await fetch(`${API_BASE_URL}/user/login`, {
         method: 'POST',
         headers: {
@@ -80,17 +64,36 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       });
 
       const data = await response.json();
-      if (data && data.status === true && data.data) {
+      if (data && (data.status === true || data.status === "1" || data.message === "Login successful") && data.data) {
         handleSuccessfulLogin(data.data);
-      } else {
-        setError(data.message || 'Invalid phone number or password.');
+        return;
+      }
+      
+      if (data && data.message && !data.data) {
+        setError(data.message);
+        return;
       }
     } catch (err: any) {
-      console.error('API login failed:', err.message);
-      setError('Network error. Failed to connect to server.');
+      console.warn('Backend API login call failed, checking offline fallback:', err.message);
     } finally {
       setLoading(false);
     }
+
+    // Offline fallback for local testing
+    if (trimmedPhone === '8269420494' && password === '12345678') {
+      handleSuccessfulLogin({ id: '1', phone: '8269420494', role_alias: 'super_admin', role_name: 'Super Admin', name: 'Ravi Sen' });
+      return;
+    }
+    if (trimmedPhone === '8965984722' && password === '12345678') {
+      handleSuccessfulLogin({ id: '2', phone: '8965984722', role_alias: 'admin', role_name: 'Admin', name: 'Admin User' });
+      return;
+    }
+    if (trimmedPhone === '8989898989' && password === '12345678') {
+      handleSuccessfulLogin({ id: '3', phone: '8989898989', role_alias: 'waiter', role_name: 'Waiter', name: 'Waiter Staff' });
+      return;
+    }
+
+    setError('Invalid phone number or password.');
   };
 
   const handleFillRole = (ph: string, pass: string) => {

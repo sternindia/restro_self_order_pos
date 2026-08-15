@@ -36,7 +36,10 @@ const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
   const savedUser = localStorage.getItem('emenu_user');
   const currentUser = savedUser ? JSON.parse(savedUser) : null;
-  const isSelfPosBilling = currentUser?.role === 'self-pos-billing' || currentUser?.role === 'self_pos_billing';
+  const roleAlias = (currentUser?.role_alias || currentUser?.role || '').toLowerCase();
+  const isWaiter = roleAlias === 'waiter';
+  const isSuperAdmin = roleAlias === 'super_admin' || roleAlias === 'admin';
+  const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || isSuperAdmin;
 
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,18 +182,50 @@ const HistoryPage: React.FC = () => {
       // Fetch orders from server
       const ordersRes = await fetch(`${API_BASE_URL}/orders/${restaurantId}`);
 
-      if (!ordersRes.ok) {
-        throw new Error('Failed to load history data from server');
+      let rawOrders: any[] = [];
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        rawOrders = Array.isArray(ordersData)
+          ? ordersData
+          : (Array.isArray(ordersData?.data) ? ordersData.data : (Array.isArray(ordersData?.orders) ? ordersData.orders : []));
       }
 
-      const ordersData = await ordersRes.json();
-      const rawOrders = ordersData && ordersData.status === true && Array.isArray(ordersData.data) ? ordersData.data : [];
+      // Merge local last order if present and missing from backend response
+      const savedLast = localStorage.getItem('emenu_last_order');
+      if (savedLast) {
+        try {
+          const parsedLast = JSON.parse(savedLast);
+          if (parsedLast && parsedLast.order_id) {
+            const exists = rawOrders.some((o: any) => String(o.order_id) === String(parsedLast.order_id));
+            if (!exists) {
+              rawOrders.unshift({
+                order_id: String(parsedLast.order_id),
+                table_name: parsedLast.table || 'Walk-In',
+                guest_name: parsedLast.guest_name || 'Guest',
+                phone: parsedLast.phone || '',
+                order_status: parsedLast.order_status || 'PENDING',
+                created_at: parsedLast.created_at || new Date().toISOString(),
+                items: parsedLast.items || [],
+                bill: {
+                  subtotal: parsedLast.subTotal || 0,
+                  tax_amount: parsedLast.tax || 0,
+                  service_charge: parsedLast.serviceCharge || 0,
+                  grand_total: parsedLast.total || 0,
+                  payment_status: 'PAID'
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse local last order for history:', e);
+        }
+      }
 
       // Use raw status from backend directly as requested by the user
       const resolvedOrders = rawOrders.map((order: any) => {
         return {
           ...order,
-          resolved_status: (order.order_status || '').toUpperCase()
+          resolved_status: (order.order_status || order.status || 'PENDING').toUpperCase()
         };
       });
 
@@ -273,13 +308,24 @@ const HistoryPage: React.FC = () => {
     const orderType = (order.order_meta?.order_type || order.order_type || '').toUpperCase();
     const tableNum = String(order.order_meta?.table_number || order.table_name || '').toLowerCase();
     const staffName = String(order.order_meta?.staff_name || order.staff_name || '').toLowerCase();
+    const orderStaffRole = (order.order_meta?.staff_role || order.staff_role || (staffName.includes('waiter') ? 'waiter' : '')).toLowerCase();
     const isCounterOrder = orderType === 'TAKEAWAY' || tableNum.includes('counter') || staffName.includes('self pos') || staffName.includes('counter');
 
-    // Strict role segregation: Self POS Billing sees Counter Orders; Waiters/Staff see Table/Dine-In Orders only.
-    if (isSelfPosBilling) {
-      if (!isCounterOrder) return false;
-    } else {
+    // 1. Waiter Role: Show ONLY orders created by Waiter
+    if (isWaiter) {
       if (isCounterOrder) return false;
+      const currentStaffId = String(currentUser?.id || currentUser?.user_id || currentUser?.staff_id || '');
+      const orderStaffId = String(order.order_meta?.staff_id || order.staff_id || order.waiter_id || '');
+      if (currentStaffId && orderStaffId && orderStaffId !== currentStaffId) {
+        return false;
+      }
+    }
+
+    // 2. Super Admin / Counter POS Billing: Hide Waiters' table orders unless logged in as Waiter
+    if (isSuperAdmin || isSelfPosBilling) {
+      if (orderStaffRole === 'waiter' || (!isCounterOrder && staffName.includes('waiter'))) {
+        return false;
+      }
     }
 
     // 1. Date Range Filter (Between Dates)

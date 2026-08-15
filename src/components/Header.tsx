@@ -92,21 +92,28 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
     return clean ? `Table #${clean}` : table;
   }, [table]);
 
-  const isSelfPosBilling = user?.role === 'self-pos-billing' || user?.role === 'self_pos_billing';
-  const isStaffUser = user && !user.isGuest;
-  const displayRole = user?.role && !user.role.toLowerCase().includes('self-pos') && !user.role.toLowerCase().includes('self_pos')
-    ? (user.role.toLowerCase() === 'admin' ? 'Admin' : user.role)
-    : '';
+  const roleAlias = (user?.role_alias || user?.role || '').toLowerCase();
+  const isWaiter = roleAlias === 'waiter';
+  const isGuestUser = user?.isGuest || roleAlias === 'guest_user' || roleAlias === 'guest';
+  const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || roleAlias === 'super_admin' || roleAlias === 'admin';
+  const isStaffUser = user && !isGuestUser;
+  const displayRole = user?.role_name || (
+    roleAlias === 'super_admin' ? 'Super Admin' : 
+    roleAlias === 'admin' ? 'Admin' : 
+    roleAlias === 'waiter' ? 'Waiter' : 
+    roleAlias === 'self_billing_pos' ? 'POS Billing' : ''
+  );
 
   const handleLogoutClick = () => {
+    localStorage.removeItem('emenu_user');
+    localStorage.removeItem('emenu_cart');
+    localStorage.removeItem('emenu_last_order');
+    localStorage.removeItem('emenu_token');
+    sessionStorage.clear();
     if (onLogout) {
       onLogout();
     } else {
-      localStorage.removeItem('emenu_user');
-      localStorage.removeItem('emenu_cart');
-      localStorage.removeItem('emenu_last_order');
-      sessionStorage.clear();
-      navigate('/login');
+      window.location.href = '/login';
     }
   };
 
@@ -145,7 +152,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             >
               🍔 Menu
             </Link>
-            {!isSelfPosBilling && isEnableTables && (
+            {isWaiter && isEnableTables && (
               <Link
                 to="/tables"
                 className={`text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
@@ -264,7 +271,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   <span className="text-base">🍔</span> Menu
                 </Link>
 
-                {!isSelfPosBilling && isEnableTables && (
+                {isWaiter && isEnableTables && (
                   <Link
                     to="/tables"
                     onClick={() => setIsMobileMenuOpen(false)}

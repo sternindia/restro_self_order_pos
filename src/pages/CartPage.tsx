@@ -20,8 +20,18 @@ const CartPage: React.FC = () => {
 
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
-  const isGuestCustomer = !userObj || userObj.isGuest || userObj.role?.toLowerCase() === 'guest';
-  const isSelfPosBilling = userObj?.role === 'self-pos-billing' || userObj?.role === 'self_pos_billing';
+  const roleAlias = (userObj?.role_alias || userObj?.role || '').toLowerCase();
+  const isWaiter = roleAlias === 'waiter';
+  const isGuestCustomer = !userObj || userObj.isGuest || roleAlias === 'guest' || roleAlias === 'guest_user';
+  const isSelfPosBilling = !isGuestCustomer && !isWaiter && (
+    roleAlias === 'self_billing_pos' || 
+    roleAlias === 'self_pos_billing' || 
+    roleAlias === 'self-pos-billing' || 
+    roleAlias === 'super_admin' || 
+    roleAlias === 'admin' || 
+    roleAlias === 'cashier' || 
+    roleAlias === 'manager'
+  );
   const [existingOrderId, setExistingOrderId] = useState<string | null>(null);
   const [submittingBilling, setSubmittingBilling] = useState(false);
 
