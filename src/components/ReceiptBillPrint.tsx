@@ -155,29 +155,44 @@ export const printThermalReceiptDirect = (props: ReceiptBillProps) => {
     </html>
   `;
 
-  let iframe = document.getElementById('silent-thermal-print-frame') as HTMLIFrameElement;
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.id = 'silent-thermal-print-frame';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-  }
+  try {
+    let iframe = document.getElementById('silent-thermal-print-frame') as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'silent-thermal-print-frame';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+    }
 
-  const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
-  if (iframeDoc) {
-    iframeDoc.open();
-    iframeDoc.write(html);
-    iframeDoc.close();
+    const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(html);
+      iframeDoc.close();
 
-    setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    }, 100);
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          const win = window.open('', '_blank', 'width=380,height=600');
+          if (win) {
+            win.document.write(html);
+            win.document.close();
+            win.focus();
+            win.print();
+            setTimeout(() => win.close(), 500);
+          }
+        }
+      }, 250);
+    }
+  } catch (err) {
+    window.print();
   }
 };
 
