@@ -500,69 +500,76 @@ const OrderInfoPage: React.FC = () => {
         <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">Order Information</h2>
       </div>
 
-      <div className="bodymiddle flex justify-center min-h-[calc(100vh-4rem-5rem)] px-1 sm:px-4 py-1.5 sm:py-6">
-        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-4 sm:space-y-6 flex flex-col justify-between">
+      <div className="bodymiddle flex justify-center min-h-[calc(100vh-4rem-5rem)] px-2 sm:px-4 py-2 sm:py-6">
+        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-2.5 sm:space-y-5 flex flex-col justify-between">
 
           {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
           {isGuestCustomer && (
-            <div className="restaurant-info bg-[#FAF6F0]/60 rounded-xl p-3 sm:p-4 border border-[#F0E6DF]">
-              <h2 className="text-lg font-black text-gray-900 mb-1 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
-              <p className="text-xs text-gray-600 flex items-start gap-1.5 my-1">
+            <div className="restaurant-info bg-[#FAF6F0]/60 rounded-xl p-2.5 sm:p-4 border border-[#F0E6DF]">
+              <h2 className="text-base sm:text-lg font-black text-gray-900 mb-0.5 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
+              <p className="text-[11px] sm:text-xs text-gray-600 flex items-start gap-1 my-0.5">
                 <span>📍</span> <span>{posSettings?.restaurant_info?.address || '1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)'}</span>
               </p>
-              <p className="text-xs text-gray-600 flex items-center gap-1.5 my-1">
+              <p className="text-[11px] sm:text-xs text-gray-600 flex items-center gap-1 my-0.5">
                 <span>📞</span> <span>{posSettings?.restaurant_info?.phone || '+91-9876543212'}</span>
               </p>
             </div>
           )}
 
           {/* Order Type & Table Badges */}
-          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-3 sm:gap-4 items-start`}>
+          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5 sm:gap-4 items-start`}>
             <div>
-              <label className="block text-[11px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1">
                 Order Type
               </label>
-              <div className="h-11 rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 px-3 text-center text-xs font-black text-[#f05a24] flex items-center justify-center gap-1.5 shadow-2xs">
+              <div className="h-10 sm:h-11 rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 px-3 text-center text-xs font-black text-[#f05a24] flex items-center justify-center gap-1.5 shadow-2xs">
                 <span>{isEnableTables ? '🍽️' : '🛍️'}</span> <span>{isEnableTables ? 'DINE-IN' : 'DIRECT ORDER'}</span>
               </div>
             </div>
 
             {isEnableTables && (
               <div>
-                <label className="block text-[11px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[10px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1">
                   Table Number *
                 </label>
-                <select
-                  value={selectedTable}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedTable(val);
-                    if (val) {
-                      sessionStorage.setItem('emenu_table', val);
-                    } else {
-                      sessionStorage.removeItem('emenu_table');
-                    }
-                  }}
-                  className="w-full h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-bold text-gray-900 bg-white cursor-pointer shadow-2xs"
-                >
-                  <option value="">-- Select Table Number * --</option>
-                  {tables.map((t: any) => {
-                    const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
-                    return (
-                      <option key={t.table_id || num} value={num}>
-                        Table #{num} ({t.status || 'Available'})
-                      </option>
-                    );
-                  })}
-                </select>
+                {isGuestCustomer ? (
+                  <select
+                    value={selectedTable}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedTable(val);
+                      if (val) {
+                        sessionStorage.setItem('emenu_table', val);
+                        localStorage.setItem('emenu_table', val);
+                      } else {
+                        sessionStorage.removeItem('emenu_table');
+                      }
+                    }}
+                    className="w-full h-10 sm:h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-bold text-gray-900 bg-white cursor-pointer shadow-2xs"
+                  >
+                    <option value="">-- Select Table Number * --</option>
+                    {tables.map((t: any) => {
+                      const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
+                      return (
+                        <option key={t.table_id || num} value={num}>
+                          Table #{num} ({t.status || 'Available'})
+                        </option>
+                      );
+                    })}
+                  </select>
+                ) : (
+                  <div className="h-10 sm:h-11 rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 px-3 text-xs font-black text-[#f05a24] flex items-center justify-center gap-1.5 shadow-2xs">
+                    <span>Table #{selectedTable || tableIdFromUrl || sessionStorage.getItem('emenu_table') || '1'}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* Personal Information */}
-          <div className="personal-info space-y-4 pt-2">
+          <div className="personal-info space-y-2.5 sm:space-y-4 pt-0">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                 Guest Name *
               </label>
               <input
@@ -570,12 +577,12 @@ const OrderInfoPage: React.FC = () => {
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 placeholder="Enter Guest Name"
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-sm font-medium text-gray-900 transition-all"
+                className="w-full h-10 sm:h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs sm:text-sm font-medium text-gray-900 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                 Phone Number *
               </label>
               <input
@@ -583,13 +590,13 @@ const OrderInfoPage: React.FC = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Enter Phone Number"
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-sm font-medium text-gray-900 transition-all"
+                className="w-full h-10 sm:h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs sm:text-sm font-medium text-gray-900 transition-all"
               />
             </div>
           </div>
 
           {/* Billing Summary Box */}
-          <div className="summary bg-[#FAF6F0]/60 rounded-xl p-3.5 sm:p-4 border border-[#F0E6DF] text-xs sm:text-sm space-y-2.5">
+          <div className="summary bg-[#FAF6F0]/60 rounded-xl p-3 sm:p-4 border border-[#F0E6DF] text-xs sm:text-sm space-y-2 sm:space-y-2.5">
             <div className="flex items-center justify-between border-b border-gray-200/80 pb-2">
               <span className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] sm:text-xs">Order Summary</span>
               <span className="text-[11px] font-bold text-gray-800">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
