@@ -500,8 +500,8 @@ const OrderInfoPage: React.FC = () => {
         <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">Order Information</h2>
       </div>
 
-      <div className="bodymiddle flex justify-center min-h-[calc(100vh-4rem-5rem)] px-2 sm:px-4 py-2 sm:py-6">
-        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-2.5 sm:space-y-5 flex flex-col justify-between">
+      <div className="bodymiddle flex justify-center px-2 sm:px-4 py-2 sm:py-6">
+        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-3 sm:space-y-5 flex flex-col">
 
           {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
           {isGuestCustomer && (
