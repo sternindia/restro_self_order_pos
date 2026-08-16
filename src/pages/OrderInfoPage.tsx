@@ -517,50 +517,44 @@ const OrderInfoPage: React.FC = () => {
           )}
 
           {/* Order Type & Table Badges */}
-          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-3 sm:gap-4 items-start`}>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1.5">
                 Order Type
               </label>
-              <div className="rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 p-3 text-center text-xs font-bold text-[#f05a24] flex items-center justify-center gap-1.5">
-                <span>{isEnableTables ? '🍽️' : '🛍️'}</span> {isEnableTables ? 'DINE-IN' : 'DIRECT ORDER'}
+              <div className="h-11 rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 px-3 text-center text-xs font-black text-[#f05a24] flex items-center justify-center gap-1.5 shadow-2xs">
+                <span>{isEnableTables ? '🍽️' : '🛍️'}</span> <span>{isEnableTables ? 'DINE-IN' : 'DIRECT ORDER'}</span>
               </div>
             </div>
 
             {isEnableTables && (
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1.5">
                   Table Number *
                 </label>
-                {(!isGuestCustomer || tableIdFromUrl) && selectedTable ? (
-                  <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/70 p-3 text-center text-xs font-bold text-emerald-700 flex items-center justify-center gap-1 shadow-sm">
-                    <span>📋</span> Table #{String(selectedTable).replace(/[^0-9]/g, '') || selectedTable}
-                  </div>
-                ) : (
-                  <select
-                    value={selectedTable}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedTable(val);
-                      if (val) {
-                        sessionStorage.setItem('emenu_table', val);
-                      } else {
-                        sessionStorage.removeItem('emenu_table');
-                      }
-                    }}
-                    className="w-full rounded-xl border border-gray-300 p-2.5 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-semibold text-gray-900 bg-white"
-                  >
-                    <option value="">-- Select Table Number * --</option>
-                    {tables.map((t: any) => {
-                      const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
-                      return (
-                        <option key={t.table_id || num} value={num}>
-                          Table #{num} ({t.status || 'Available'})
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
+                <select
+                  value={selectedTable}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedTable(val);
+                    if (val) {
+                      sessionStorage.setItem('emenu_table', val);
+                    } else {
+                      sessionStorage.removeItem('emenu_table');
+                    }
+                  }}
+                  className="w-full h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-bold text-gray-900 bg-white cursor-pointer shadow-2xs"
+                >
+                  <option value="">-- Select Table Number * --</option>
+                  {tables.map((t: any) => {
+                    const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
+                    return (
+                      <option key={t.table_id || num} value={num}>
+                        Table #{num} ({t.status || 'Available'})
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
           </div>
