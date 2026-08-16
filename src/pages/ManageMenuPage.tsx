@@ -678,157 +678,192 @@ const ManageMenuPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Add New Item Form */}
+                {/* Add Item Overlay Modal Popup */}
                 {showAddItemForm && (
-                  <form onSubmit={handleAddNewItem} className="p-3 sm:p-4 bg-[#FFF0E6]/50 rounded-2xl border border-[#f05a24]/20 space-y-3 animate-fade-in">
-                    <h6 className="font-extrabold text-[#f05a24] text-xs m-0">Add New Dish</h6>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Item Name</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Chicken Tikka"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={newItemData.item_name}
-                          onChange={(e) => setNewItemData(prev => ({ ...prev, item_name: e.target.value }))}
-                        />
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in"
+                    onClick={() => setShowAddItemForm(false)}
+                  >
+                    <div
+                      className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 border border-gray-100 animate-scale-up"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                        <h6 className="font-extrabold text-[#f05a24] text-base flex items-center gap-2 m-0">
+                          ➕ Add New Dish to Menu
+                        </h6>
+                        <button type="button" onClick={() => setShowAddItemForm(false)} className="text-gray-400 hover:text-gray-600 text-lg font-bold p-1 cursor-pointer">
+                          <X size={20} />
+                        </button>
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Category</label>
-                        <select
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={newItemData.category_id}
-                          onChange={(e) => setNewItemData(prev => ({ ...prev, category_id: e.target.value }))}
-                        >
-                          {categories.map(c => (
-                            <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
-                          ))}
-                        </select>
-                      </div>
+                      <form onSubmit={handleAddNewItem} className="space-y-4">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Item Name *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Paneer Butter Masala"
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-bold focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 outline-none bg-white"
+                              value={newItemData.item_name}
+                              onChange={(e) => setNewItemData(prev => ({ ...prev, item_name: e.target.value }))}
+                            />
+                          </div>
 
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Price (₹)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          required
-                          placeholder="299.00"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={newItemData.price}
-                          onChange={(e) => setNewItemData(prev => ({ ...prev, price: e.target.value }))}
-                        />
-                      </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Category *</label>
+                              <select
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                                value={newItemData.category_id}
+                                onChange={(e) => setNewItemData(prev => ({ ...prev, category_id: e.target.value }))}
+                              >
+                                {categories.map(c => (
+                                  <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+                                ))}
+                              </select>
+                            </div>
 
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Dietary Info</label>
-                        <select
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={newItemData.dietary_info}
-                          onChange={(e) => setNewItemData(prev => ({ ...prev, dietary_info: e.target.value }))}
-                        >
-                          <option value="Veg">Veg</option>
-                          <option value="Non-Veg">Non-Veg</option>
-                          <option value="Egg">Egg</option>
-                        </select>
-                      </div>
+                            <div>
+                              <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Price (₹) *</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                required
+                                placeholder="299.00"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-bold focus:border-[#f05a24] outline-none bg-white"
+                                value={newItemData.price}
+                                onChange={(e) => setNewItemData(prev => ({ ...prev, price: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Dietary Tag *</label>
+                            <select
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                              value={newItemData.dietary_info}
+                              onChange={(e) => setNewItemData(prev => ({ ...prev, dietary_info: e.target.value }))}
+                            >
+                              <option value="Veg">Pure Veg 🟢</option>
+                              <option value="Non-Veg">Non-Veg 🔴</option>
+                              <option value="Egg">Egg 🟡</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddItemForm(false)}
+                            className="px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-200 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all active:scale-95"
+                          >
+                            Add to Menu
+                          </button>
+                        </div>
+                      </form>
                     </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddItemForm(false)}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-5 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
-                      >
-                        Add to Menu
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 )}
 
-                {/* Edit Item Modal / Inline Form */}
+                {/* Edit Item Overlay Modal Popup */}
                 {editingItem && (
-                  <form onSubmit={handleUpdateItem} className="p-3 sm:p-4 bg-[#FFF0E6]/60 rounded-2xl border border-[#f05a24]/30 space-y-3 animate-fade-in">
-                    <div className="flex items-center justify-between">
-                      <h6 className="font-extrabold text-[#f05a24] text-xs m-0">Edit Dish Details</h6>
-                      <button type="button" onClick={() => setEditingItem(null)} className="text-gray-500 hover:text-gray-900 text-xs font-bold cursor-pointer">
-                        <X size={14} />
-                      </button>
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in"
+                    onClick={() => setEditingItem(null)}
+                  >
+                    <div
+                      className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 border border-gray-100 animate-scale-up"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                        <h6 className="font-extrabold text-[#f05a24] text-base flex items-center gap-2 m-0">
+                          ✏️ Edit Dish Details
+                        </h6>
+                        <button type="button" onClick={() => setEditingItem(null)} className="text-gray-400 hover:text-gray-600 text-lg font-bold p-1 cursor-pointer">
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleUpdateItem} className="space-y-4">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Item Name *</label>
+                            <input
+                              type="text"
+                              required
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-bold focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 outline-none bg-white"
+                              value={editingItem.item_name}
+                              onChange={(e) => setEditingItem(prev => prev ? { ...prev, item_name: e.target.value } : null)}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Category *</label>
+                              <select
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                                value={editingItem.category_id}
+                                onChange={(e) => setEditingItem(prev => prev ? { ...prev, category_id: e.target.value } : null)}
+                              >
+                                {categories.map(c => (
+                                  <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Price (₹) *</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                required
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm font-bold focus:border-[#f05a24] outline-none bg-white"
+                                value={editingItem.price}
+                                onChange={(e) => setEditingItem(prev => prev ? { ...prev, price: e.target.value } : null)}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-extrabold text-gray-600 uppercase mb-1">Dietary Tag *</label>
+                            <select
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
+                              value={editingItem.dietary_info || 'Veg'}
+                              onChange={(e) => setEditingItem(prev => prev ? { ...prev, dietary_info: e.target.value } : null)}
+                            >
+                              <option value="Veg">Pure Veg 🟢</option>
+                              <option value="Non-Veg">Non-Veg 🔴</option>
+                              <option value="Egg">Egg 🟡</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem(null)}
+                            className="px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-200 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all active:scale-95"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Item Name</label>
-                        <input
-                          type="text"
-                          required
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={editingItem.item_name}
-                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, item_name: e.target.value } : null)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Category</label>
-                        <select
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={editingItem.category_id}
-                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, category_id: e.target.value } : null)}
-                        >
-                          {categories.map(c => (
-                            <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Price (₹)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          required
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={editingItem.price}
-                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, price: e.target.value } : null)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Dietary Info</label>
-                        <select
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:border-[#f05a24] outline-none bg-white"
-                          value={editingItem.dietary_info || 'Veg'}
-                          onChange={(e) => setEditingItem(prev => prev ? { ...prev, dietary_info: e.target.value } : null)}
-                        >
-                          <option value="Veg">Veg</option>
-                          <option value="Non-Veg">Non-Veg</option>
-                          <option value="Egg">Egg</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingItem(null)}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-5 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 )}
 
                 {/* Items Grid (2 Columns on mobile, 3 Columns on desktop) */}
