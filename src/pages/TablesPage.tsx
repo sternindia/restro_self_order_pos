@@ -298,7 +298,7 @@ const TablesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans pb-[3vh]">
+    <div className="min-h-screen bg-[#FAF6F0] font-sans pb-[3vh]">
       <Header />
 
       <div className="mt-5 px-[3%] py-5 max-w-[1400px] mx-auto box-border">
@@ -306,7 +306,7 @@ const TablesPage: React.FC = () => {
           <h2 className="text-xl font-bold text-gray-800 m-0">Table Status</h2>
           <button 
             onClick={fetchTables} 
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-[8px] shadow-sm hover:bg-gray-50 text-gray-700 text-sm font-semibold transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F0E6DF] rounded-[8px] shadow-2xs hover:bg-gray-50 text-gray-700 text-sm font-semibold transition-all active:scale-95 cursor-pointer"
           >
             <RotateCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -314,7 +314,7 @@ const TablesPage: React.FC = () => {
         </div>
 
         {!isEnableTables ? (
-          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-gray-200 shadow-xs max-w-md mx-auto my-6">
+          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-[#F0E6DF] shadow-xs max-w-md mx-auto my-6">
             <div className="text-5xl mb-3">🪑</div>
             <h3 className="text-lg font-black text-gray-900 mb-1">Tables Management Disabled</h3>
             <p className="text-xs text-gray-500 mb-5 leading-relaxed">
@@ -322,7 +322,7 @@ const TablesPage: React.FC = () => {
             </p>
             <button 
               onClick={() => navigate('/')} 
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0077b6] hover:bg-[#005f92] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
             >
               Go to Menu View →
             </button>
@@ -330,14 +330,14 @@ const TablesPage: React.FC = () => {
         ) : error ? (
           <div className="text-center py-10 font-bold text-red-500">{error}</div>
         ) : loading ? (
-          <div className="text-center py-10 font-bold text-[#0077b6]">Loading tables...</div>
+          <div className="text-center py-10 font-bold text-[#f05a24]">Loading tables...</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 py-3 sm:py-5">
             {tables.map((table) => {
               return (
                 <div 
                   key={table.table_id} 
-                  className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-gray-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
+                  className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-[#F0E6DF] flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
                   onClick={() => handleTableSelect(table.table_number)}
                 >
                   <div className="absolute top-0 right-0">
@@ -356,7 +356,7 @@ const TablesPage: React.FC = () => {
 
                   {/* Occupied Session Box */}
                   {table.status === 'Occupied' && table.current_session && (
-                    <div className="bg-slate-50/80 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-slate-100/80">
+                    <div className="bg-[#FAF6F0]/70 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-[#F0E6DF]">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 font-medium">Server</span>
                         <span className="font-bold text-gray-800 truncate max-w-[65px] sm:max-w-none">{table.current_session.staff_name || 'Staff'}</span>
@@ -367,7 +367,7 @@ const TablesPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 mt-0.5">
                         <span className="text-gray-500 font-medium">Total</span>
-                        <span className="font-black text-emerald-600 text-xs sm:text-base">
+                        <span className="font-black text-[#f05a24] text-xs sm:text-base">
                           ₹{(table.current_session.current_total || 0).toFixed(2)}
                         </span>
                       </div>
@@ -394,18 +394,18 @@ const TablesPage: React.FC = () => {
                   {/* Action Buttons with Compact Height & Modern Radius for Mobile */}
                   <div className="flex gap-1.5 sm:gap-2 mt-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
                     {table.status === 'Available' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
                         <Receipt size={12} /> OPEN TAB
                       </button>
                     )}
 
                     {table.status === 'Occupied' && (
                       <div className="grid grid-cols-2 gap-1.5 w-full">
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#0077b6] hover:bg-[#005f92] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
                           <Plus size={11} /> <span className="truncate">ADD</span>
                         </button>
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
-                          <CreditCard size={11} /> <span className="truncate">PAID</span>
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
+                          <CreditCard size={11} className="text-emerald-700" /> <span className="truncate">PAID</span>
                         </button>
                       </div>
                     )}
@@ -417,7 +417,7 @@ const TablesPage: React.FC = () => {
                     )}
 
                     {table.status === 'Reserved' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#0077b6] hover:bg-[#005f92] text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
                         <Check size={12} /> ARRIVED
                       </button>
                     )}

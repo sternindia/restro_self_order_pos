@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, BellRing, PhoneCall } from 'lucide-react';
+import { ShoppingCart, BellRing, PhoneCall, Search, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { API_BASE_URL } from '../config';
@@ -241,149 +241,210 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   }).filter(cat => cat.items.length > 0);
 
 
+  const SteamingPotSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <path d="M7 3.5C7 2.5 8 2 8 1.5M12 3.5C12 2.5 13 2 13 1.5M16 3.5C16 2.5 17 2 17 1.5" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M4 10C4 8.89543 4.89543 8 6 8H18C19.1046 8 20 8.89543 20 10V11C20 15.4183 16.4183 19 12 19C7.58172 19 4 15.4183 4 11V10Z" fill="#F05A24" fillOpacity="0.18" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M2 10.5H22" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const SkewersSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <circle cx="7" cy="7" r="3.2" fill="#F05A24" fillOpacity="0.2" stroke="#f05a24" strokeWidth="2"/>
+      <circle cx="12" cy="12" r="3.2" fill="#F05A24" fillOpacity="0.2" stroke="#f05a24" strokeWidth="2"/>
+      <circle cx="17" cy="17" r="3.2" fill="#F05A24" fillOpacity="0.2" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M3 3L21 21" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const CurryBowlSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <path d="M3 11C3 9.89543 3.89543 9 5 9H19C20.1046 9 21 9.89543 21 11V12C21 16.4183 17.4183 20 13 20H11C6.58172 20 3 16.4183 3 12V11Z" fill="#F05A24" fillOpacity="0.18" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M1 11H3M21 11H23" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M8 6C8 5 9 4.5 9 4M15 6C15 5 16 4.5 16 4" stroke="#f05a24" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const DrinkSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <path d="M6 8L8.2 20H15.8L18 8H6Z" fill="#F05A24" fillOpacity="0.18" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M5 8H19" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M15 2L11 8" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const CutleryFilterSVG = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <path d="M6 2V10M10 2V10M6 6H10M8 10V22" stroke="#F05A24" strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M16 2V7C16 9 18 10 18 10V22" stroke="#F05A24" strokeWidth="2.2" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const getCategoryIcon = (name: string = '') => {
+    const n = name.toLowerCase();
+    if (n.includes('biryani') || n.includes('rice') || n.includes('pulao')) return <SteamingPotSVG />;
+    if (n.includes('starter') || n.includes('tikka') || n.includes('kebab') || n.includes('snack') || n.includes('appetizer')) return <SkewersSVG />;
+    if (n.includes('curry') || n.includes('main') || n.includes('gravy') || n.includes('dal') || n.includes('paneer')) return <CurryBowlSVG />;
+    if (n.includes('drink') || n.includes('beverage') || n.includes('juice') || n.includes('shake') || n.includes('tea') || n.includes('coffee')) return <DrinkSVG />;
+    return <SteamingPotSVG />;
+  };
+
   const MenuSection = ({ title, items }: { title: string; items: any[] }) => (
     <section 
       id={`category-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`} 
-      className="menu ml-[2.5vw] mt-[3vh] w-[95%] rounded-[10px] bg-white p-[15px] shadow-md scroll-mt-20"
+      className="mx-3 sm:mx-6 mt-4 rounded-2xl bg-white p-4 sm:p-5 border border-[#F0E6DF] shadow-[0_2px_12px_rgba(0,0,0,0.03)] scroll-mt-20"
     >
-      <h2 className="section-heading mb-[2.5%] mt-[1%] text-left text-base md:text-[20px] font-bold text-black">
-        {title}
-      </h2>
-      {items.map((item) => {
-        const dietaryType = getDietaryType(item);
-        const priceNum = parseFloat(item.price || '0');
-        const qty = getQuantityInCart(item.item_id);
-        return (
-          <div key={item.item_id} className="item flex items-center justify-between border-t border-[#ddd] py-[12px] last:border-b-0">
-            <div className="iconplusitem flex w-[80%] items-center">
+      {/* Category Header with Dynamic Realistic Vector SVG Icon */}
+      <div className="flex flex-col mb-3 w-max">
+        <div className="flex items-center gap-2">
+          {getCategoryIcon(title)}
+          <h2 className="text-base sm:text-lg font-extrabold text-[#1A1A1A] tracking-tight">{title}</h2>
+        </div>
+        <div className="h-[2.5px] bg-[#f05a24] rounded-full w-full mt-0.5"></div>
+      </div>
+
+      {/* Item List (Directly inside section card, NO double inner box) */}
+      <div className="divide-y divide-gray-100">
+        {items.map((item) => {
+          const dietaryType = getDietaryType(item);
+          const priceNum = parseFloat(item.price || '0');
+          const qty = getQuantityInCart(item.item_id);
+          return (
+            <div key={item.item_id} className="flex items-center justify-between py-3.5 first:pt-1 last:pb-1">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                <div className="flex-shrink-0">
+                  {dietaryType === 'Veg' && (
+                    <div className="w-4 h-4 border-2 border-[#00B074] flex items-center justify-center p-0.5 rounded-sm bg-white" title="Veg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#00B074]"></span>
+                    </div>
+                  )}
+                  {dietaryType === 'Non-Veg' && (
+                    <div className="w-4 h-4 border-2 border-[#E53935] flex items-center justify-center p-0.5 rounded-sm bg-white" title="Non-Veg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#E53935]"></span>
+                    </div>
+                  )}
+                  {dietaryType === 'Egg' && (
+                    <div className="w-4 h-4 border-2 border-[#FFB300] flex items-center justify-center p-0.5 rounded-sm bg-white" title="Egg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB300]"></span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-bold text-[#1E1F24] leading-snug">{item.item_name}</h3>
+                  <p className="text-xs font-bold text-[#f05a24] mt-0.5">₹{priceNum.toFixed(2)}</p>
+                </div>
+              </div>
+
               <div className="flex-shrink-0">
-                {dietaryType === 'Veg' && (
-                  <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-emerald-600 flex items-center justify-center p-0.5 rounded-sm bg-white" title="Veg">
-                    <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-emerald-600"></span>
+                {qty > 0 ? (
+                  <div className="flex items-center border border-[#f05a24]/40 rounded-xl overflow-hidden bg-[#FFF0E6]/60 shadow-2xs">
+                    <button
+                      onClick={() => removeFromCart(item)}
+                      className="px-2.5 py-1.5 text-[#f05a24] hover:bg-[#f05a24] hover:text-white transition-colors font-black cursor-pointer text-xs"
+                    >
+                      −
+                    </button>
+                    <span className="px-2 py-1.5 text-xs font-black text-[#1E1F24] min-w-[18px] text-center bg-white">
+                      {qty}
+                    </span>
+                    <button
+                      onClick={() => addToCart(item)}
+                      className="px-2.5 py-1.5 text-[#f05a24] hover:bg-[#f05a24] hover:text-white transition-colors font-black cursor-pointer text-xs"
+                    >
+                      +
+                    </button>
                   </div>
-                )}
-                {dietaryType === 'Non-Veg' && (
-                  <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-rose-600 flex items-center justify-center p-0.5 rounded-sm bg-white" title="Non-Veg">
-                    <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-rose-600"></span>
-                  </div>
-                )}
-                {dietaryType === 'Egg' && (
-                  <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-amber-500 flex items-center justify-center p-0.5 rounded-sm bg-white" title="Egg">
-                    <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-amber-500"></span>
-                  </div>
-                )}
-              </div>
-              <div className="nameplusprice ml-4">
-                <div className="name mb-[3%] w-auto max-w-[50vw] text-sm md:text-[16px] font-bold text-gray-900">
-                  {item.item_name}
-                </div>
-                <div className="price text-xs md:text-[15px] font-medium md:font-normal text-gray-500 md:text-[#555]">
-                  {priceNum.toFixed(2)} Rs
-                </div>
-              </div>
-            </div>
-            <div>
-              {qty > 0 ? (
-                <div className="flex items-center border border-[#0077b6] rounded-[5px] overflow-hidden bg-white">
-                  <button
-                    onClick={() => removeFromCart(item)}
-                    className="px-[12px] py-[6px] text-[#0077b6] hover:bg-gray-100 transition-colors font-bold cursor-pointer text-sm"
-                  >
-                    −
-                  </button>
-                  <span className="px-[8px] py-[6px] text-sm font-bold text-black min-w-[24px] text-center bg-white">
-                    {qty}
-                  </span>
+                ) : (
                   <button
                     onClick={() => addToCart(item)}
-                    className="px-[12px] py-[6px] text-[#0077b6] hover:bg-gray-100 transition-colors font-bold cursor-pointer text-sm"
+                    className="flex items-center justify-center gap-1 min-w-[72px] px-3.5 py-1.5 rounded-xl bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white border border-[#f05a24]/30 hover:border-[#f05a24] text-xs font-extrabold tracking-wide transition-all shadow-2xs active:scale-95 cursor-pointer group"
                   >
-                    +
+                    <span>ADD</span>
+                    <span className="text-sm font-bold leading-none group-hover:scale-110 transition-transform">+</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => addToCart(item)}
-                  className="add-btn cursor-pointer rounded-[5px] bg-[#0077b6] px-[20px] py-[8px] font-semibold text-white transition-opacity hover:opacity-90 text-sm"
-                >
-                  Add
-                </button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </section>
   );
 
   return (
-    <div className="index-body min-h-screen bg-[#f8f8f8] pb-[12vh]">
+    <div className="index-body min-h-screen bg-[#FAF6F0] pb-24 md:pb-28">
       <Header onLogout={onLogout} />
 
-      <input
-        placeholder="Search here.."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="search-input ml-[2.5vw] mt-[10px] w-[95%] rounded-[10px] border border-[#888] p-[10px] outline-none focus:border-[#0077b6] bg-white text-sm"
-      />
+      {/* Search Bar */}
+      <div className="relative mx-3 sm:mx-6 mt-4">
+        <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          placeholder="Search for dishes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm text-gray-900 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 shadow-2xs transition-all"
+        />
+      </div>
 
-      {/* Filter Toggle Buttons */}
-      <div className="flex items-center gap-2 px-[2.5vw] mt-3 overflow-x-auto select-none no-scrollbar py-1">
+      {/* Filter Toggle Buttons matching reference image */}
+      <div className="flex items-center gap-2.5 px-3 sm:px-6 mt-4 overflow-x-auto select-none no-scrollbar py-1">
         <button
           onClick={() => { setDietaryFilter('ALL'); setSpecialFilter('ALL'); }}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'ALL' && specialFilter === 'ALL'
-              ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-sm'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'ALL' && specialFilter === 'ALL'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
             }`}
         >
-          🍽️ All Items
+          <CutleryFilterSVG /> All Items
         </button>
 
         <button
           onClick={() => setDietaryFilter(dietaryFilter === 'VEG' ? 'ALL' : 'VEG')}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'VEG'
-              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-              : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'VEG'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
             }`}
         >
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Veg Only
+          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span> Veg Only
         </button>
 
         <button
           onClick={() => setDietaryFilter(dietaryFilter === 'NON_VEG' ? 'ALL' : 'NON_VEG')}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'NON_VEG'
-              ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-              : 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50'
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'NON_VEG'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
             }`}
         >
-          <span className="w-2 h-2 rounded-full bg-rose-500"></span> Non-Veg
+          <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span> Non-Veg
         </button>
 
         <button
           onClick={() => setDietaryFilter(dietaryFilter === 'EGG' ? 'ALL' : 'EGG')}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'EGG'
-              ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-              : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50'
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'EGG'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
             }`}
         >
-          <span className="w-2 h-2 rounded-full bg-amber-400"></span> Egg
+          <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span> Egg
         </button>
 
         <button
           onClick={() => setSpecialFilter(specialFilter === 'SPECIAL' ? 'ALL' : 'SPECIAL')}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${specialFilter === 'SPECIAL'
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-              : 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50'
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${specialFilter === 'SPECIAL'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
             }`}
         >
-          ⭐ Bestsellers
+          <span>⭐</span> Bestsellers
         </button>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#0077b6]"></div>
-          <p className="text-gray-500 mt-3 text-sm">Loading menu from API...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#f05a24]"></div>
+          <p className="text-gray-500 mt-3 text-xs font-bold">Loading menu from API...</p>
         </div>
       ) : (
         <>
@@ -396,7 +457,7 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
               />
             ))
           ) : (
-            <div className="text-center py-20 text-gray-500">
+            <div className="text-center py-20 text-gray-500 text-xs font-semibold">
               No items found matching your filter selection.
             </div>
           )}
@@ -412,7 +473,7 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
         return (
           <button
             onClick={() => setIsCallWaiterOpen(true)}
-            className="fixed bottom-14 md:bottom-[10vh] right-4 md:right-5 z-40 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-white font-bold text-xs p-3 md:px-4 md:py-2.5 rounded-full shadow-xl flex items-center justify-center gap-2 border border-amber-400/80 transition-all cursor-pointer animate-float-glow"
+            className="fixed bottom-20 right-4 z-40 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-white font-bold text-xs p-3 md:px-4 md:py-2.5 rounded-full shadow-xl flex items-center justify-center gap-2 border border-amber-400/80 transition-all cursor-pointer animate-float-glow"
             title="Call Waiter"
           >
             <PhoneCall size={18} className="animate-pulse flex-shrink-0" />
@@ -421,23 +482,27 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
         );
       })()}
 
-      <div className="footer-index fixed bottom-0 left-0 right-0 z-40 flex h-11 md:h-14 w-full items-center shadow-[0_-2px_5px_rgba(0,0,0,0.1)] bg-white">
-        <div className="menu-btn-section flex h-full w-1/2 items-center justify-center bg-white">
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="menu-btn flex cursor-pointer items-center justify-center rounded-[25px] bg-black px-[16px] py-[5px] md:px-[20px] md:py-[8px] text-[13px] md:text-[15px] font-bold text-white hover:bg-[#333] transition-all"
-          >
-            ☰ Menu
-          </button>
-        </div>
-        <Link to="/cart" className="cart flex h-full w-1/2 items-center justify-center bg-[#0077b6] text-white no-underline shadow-md">
-          <ShoppingCart size={16} className="md:w-[18px] md:h-[18px]" />
-          <span className="cart-text ml-1.5 mr-2 text-[13px] md:text-[15px] font-bold text-white">Cart</span>
-          {totalCartCount > 0 && (
-            <div className="count-bg flex h-[18px] w-[18px] md:h-[22px] md:w-[22px] items-center justify-center rounded-full bg-red-600">
-              <span className="cart-count text-[10px] md:text-[12px] font-bold text-white">{totalCartCount}</span>
-            </div>
-          )}
+      {/* FLOATING BOTTOM BAR WITH MENU & CART PILLS */}
+      <div className="fixed bottom-3 left-3 right-3 z-40 flex items-center justify-between gap-3 max-w-md mx-auto">
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200/90 text-gray-900 font-extrabold text-xs sm:text-sm py-3 px-5 rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer"
+        >
+          <span className="text-base font-black">☰</span>
+          <span>Menu</span>
+        </button>
+
+        <Link
+          to="/cart"
+          className="flex-[1.4] flex items-center justify-between bg-[#f05a24] hover:bg-[#d94815] text-white font-extrabold text-xs sm:text-sm py-3 px-5 rounded-2xl shadow-xl shadow-[#f05a24]/30 active:scale-95 transition-all no-underline"
+        >
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={18} />
+            <span>Cart</span>
+          </div>
+          <span className="bg-white text-[#f05a24] text-[11px] font-black h-5.5 min-w-[22px] px-1.5 rounded-full shadow-xs flex items-center justify-center">
+            {totalCartCount}
+          </span>
         </Link>
       </div>
 
@@ -509,10 +574,10 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#0077b6]/10 border border-[#0077b6]/20 flex items-center justify-center text-[#0077b6] font-bold">
-                  📋
+            <div className="flex items-center justify-between border-b border-[#F0E6DF] pb-3 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#FFF0E6] border border-[#f05a24]/20 flex items-center justify-center text-[#f05a24] shadow-2xs">
+                  <SteamingPotSVG />
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">Menu Categories</h3>
@@ -544,19 +609,21 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
                         }
                       }, 100);
                     }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-[#0077b6]/10 hover:border-[#0077b6]/30 border border-gray-100 transition-all cursor-pointer group text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white hover:bg-[#FFF0E6]/60 border border-[#F0E6DF] hover:border-[#f05a24]/40 transition-all cursor-pointer group text-left shadow-2xs active:scale-98"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-base group-hover:scale-110 transition-transform">🍽️</span>
-                      <span className="text-xs sm:text-sm font-bold text-gray-800 group-hover:text-[#0077b6]">
+                      <div className="w-8 h-8 rounded-lg bg-[#FFF0E6] flex items-center justify-center shrink-0 group-hover:bg-[#f05a24] transition-colors">
+                        {getCategoryIcon(category.category_name)}
+                      </div>
+                      <span className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">
                         {category.category_name}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200 shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-extrabold text-[#f05a24] bg-[#FFF0E6] px-2.5 py-0.5 rounded-full border border-[#f05a24]/20 shadow-2xs">
                         {count} {count === 1 ? 'item' : 'items'}
                       </span>
-                      <span className="text-gray-400 text-xs font-bold group-hover:text-[#0077b6]">→</span>
+                      <span className="text-[#f05a24] text-xs font-bold group-hover:translate-x-0.5 transition-transform">→</span>
                     </div>
                   </button>
                 );

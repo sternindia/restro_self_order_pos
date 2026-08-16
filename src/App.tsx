@@ -12,6 +12,8 @@ const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const Login = lazy(() => import('./pages/Login'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ManageMenuPage = lazy(() => import('./pages/ManageMenuPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -79,8 +81,10 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('emenu_user');
-    sessionStorage.removeItem('emenu_table');
+    localStorage.removeItem('emenu_cart');
+    localStorage.removeItem('emenu_last_order');
     localStorage.removeItem('emenu_token');
+    sessionStorage.clear();
     setUser(null);
     window.location.href = '/login';
   };
@@ -105,7 +109,8 @@ function App() {
                     }
                   } catch {}
                   
-                  if (user.role === 'self-pos-billing' || user.role === 'self_pos_billing' || !enableTables) {
+                  const rAlias = (user?.role_alias || user?.role || '').toLowerCase();
+                  if (rAlias !== 'waiter' || !enableTables) {
                     return <Navigate to="/" replace />;
                   }
                   return <Navigate to="/tables" replace />;
@@ -146,6 +151,14 @@ function App() {
           <Route 
             path="/history" 
             element={user && !user.isGuest ? <HistoryPage /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/settings" 
+            element={user && !user.isGuest ? <SettingsPage /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/manage-menu" 
+            element={user && !user.isGuest ? <ManageMenuPage /> : <Navigate to="/" replace />} 
           />
         </Routes>
       </Suspense>

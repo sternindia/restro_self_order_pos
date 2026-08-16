@@ -488,9 +488,9 @@ const OrderInfoPage: React.FC = () => {
   };
 
   return (
-    <div className="infobody min-h-screen bg-[#f8f9fa] font-sans pb-32">
+    <div className="infobody min-h-screen bg-[#FAF6F0] font-sans pb-32">
       {/* Top Header */}
-      <div className="header-info sticky top-0 z-50 flex h-11 md:h-16 w-full items-center bg-white px-3 md:px-8 shadow-sm border-b border-gray-150">
+      <div className="header-info sticky top-0 z-50 flex h-11 md:h-16 w-full items-center bg-[#FFFBF8] px-3 md:px-8 shadow-xs border-b border-[#F0E6DF]">
         <button
           onClick={() => navigate(-1)}
           className="back-arrow mr-2.5 p-1.5 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -501,11 +501,11 @@ const OrderInfoPage: React.FC = () => {
       </div>
 
       <div className="bodymiddle flex justify-center min-h-[calc(100vh-4rem-5rem)] px-1 sm:px-4 py-1.5 sm:py-6">
-        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-6 shadow-none sm:shadow-sm border-0 sm:border border-gray-200/80 space-y-4 sm:space-y-6 flex flex-col justify-between">
+        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-4 sm:space-y-6 flex flex-col justify-between">
 
           {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
           {isGuestCustomer && (
-            <div className="restaurant-info bg-gray-50/80 rounded-xl p-3 sm:p-4 border border-gray-100">
+            <div className="restaurant-info bg-[#FAF6F0]/60 rounded-xl p-3 sm:p-4 border border-[#F0E6DF]">
               <h2 className="text-lg font-black text-gray-900 mb-1 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
               <p className="text-xs text-gray-600 flex items-start gap-1.5 my-1">
                 <span>📍</span> <span>{posSettings?.restaurant_info?.address || '1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)'}</span>
@@ -517,50 +517,44 @@ const OrderInfoPage: React.FC = () => {
           )}
 
           {/* Order Type & Table Badges */}
-          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+          <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-3 sm:gap-4 items-start`}>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1.5">
                 Order Type
               </label>
-              <div className="rounded-xl border border-sky-200/60 bg-sky-50/70 p-3 text-center text-xs font-bold text-[#0077b6] flex items-center justify-center gap-1.5">
-                <span>{isEnableTables ? '🍽️' : '🛍️'}</span> {isEnableTables ? 'DINE-IN' : 'DIRECT ORDER'}
+              <div className="h-11 rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 px-3 text-center text-xs font-black text-[#f05a24] flex items-center justify-center gap-1.5 shadow-2xs">
+                <span>{isEnableTables ? '🍽️' : '🛍️'}</span> <span>{isEnableTables ? 'DINE-IN' : 'DIRECT ORDER'}</span>
               </div>
             </div>
 
             {isEnableTables && (
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1.5">
                   Table Number *
                 </label>
-                {(!isGuestCustomer || tableIdFromUrl) && selectedTable ? (
-                  <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/70 p-3 text-center text-xs font-bold text-emerald-700 flex items-center justify-center gap-1 shadow-sm">
-                    <span>📋</span> Table #{String(selectedTable).replace(/[^0-9]/g, '') || selectedTable}
-                  </div>
-                ) : (
-                  <select
-                    value={selectedTable}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedTable(val);
-                      if (val) {
-                        sessionStorage.setItem('emenu_table', val);
-                      } else {
-                        sessionStorage.removeItem('emenu_table');
-                      }
-                    }}
-                    className="w-full rounded-xl border border-gray-300 p-2.5 outline-none focus:border-[#0077b6] focus:ring-2 focus:ring-[#0077b6]/20 text-xs font-semibold text-gray-900 bg-white"
-                  >
-                    <option value="">-- Select Table Number * --</option>
-                    {tables.map((t: any) => {
-                      const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
-                      return (
-                        <option key={t.table_id || num} value={num}>
-                          Table #{num} ({t.status || 'Available'})
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
+                <select
+                  value={selectedTable}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedTable(val);
+                    if (val) {
+                      sessionStorage.setItem('emenu_table', val);
+                    } else {
+                      sessionStorage.removeItem('emenu_table');
+                    }
+                  }}
+                  className="w-full h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-bold text-gray-900 bg-white cursor-pointer shadow-2xs"
+                >
+                  <option value="">-- Select Table Number * --</option>
+                  {tables.map((t: any) => {
+                    const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
+                    return (
+                      <option key={t.table_id || num} value={num}>
+                        Table #{num} ({t.status || 'Available'})
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
           </div>
@@ -576,7 +570,7 @@ const OrderInfoPage: React.FC = () => {
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 placeholder="Enter Guest Name"
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-[#0077b6] focus:ring-2 focus:ring-[#0077b6]/20 text-sm font-medium text-gray-900 transition-all"
+                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-sm font-medium text-gray-900 transition-all"
               />
             </div>
 
@@ -589,16 +583,16 @@ const OrderInfoPage: React.FC = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Enter Phone Number"
-                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-[#0077b6] focus:ring-2 focus:ring-[#0077b6]/20 text-sm font-medium text-gray-900 transition-all"
+                className="w-full rounded-xl border border-gray-300 p-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-sm font-medium text-gray-900 transition-all"
               />
             </div>
           </div>
 
           {/* Billing Summary Box */}
-          <div className="summary bg-gray-50/90 rounded-xl p-3.5 sm:p-4 border border-gray-200/80 text-xs sm:text-sm space-y-2.5">
+          <div className="summary bg-[#FAF6F0]/60 rounded-xl p-3.5 sm:p-4 border border-[#F0E6DF] text-xs sm:text-sm space-y-2.5">
             <div className="flex items-center justify-between border-b border-gray-200/80 pb-2">
               <span className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] sm:text-xs">Order Summary</span>
-              <span className="text-[11px] font-semibold text-gray-500">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
+              <span className="text-[11px] font-bold text-gray-800">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
             </div>
 
             {/* Itemized List of Cart Dishes */}
@@ -608,7 +602,7 @@ const OrderInfoPage: React.FC = () => {
                 return (
                   <div key={item.id} className="flex justify-between items-center text-gray-800 text-xs">
                     <span className="font-semibold truncate max-w-[220px]">
-                      {item.name} <span className="text-gray-500 font-normal">× {item.quantity}</span>
+                      {item.name} <span className="text-gray-700 font-bold">× {item.quantity}</span>
                     </span>
                     <span className="font-bold text-gray-900">₹{itemLineTotal}</span>
                   </div>
@@ -616,9 +610,9 @@ const OrderInfoPage: React.FC = () => {
               })}
             </div>
 
-            <div className="flex justify-between text-gray-600 font-medium pt-0.5">
+            <div className="flex justify-between text-gray-800 font-bold pt-0.5">
               <span>Items Subtotal</span>
-              <span className="font-semibold text-gray-900">₹{subTotal.toFixed(2)}</span>
+              <span className="font-extrabold text-gray-900">₹{subTotal.toFixed(2)}</span>
             </div>
 
             {serviceChargeRate > 0 && (
@@ -630,18 +624,18 @@ const OrderInfoPage: React.FC = () => {
 
             {taxRate > 0 && (
               <>
-                <div className="flex justify-between text-gray-500 pl-2 text-[11px]">
+                <div className="flex justify-between text-gray-700 font-medium pl-2 text-xs">
                   <span>CGST ({(taxRate / 2).toFixed(1)}%)</span>
-                  <span>+₹{cgstAmt.toFixed(2)}</span>
+                  <span className="font-bold">+₹{cgstAmt.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-500 pl-2 text-[11px]">
+                <div className="flex justify-between text-gray-700 font-medium pl-2 text-xs">
                   <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
-                  <span>+₹{sgstAmt.toFixed(2)}</span>
+                  <span className="font-bold">+₹{sgstAmt.toFixed(2)}</span>
                 </div>
               </>
             )}
 
-            <div className="border-t border-dashed border-gray-300 pt-2.5 flex justify-between font-black text-base text-[#0077b6]">
+            <div className="border-t border-dashed border-gray-300 pt-2.5 flex justify-between font-black text-base text-[#f05a24]">
               <span>Grand Total</span>
               <span>₹{total.toFixed(2)}</span>
             </div>
@@ -665,7 +659,7 @@ const OrderInfoPage: React.FC = () => {
             <button
               onClick={handleUpdateOrder}
               disabled={loading}
-              className="flex-[1.6] py-3 px-3 sm:px-4 rounded-xl bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.99] text-white font-extrabold text-[11px] sm:text-sm whitespace-nowrap shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 border border-[#005f92]/20"
+              className="flex-[1.6] py-3 px-3 sm:px-4 rounded-xl bg-[#f05a24] hover:bg-[#d94815] active:scale-[0.99] text-white font-extrabold text-[11px] sm:text-sm whitespace-nowrap shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 border border-[#f05a24]/20"
             >
               {loading ? (
                 <>
@@ -681,7 +675,7 @@ const OrderInfoPage: React.FC = () => {
           <button
             onClick={handlePlaceOrder}
             disabled={loading}
-            className="w-full max-w-[550px] py-3.5 px-6 rounded-xl bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full max-w-[550px] py-3.5 px-6 rounded-xl bg-[#f05a24] hover:bg-[#d94815] active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -712,7 +706,7 @@ const OrderInfoPage: React.FC = () => {
                   setShowModal(false);
                   navigate('/history');
                 }}
-                className="w-full py-3 rounded-xl bg-[#0077b6] hover:bg-[#005f92] text-sm font-bold text-white transition-all cursor-pointer shadow-md"
+                className="w-full py-3 rounded-xl bg-[#f05a24] hover:bg-[#d94815] text-sm font-bold text-white transition-all cursor-pointer shadow-md"
               >
                 View Order History
               </button>

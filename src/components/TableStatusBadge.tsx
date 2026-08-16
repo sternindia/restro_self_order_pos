@@ -12,21 +12,21 @@ export const getTableStatusStyle = (status: string) => {
   if (s === 'OCCUPIED' || s === 'BUSY' || s === 'IN_USE') {
     return {
       label: 'OCCUPIED',
-      badgeClass: 'bg-[#e63946] text-white',
+      badgeClass: 'bg-rose-600 text-white font-extrabold',
     };
   }
 
   if (s === 'RESERVED' || s === 'DISABLED' || s === 'INACTIVE' || s === 'UNAVAILABLE') {
     return {
       label: s === 'DISABLED' ? 'DISABLED' : 'RESERVED',
-      badgeClass: 'bg-purple-600 text-white',
+      badgeClass: 'bg-amber-600 text-white font-extrabold',
     };
   }
 
   // Default: AVAILABLE
   return {
     label: 'AVAILABLE',
-    badgeClass: 'bg-[#00966d] text-white',
+    badgeClass: 'bg-emerald-600 text-white font-extrabold',
   };
 };
 

@@ -8,14 +8,15 @@ import OrderStatusBadge from '../components/OrderStatusBadge';
 const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const queryParams = new URLSearchParams(location.search);
   const urlOrderId = queryParams.get('id') || queryParams.get('order_id') || queryParams.get('track_id');
 
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
-  const isGuestCustomer = !userObj || userObj.isGuest || userObj.role?.toLowerCase() === 'guest';
-  const isSelfPosBilling = userObj?.role === 'self-pos-billing' || userObj?.role === 'self_pos_billing';
+  const roleAlias = (userObj?.role_alias || userObj?.role || '').toLowerCase();
+  const isWaiter = roleAlias === 'waiter';
+  const isGuestCustomer = !userObj || userObj.isGuest || roleAlias === 'guest' || roleAlias === 'guest_user';
+  const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || roleAlias === 'super_admin' || roleAlias === 'admin';
 
   const [orderInfo, setOrderInfo] = useState<any>(() => {
     const saved = localStorage.getItem('emenu_last_order');
@@ -65,8 +66,8 @@ const OrderNumberPage: React.FC = () => {
               items: freshOrder.items || [],
               subTotal: freshOrder.bill?.subtotal || freshOrder.subtotal || 0,
               tax: freshOrder.bill?.tax_amount || freshOrder.tax_amount || 0,
-              serviceCharge: freshOrder.bill?.service_charge !== undefined 
-                ? parseFloat(freshOrder.bill.service_charge) 
+              serviceCharge: freshOrder.bill?.service_charge !== undefined
+                ? parseFloat(freshOrder.bill.service_charge)
                 : (orderInfo?.serviceCharge ?? 0),
               total: freshOrder.bill?.grand_total || freshOrder.total || 0,
               order_status: freshOrder.order_status || freshOrder.status || 'PENDING',
@@ -86,14 +87,14 @@ const OrderNumberPage: React.FC = () => {
 
   if (!orderInfo) {
     return (
-      <div className="numberBody min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-4">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-gray-200 max-w-sm w-full">
+      <div className="numberBody min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-[#F0E6DF] max-w-sm w-full">
           <div className="text-5xl mb-4">🍽️</div>
           <h2 className="text-lg font-bold text-gray-800 mb-1">No active order found</h2>
           <p className="text-xs text-gray-500 mb-6">You haven't placed any order yet in this session.</p>
-          <Link 
-            to="/" 
-            className="inline-block bg-[#0077b6] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
+          <Link
+            to="/"
+            className="inline-block bg-[#f05a24] text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-[#d94815] transition-colors shadow-sm"
           >
             Go to Menu
           </Link>
@@ -115,12 +116,11 @@ const OrderNumberPage: React.FC = () => {
     }
   };
 
-  const cleanDate = created_at 
+  const cleanDate = created_at
     ? new Date(created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
     : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
   // Calculations matching POS Receipt logic with fallbacks
-  const totalQty = items.reduce((sum: number, item: any) => sum + (parseInt(item.quantity || item.qty) || 1), 0);
   const itemsSubtotal = items.reduce((sum: number, item: any) => {
     const q = parseInt(item.quantity || item.qty) || 1;
     const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
@@ -131,10 +131,10 @@ const OrderNumberPage: React.FC = () => {
   const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
 
   const subTotalNum = parseFloat(subTotal) > 0 ? parseFloat(subTotal) : itemsSubtotal;
-  const serviceAmt = orderInfo?.serviceCharge !== undefined 
+  const serviceAmt = orderInfo?.serviceCharge !== undefined
     ? parseFloat(orderInfo.serviceCharge)
-    : (orderInfo?.totals?.service_charge !== undefined 
-      ? parseFloat(orderInfo.totals.service_charge) 
+    : (orderInfo?.totals?.service_charge !== undefined
+      ? parseFloat(orderInfo.totals.service_charge)
       : (orderInfo?.service_charge !== undefined ? parseFloat(orderInfo.service_charge) : 0));
   const taxTotal = parseFloat(tax) > 0 ? parseFloat(tax) : ((subTotalNum * taxRate) / 100);
   const cgstAmt = taxTotal / 2;
@@ -165,7 +165,7 @@ const OrderNumberPage: React.FC = () => {
     });
     window.print();
   };
-   const handleOrderMore = () => {
+  const handleOrderMore = () => {
     if (table) {
       const activeTableNum = String(table).replace(/Table\s*#/i, '').replace(/Table\s*/i, '').trim();
       sessionStorage.setItem('emenu_table', activeTableNum);
@@ -174,7 +174,7 @@ const OrderNumberPage: React.FC = () => {
   };
 
   return (
-    <div className="numberBody min-h-screen bg-[#f8f9fa] font-sans pb-32">
+    <div className="numberBody min-h-screen bg-[#FAF6F0] font-sans pb-32">
       {/* Thermal POS Receipt Print Styles */}
       <style>{`
         @media print {
@@ -210,10 +210,10 @@ const OrderNumberPage: React.FC = () => {
       `}</style>
 
       {/* Header (Hidden on print) */}
-      <div className="header-number sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white px-4 md:px-8 shadow-sm border-b border-gray-150 no-print">
+      <div className="header-number sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-[#FFFBF8] px-4 md:px-8 shadow-xs border-b border-[#F0E6DF] no-print">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/')} 
+          <button
+            onClick={() => navigate('/')}
             className="back-arrow p-2 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
             title="Back to menu"
           >
@@ -230,9 +230,9 @@ const OrderNumberPage: React.FC = () => {
           const isOrderCancelled = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
           if (!isGuestCustomer && !isSelfPosBilling && !isOrderCancelled) {
             return (
-              <button 
+              <button
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
               >
                 <Printer size={16} />
                 <span className="hidden xs:inline">Print POS Bill</span>
@@ -245,7 +245,7 @@ const OrderNumberPage: React.FC = () => {
 
       {/* Web View Order Review Card */}
       <div className="numbermiddle flex justify-center w-full px-2 sm:px-6 md:px-12 py-3 sm:py-6 no-print">
-        <div className="number-container w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 md:p-10 shadow-sm border border-gray-200 space-y-4 sm:space-y-7">
+        <div className="number-container w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-8 md:p-10 shadow-xs border border-[#F0E6DF] space-y-4 sm:space-y-7">
           {/* Order Status Banner */}
           {(() => {
             const currentStatus = String(orderInfo?.order_status || orderInfo?.status || 'PENDING').toUpperCase();
@@ -287,7 +287,7 @@ const OrderNumberPage: React.FC = () => {
                     Order Completed!
                   </h3>
                   <p className="text-[11px] sm:text-sm text-emerald-700 font-medium max-w-sm mx-auto leading-relaxed">
-                    {isSelfPosBilling 
+                    {isSelfPosBilling
                       ? `Counter order #${order_id} has been billed successfully.`
                       : `Your order #${order_id} has been completed. Thank you!`}
                   </p>
@@ -296,7 +296,7 @@ const OrderNumberPage: React.FC = () => {
                     <span className="bg-white text-emerald-900 font-extrabold text-[11px] sm:text-xs px-2.5 py-1 rounded-lg border border-emerald-200/80 shadow-2xs">
                       Order ID: #{order_id}
                     </span>
-                    <span className="bg-white text-[#0077b6] font-extrabold text-[11px] sm:text-xs px-2.5 py-1 rounded-lg border border-[#0077b6]/20 shadow-2xs">
+                    <span className="bg-white text-[#f05a24] font-extrabold text-[11px] sm:text-xs px-2.5 py-1 rounded-lg border border-[#f05a24]/20 shadow-2xs">
                       {isSelfPosBilling ? 'Type: Counter Billing' : (table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'Walk-In')}
                     </span>
                   </div>
@@ -326,7 +326,7 @@ const OrderNumberPage: React.FC = () => {
                     Order ID: #{order_id}
                   </span>
                   {table && (
-                    <span className="bg-white text-[#0077b6] font-black text-xs px-3 py-1.5 rounded-xl border border-[#0077b6]/20 shadow-2xs">
+                    <span className="bg-white text-[#f05a24] font-black text-xs px-3 py-1.5 rounded-xl border border-[#f05a24]/20 shadow-2xs">
                       {String(table).includes('Table') ? table : `Table #${table}`}
                     </span>
                   )}
@@ -336,41 +336,41 @@ const OrderNumberPage: React.FC = () => {
           })()}
 
           {/* Customer & Timestamp Info */}
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-600 bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 gap-2">
+          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-800 bg-[#FAF6F0]/70 p-3.5 sm:p-4 rounded-xl border border-[#F0E6DF] gap-2">
             <div>
-              <span className="text-gray-400 font-medium">Customer: </span>
-              <span className="font-bold text-gray-900">{guest_name || 'Guest Customer'}</span>
-              {phone && <span className="text-gray-500 font-medium ml-1">({phone})</span>}
+              <span className="text-gray-700 font-bold">Customer: </span>
+              <span className="font-extrabold text-gray-900">{guest_name || 'Guest Customer'}</span>
+              {phone && <span className="text-gray-700 font-bold ml-1">({phone})</span>}
             </div>
-            <div className="flex items-center gap-1 text-gray-500 font-medium">
-              <Clock size={14} />
+            <div className="flex items-center gap-1 text-gray-800 font-bold">
+              <Clock size={14} className="text-gray-700" />
               <span>{cleanDate}</span>
             </div>
           </div>
 
           {/* Items Ordered List */}
           <div>
-            <h4 className="text-xs sm:text-sm font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center justify-between border-b pb-2">
+            <h4 className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wider mb-3 flex items-center justify-between border-b pb-2">
               <span>Ordered Items</span>
-              <span className="text-gray-500 font-semibold">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+              <span className="text-gray-800 font-extrabold">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
             </h4>
-            
+
             <div className="divide-y divide-gray-100">
               {items.map((item: any, idx: number) => {
                 const itemTotal = (parseFloat(item.price || item.unit_price || 0) * (parseInt(item.quantity || item.qty) || 1)).toFixed(2);
                 return (
                   <div key={idx} className="py-3 flex items-start justify-between gap-3 first:pt-0 last:pb-0">
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <span className="text-xs sm:text-sm font-bold text-gray-400 min-w-[16px]">{idx + 1}.</span>
+                      <span className="text-xs sm:text-sm font-black text-gray-700 min-w-[16px]">{idx + 1}.</span>
                       <div className="min-w-0">
                         <p className="font-bold text-gray-900 text-xs sm:text-base leading-snug break-words">
                           {item.name}
                         </p>
-                        <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
+                        <p className="text-xs sm:text-sm text-gray-800 font-bold mt-0.5">
                           ₹{parseFloat(item.price || item.unit_price || 0).toFixed(2)} × {item.quantity || item.qty}
                         </p>
                         {item.notes && (
-                          <p className="text-[11px] sm:text-xs text-amber-800 italic bg-amber-50 rounded px-2 py-0.5 mt-1 inline-block border border-amber-200/50">
+                          <p className="text-[11px] sm:text-xs text-amber-900 font-semibold italic bg-amber-50 rounded px-2 py-0.5 mt-1 inline-block border border-amber-200">
                             Note: "{item.notes}"
                           </p>
                         )}
@@ -387,73 +387,75 @@ const OrderNumberPage: React.FC = () => {
 
           {/* Bill Summary */}
           <div className="bill-details border-t border-dashed border-gray-300 pt-4 space-y-2.5">
-            <h4 className="text-xs sm:text-sm font-black text-gray-400 uppercase tracking-wider mb-2">
+            <h4 className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wider mb-2">
               Bill Breakdown
             </h4>
 
-            <div className="flex justify-between text-xs sm:text-sm text-gray-600">
+            <div className="flex justify-between text-xs sm:text-sm text-gray-800 font-bold">
               <span>Subtotal</span>
-              <span className="font-semibold text-gray-900">₹{subTotalNum.toFixed(2)}</span>
+              <span className="font-extrabold text-gray-900">₹{subTotalNum.toFixed(2)}</span>
             </div>
 
             {serviceAmt > 0 && (
-              <div className="flex justify-between text-xs sm:text-sm text-gray-600">
+              <div className="flex justify-between text-xs sm:text-sm text-gray-800 font-bold">
                 <span>Service Charge ({serviceChargeRate}%)</span>
-                <span className="font-semibold text-gray-900">+₹{serviceAmt.toFixed(2)}</span>
+                <span className="font-extrabold text-gray-900">+₹{serviceAmt.toFixed(2)}</span>
               </div>
             )}
 
             {taxTotal > 0 && (
               <>
-                <div className="flex justify-between text-xs text-gray-500 pl-2">
+                <div className="flex justify-between text-xs text-gray-800 font-bold pl-2">
                   <span>CGST ({(posSettings?.financials?.cgst || 2.5)}%)</span>
-                  <span>+₹{cgstAmt.toFixed(2)}</span>
+                  <span className="font-black">+₹{cgstAmt.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 pl-2">
+                <div className="flex justify-between text-xs text-gray-800 font-bold pl-2">
                   <span>SGST ({(posSettings?.financials?.sgst || 2.5)}%)</span>
-                  <span>+₹{sgstAmt.toFixed(2)}</span>
+                  <span className="font-black">+₹{sgstAmt.toFixed(2)}</span>
                 </div>
               </>
             )}
 
             <div className="border-t border-gray-200 pt-3 flex justify-between font-black text-base sm:text-lg text-gray-900">
               <span>Grand Total</span>
-              <span className="text-[#0077b6]">₹{grandTotalNum.toFixed(2)}</span>
+              <span className="text-[#f05a24]">₹{grandTotalNum.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Footer Note */}
-          <div className="text-center text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider pt-3 border-t border-gray-100">
+          <div className="text-center text-[10px] sm:text-xs text-gray-700 font-black uppercase tracking-wider pt-3 border-t border-gray-100">
             Thank you for dining with Big Ben Restaurant!
           </div>
         </div>
       </div>
 
-      {/* Unified Receipt Bill Print Component */}
-      <ReceiptBillPrint
-        orderId={order_id}
-        dateStr={cleanDate}
-        tableName={table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'DINE-IN'}
-        staffName="Staff"
-        guestName={guest_name}
-        items={items}
-        subtotal={subTotalNum}
-        taxRate={taxRate}
-        cgstAmt={cgstAmt}
-        sgstAmt={sgstAmt}
-        serviceChargeRate={serviceChargeRate}
-        serviceChargeAmt={serviceAmt}
-        grandTotal={grandTotalNum}
-        restaurantInfo={{
-          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name,
-          address: posSettings?.address || posSettings?.restaurant_info?.address,
-          city: posSettings?.city || posSettings?.restaurant_info?.city,
-          state: posSettings?.state || posSettings?.restaurant_info?.state,
-          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode,
-          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number,
-          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number
-        }}
-      />
+      {/* Unified Receipt Bill Print Component (Hidden on screen, active only for printing) */}
+      <div className="hidden print:block">
+        <ReceiptBillPrint
+          orderId={order_id}
+          dateStr={cleanDate}
+          tableName={table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'DINE-IN'}
+          staffName="Staff"
+          guestName={guest_name}
+          items={items}
+          subtotal={subTotalNum}
+          taxRate={taxRate}
+          cgstAmt={cgstAmt}
+          sgstAmt={sgstAmt}
+          serviceChargeRate={serviceChargeRate}
+          serviceChargeAmt={serviceAmt}
+          grandTotal={grandTotalNum}
+          restaurantInfo={{
+            name: posSettings?.restaurantName || posSettings?.restaurant_info?.name,
+            address: posSettings?.address || posSettings?.restaurant_info?.address,
+            city: posSettings?.city || posSettings?.restaurant_info?.city,
+            state: posSettings?.state || posSettings?.restaurant_info?.state,
+            pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode,
+            gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number,
+            fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number
+          }}
+        />
+      </div>
 
       {/* Curved Center-Raised FAB Bottom Navigation Bar (Hidden for self-pos-billing) */}
       {!isSelfPosBilling && (
@@ -465,11 +467,11 @@ const OrderNumberPage: React.FC = () => {
               const isOrderCancelled = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
               if (!isGuestCustomer && !isOrderCancelled) {
                 return (
-                  <button 
+                  <button
                     onClick={handlePrint}
-                    className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-amber-600 transition-colors cursor-pointer group"
+                    className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors cursor-pointer group"
                   >
-                    <Printer size={20} className="group-hover:scale-110 transition-transform text-amber-500" />
+                    <Printer size={20} className="group-hover:scale-110 transition-transform text-[#f05a24]" />
                     <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Print</span>
                   </button>
                 );
@@ -480,50 +482,50 @@ const OrderNumberPage: React.FC = () => {
 
 
             {/* MENU TAB (Always visible for Guest Customers on mobile; responsive for staff) */}
-            <button 
+            <button
               onClick={handleOrderMore}
-              className={`${isGuestCustomer ? 'flex' : 'hidden md:flex'} flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors cursor-pointer group`}
+              className={`${isGuestCustomer ? 'flex' : 'hidden md:flex'} flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors cursor-pointer group`}
             >
-              <UtensilsCrossed size={20} className="group-hover:scale-110 transition-transform text-[#0077b6]" />
+              <UtensilsCrossed size={20} className="group-hover:scale-110 transition-transform text-[#f05a24]" />
               <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Menu</span>
             </button>
 
             {/* CENTER RAISED FAB BUTTON - TAKE NEW ORDER FOR WAITERS / ADD MORE FOR GUESTS */}
             <div className="relative -top-3.5 flex flex-col items-center justify-center">
-              <button 
+              <button
                 onClick={handleTakeNewOrder}
-                className="bg-gradient-to-tr from-[#0077b6] to-[#0284c7] hover:from-[#005f92] hover:to-[#0284c7] text-white p-3 rounded-full shadow-lg shadow-sky-500/35 border-4 border-white active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                className="bg-gradient-to-tr from-[#f05a24] to-[#d94815] hover:from-[#d94815] hover:to-[#f05a24] text-white p-3 rounded-full shadow-lg shadow-[#f05a24]/35 border-4 border-white active:scale-95 transition-all cursor-pointer flex items-center justify-center"
                 title="Start Fresh New Order"
               >
                 <ShoppingBag size={20} className="text-white" />
               </button>
-              <span className="text-[10px] font-black tracking-wider uppercase text-[#0077b6] mt-0.5">
+              <span className="text-[10px] font-black tracking-wider uppercase text-[#f05a24] mt-0.5">
                 {isGuestCustomer ? 'Order' : 'New'}
               </span>
             </div>
 
-            {/* TABLES TAB FOR WAITERS (Only on Tablet & Desktop to avoid crowding mobile bar) */}
-            {!isGuestCustomer && (
-              <button 
+            {/* TABLES TAB FOR WAITERS ONLY */}
+            {isWaiter && (
+              <button
                 onClick={() => {
                   sessionStorage.removeItem('emenu_table');
                   localStorage.removeItem('emenu_cart');
                   navigate('/tables');
                 }}
-                className="hidden md:flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors cursor-pointer group"
+                className="hidden md:flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors cursor-pointer group"
               >
-                <Grid size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#0077b6]" />
+                <Grid size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#f05a24]" />
                 <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Tables</span>
               </button>
             )}
 
             {/* HISTORY TAB FOR WAITERS/STAFF */}
             {!isGuestCustomer && (
-              <Link 
+              <Link
                 to="/history"
-                className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#0077b6] transition-colors no-underline group"
+                className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-[#f05a24] transition-colors no-underline group"
               >
-                <Clock size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#0077b6]" />
+                <Clock size={20} className="group-hover:scale-110 transition-transform text-gray-500 group-hover:text-[#f05a24]" />
                 <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">History</span>
               </Link>
             )}

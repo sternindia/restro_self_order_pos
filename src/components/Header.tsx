@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut, Search } from 'lucide-react';
+import { Bell, Menu as MenuIcon, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { API_BASE_URL, getRestaurantId, parseBool, getStoredPOSSettings } from '../config';
+import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -42,7 +42,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         setIsEnableTables(parseBool(enableTablesVal, false));
       };
 
-      // 1. Initial render from local cache if available
       try {
         const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
         if (savedSettingsStr) {
@@ -52,7 +51,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         console.warn('Failed to parse cached POS settings in Header:', e);
       }
 
-      // 2. Always fetch fresh settings from backend API
       try {
         const rid = getRestaurantId();
         const res = await fetch(`${API_BASE_URL}/settings/pos/${rid}`);
@@ -92,107 +90,162 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
     return clean ? `Table #${clean}` : table;
   }, [table]);
 
-  const isSelfPosBilling = user?.role === 'self-pos-billing' || user?.role === 'self_pos_billing';
-  const isStaffUser = user && !user.isGuest;
+  const roleAlias = (user?.role_alias || user?.role || '').toLowerCase();
+  const isWaiter = roleAlias === 'waiter';
+  const isGuestUser = user?.isGuest || roleAlias === 'guest_user' || roleAlias === 'guest';
+  const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || roleAlias === 'super_admin' || roleAlias === 'admin';
+  const isStaffUser = user && !isGuestUser;
+  const displayRole = user?.role_name || (
+    roleAlias === 'super_admin' ? 'Super Admin' : 
+    roleAlias === 'admin' ? 'Admin' : 
+    roleAlias === 'waiter' ? 'Waiter' : 
+    roleAlias === 'self_billing_pos' ? 'POS Billing' : ''
+  );
+
+  const handleLogoutClick = () => {
+    localStorage.removeItem('emenu_user');
+    localStorage.removeItem('emenu_cart');
+    localStorage.removeItem('emenu_last_order');
+    localStorage.removeItem('emenu_token');
+    sessionStorage.clear();
+    if (onLogout) {
+      onLogout();
+    } else {
+      window.location.href = '/login';
+    }
+  };
 
   return (
-    <nav className="navbar sticky top-0 z-50 bg-white shadow-sm border-b border-gray-150">
-      <div className="flex min-h-[54px] md:min-h-[60px] w-full items-center justify-between px-3 sm:px-6 py-1 md:py-2">
-        {/* LEFT: Logo & Restaurant Title */}
-        <div className="logo-section flex items-center min-w-0">
-          <span className="logo text-lg sm:text-xl mr-1.5 flex-shrink-0">🏠</span>
-          <div className="shop-name text-sm sm:text-base md:text-lg font-extrabold text-[#0077b6] flex items-center gap-1.5 min-w-0 truncate">
-            <span className="truncate uppercase">{restaurantName}</span>
-            {displayTable && !isSelfPosBilling && isEnableTables && (
-              <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
-                {displayTable}
+    <>
+      <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-[#FFFBF8] px-3 sm:px-8 shadow-xs border-b border-[#F0E6DF] select-none">
+        {/* LEFT: Restaurant Logo & Table Status */}
+        <div 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity min-w-0"
+        >
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xl sm:text-2xl flex-shrink-0">🧑‍🍳</span>
+              <span className="text-lg sm:text-xl font-black text-black tracking-tight truncate uppercase">
+                {restaurantName}
               </span>
-            )}
+              {displayTable && !isSelfPosBilling && isEnableTables && (
+                <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
+                  {displayTable}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-gray-700 font-bold tracking-wide ml-7 -mt-0.5">
+              Smart Restaurant Management
+            </span>
           </div>
         </div>
 
-        {/* CENTER: Desktop Navigation Tabs */}
+        {/* CENTER: Desktop Navigation Tabs with real SVG icons */}
         {isStaffUser && (
-          <div className="hidden lg:flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+          <div className="hidden lg:flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200">
             <Link
               to="/"
-              className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/'
-                  ? 'bg-white text-[#0077b6] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-800'
+              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
+                  ? 'bg-white text-[#f05a24] shadow-2xs'
+                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
-              🍔 Menu
+              <Utensils size={14} />
+              <span>Menu</span>
             </Link>
-            {!isSelfPosBilling && isEnableTables && (
+            {isWaiter && isEnableTables && (
               <Link
                 to="/tables"
-                className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/tables'
-                    ? 'bg-white text-[#0077b6] shadow-[#0077b6]/20'
-                    : 'text-gray-600 hover:text-gray-800'
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
                   }`}
               >
-                📋 Tables
+                <Grid size={14} />
+                <span>Tables</span>
               </Link>
             )}
             <Link
               to="/history"
-              className={`text-xs font-bold px-3 py-1.5 rounded-md transition-all ${currentPath === '/history'
-                  ? 'bg-white text-[#0077b6] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-800'
+              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
+                  ? 'bg-white text-[#f05a24] shadow-2xs'
+                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
-              ⏳ History
+              <Clock size={14} />
+              <span>History</span>
             </Link>
+            {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
+              <>
+                <Link
+                  to="/manage-menu"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/manage-menu'
+                      ? 'bg-white text-[#f05a24] shadow-2xs'
+                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <Edit3 size={14} />
+                  <span>Manage Menu</span>
+                </Link>
+                <Link
+                  to="/settings"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
+                      ? 'bg-white text-[#f05a24] shadow-2xs'
+                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <Settings size={14} />
+                  <span>Settings</span>
+                </Link>
+              </>
+            )}
           </div>
         )}
 
-        {/* RIGHT: User Profile, Logout Icon, Notifications & 3-Bar Toggle */}
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+        {/* RIGHT: Action Icons & Menu Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {/* User Profile Badge */}
-          {isStaffUser && !isSelfPosBilling && (
+          {isStaffUser && (
             <div 
-              className="relative group hidden sm:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200/80 px-2.5 py-1 rounded-full border border-gray-200/60 transition-all cursor-pointer"
-              title={`Logged in as: ${user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}`}
+              className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-gray-800 bg-[#FAF6F0] hover:bg-[#FFF0E6] px-3 py-1.5 rounded-xl border border-[#F0E6DF] transition-all cursor-pointer shadow-2xs"
+              title={`Logged in as: ${user?.username || user?.name || user?.user_name || 'Staff User'}`}
             >
-              <User size={15} className="text-[#0077b6]" />
-              <span className="max-w-[120px] truncate">{user?.username || user?.name || user?.phone || user?.user_name || 'Profile'}</span>
-
-              {/* Hover Tooltip Popup */}
-              <div className="absolute top-full right-0 mt-2 hidden group-hover:flex flex-col bg-slate-900 text-white text-[11px] font-medium py-1.5 px-3 rounded-xl shadow-xl whitespace-nowrap z-50 pointer-events-none border border-slate-800">
-                <span className="font-bold text-amber-400">Logged in User</span>
-                <span className="text-white fw-bold">{user?.username || user?.name || user?.phone || user?.user_name || 'Staff User'}</span>
-                {user?.role && <span className="text-[10px] text-slate-400 capitalize">Role: {user.role}</span>}
-              </div>
+              <User size={15} className="text-[#f05a24]" />
+              <span className="max-w-[110px] truncate font-extrabold">{user?.username || user?.name || user?.user_name || 'Staff'}</span>
+              {displayRole && (
+                <span className="bg-[#f05a24] text-white text-[9px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">
+                  {displayRole}
+                </span>
+              )}
             </div>
           )}
-
-
 
           {/* Track Order Button (Visible ONLY for Guest Customers) */}
           {!isStaffUser && (
             <button
               onClick={() => setIsTrackModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#0077b6] bg-[#0077b6]/10 hover:bg-[#0077b6]/20 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#0077b6]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
+              className="flex items-center gap-1.5 text-xs font-bold text-[#f05a24] bg-[#f05a24]/10 hover:bg-[#f05a24]/20 px-3 py-1.5 rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
               title="Track your order status"
             >
-              <Search size={14} className="text-[#0077b6]" />
-              <span>Track Order</span>
+              <Search size={14} className="text-[#f05a24]" />
+              <span className="hidden xs:inline">Track Order</span>
             </button>
           )}
 
-          <button id="notification-btn" className="text-gray-700 hover:text-[#0077b6] transition-colors cursor-pointer p-1" title="Notifications">
-            <Bell size={18} />
+          <button id="notification-btn" className="p-2 text-gray-700 hover:text-[#f05a24] hover:bg-gray-100 rounded-xl transition-colors cursor-pointer" title="Notifications">
+            <Bell size={20} />
           </button>
 
-          {/* Logout Button (Visible ONLY for Staff/Logged-in Users) */}
-          {isStaffUser && onLogout && (
+          {/* Logout Button (Visible ONLY for Staff/Admin Users, Hidden for Guest Customers) */}
+          {isStaffUser && (
             <button
-              onClick={onLogout}
-              className="flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-full border border-rose-200/80 transition-all cursor-pointer shadow-xs active:scale-95"
+              onClick={handleLogoutClick}
+              className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
               title="Logout Account"
             >
-              <LogOut size={15} className="text-rose-600" />
-              <span className="hidden sm:inline">Logout</span>
+              <LogOut size={18} />
+              <span className="text-xs">Logout</span>
             </button>
           )}
 
@@ -200,7 +253,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           {isStaffUser && (
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="flex lg:hidden p-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition-all cursor-pointer"
+              className="flex lg:hidden p-2 rounded-xl border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 transition-all cursor-pointer"
               title="Toggle Menu"
             >
               {isMobileMenuOpen ? <X size={20} /> : <MenuIcon size={20} />}
@@ -224,8 +277,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🏠</span>
-                  <span className="text-sm font-extrabold text-[#0077b6]">Navigation</span>
+                  <Compass size={18} className="text-[#f05a24]" />
+                  <span className="text-sm font-extrabold text-[#f05a24]">Navigation</span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -235,29 +288,31 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </button>
               </div>
 
-              {/* Navigation Links */}
+              {/* Navigation Links with real Lucide React SVG Icons */}
               <div className="py-4 space-y-2">
                 <Link
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/'
-                      ? 'bg-[#0077b6] text-white shadow-md'
+                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  <span className="text-base">🍔</span> Menu
+                  <Utensils size={18} />
+                  <span>Menu</span>
                 </Link>
 
-                {!isSelfPosBilling && isEnableTables && (
+                {isWaiter && isEnableTables && (
                   <Link
                     to="/tables"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/tables'
-                        ? 'bg-[#0077b6] text-white shadow-md'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
                         : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
-                    <span className="text-base">📋</span> Tables
+                    <Grid size={18} />
+                    <span>Tables</span>
                   </Link>
                 )}
 
@@ -265,42 +320,93 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/history"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/history'
-                      ? 'bg-[#0077b6] text-white shadow-md'
+                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
                       : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  <span className="text-base">⏳</span> History
+                  <Clock size={18} />
+                  <span>History</span>
                 </Link>
+
+                {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
+                  <>
+                    <Link
+                      to="/manage-menu"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/manage-menu'
+                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                          : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <Edit3 size={18} />
+                      <span>Manage Menu</span>
+                    </Link>
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/settings'
+                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                          : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <Settings size={18} />
+                      <span>Settings</span>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Drawer Footer */}
             <div className="pt-4 border-t border-gray-100 space-y-3">
-              {user.phone && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                  <span>📱</span> Phone: <span className="text-gray-800 font-bold">{user.phone}</span>
+              {/* User Profile Card */}
+              <div className="bg-[#FAF6F0] p-3 rounded-2xl border border-[#F0E6DF] space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#f05a24] text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
+                    <User size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-black text-gray-900 truncate">
+                        {user?.username || user?.name || user?.user_name || 'Admin'}
+                      </p>
+                      {displayRole && (
+                        <span className="bg-[#f05a24]/10 text-[#f05a24] border border-[#f05a24]/20 text-[9px] px-1.5 py-0.2 rounded-md font-extrabold uppercase shrink-0">
+                          {displayRole}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-semibold text-gray-600 truncate mt-0.5">
+                      {user?.phone ? `📱 ${user.phone}` : (user?.email || 'Logged In')}
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {onLogout && (
+              {isStaffUser && (
                 <button
-                  onClick={() => { setIsMobileMenuOpen(false); onLogout(); }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl border border-red-200 transition-all cursor-pointer"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogoutClick();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white font-extrabold text-xs rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-98 group"
                 >
-                  🚪 Logout Account
+                  <LogOut size={16} className="text-[#f05a24] group-hover:text-white transition-colors" />
+                  <span>Logout Account</span>
                 </button>
               )}
             </div>
           </div>
         </div>
       )}
+
       {/* TRACK ORDER MODAL FOR GUEST CUSTOMERS */}
       {isTrackModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setIsTrackModalOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#0077b6]/10 flex items-center justify-center text-[#0077b6]">
+                <div className="w-8 h-8 rounded-full bg-[#f05a24]/10 flex items-center justify-center text-[#f05a24]">
                   <Search size={16} />
                 </div>
                 <h3 className="text-sm font-bold text-gray-900">Track Order Status</h3>
@@ -316,17 +422,15 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
             <form onSubmit={handleTrackSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 mb-1">
                   Enter Order ID
                 </label>
-                <input
+                <input 
                   type="text"
-                  required
-                  autoFocus
-                  placeholder="e.g. 107 or #107"
+                  placeholder="e.g. 1042 or 987654"
                   value={trackInputId}
                   onChange={(e) => setTrackInputId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0077b6]/40 focus:border-[#0077b6]"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/40 focus:border-[#f05a24]"
                 />
               </div>
 
@@ -340,7 +444,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 text-xs font-bold text-white bg-[#0077b6] hover:bg-[#005f92] rounded-xl shadow-md transition-all cursor-pointer"
+                  className="flex-1 py-2 text-xs font-bold text-white bg-[#f05a24] hover:bg-[#d94815] rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer"
                 >
                   Track Order →
                 </button>
@@ -349,7 +453,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 
