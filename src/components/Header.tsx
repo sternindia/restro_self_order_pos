@@ -237,15 +237,17 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             <Bell size={20} />
           </button>
 
-          {/* Logout Button (Hidden on small mobile screens, visible on desktop/sm+) */}
-          <button
-            onClick={handleLogoutClick}
-            className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
-            title="Logout Account"
-          >
-            <LogOut size={18} />
-            <span className="text-xs">Logout</span>
-          </button>
+          {/* Logout Button (Visible ONLY for Staff/Admin Users, Hidden for Guest Customers) */}
+          {isStaffUser && (
+            <button
+              onClick={handleLogoutClick}
+              className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
+              title="Logout Account"
+            >
+              <LogOut size={18} />
+              <span className="text-xs">Logout</span>
+            </button>
+          )}
 
           {/* 3-BAR HAMBURGER TOGGLE BUTTON */}
           {isStaffUser && (
@@ -381,16 +383,18 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  handleLogoutClick();
-                }}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white font-extrabold text-xs rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-98 group"
-              >
-                <LogOut size={16} className="text-[#f05a24] group-hover:text-white transition-colors" />
-                <span>Logout Account</span>
-              </button>
+              {isStaffUser && (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogoutClick();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white font-extrabold text-xs rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-98 group"
+                >
+                  <LogOut size={16} className="text-[#f05a24] group-hover:text-white transition-colors" />
+                  <span>Logout Account</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

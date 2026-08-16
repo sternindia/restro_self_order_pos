@@ -867,7 +867,7 @@ const ManageMenuPage: React.FC = () => {
                               )}
                             </div>
 
-                            <h6 className="font-extrabold text-gray-900 text-xs sm:text-sm m-0 line-clamp-1 group-hover:text-[#f05a24] transition-colors">
+                            <h6 className="font-bold text-gray-800 text-xs sm:text-sm m-0 line-clamp-1 group-hover:text-[#f05a24] transition-colors">
                               {item.item_name}
                             </h6>
                           </div>
@@ -878,7 +878,7 @@ const ManageMenuPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setEditingItem(item)}
-                                className="p-1.5 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white rounded-lg transition-colors cursor-pointer border border-[#f05a24]/20"
+                                className="p-1.5 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 rounded-lg transition-colors cursor-pointer"
                                 title="Edit Item"
                               >
                                 <Edit2 size={13} />
@@ -886,7 +886,7 @@ const ManageMenuPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteItem(item.item_id)}
-                                className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition-colors cursor-pointer border border-rose-200/60"
+                                className="p-1.5 bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-700 rounded-lg transition-colors cursor-pointer"
                                 title="Delete Item"
                               >
                                 <Trash2 size={13} />
