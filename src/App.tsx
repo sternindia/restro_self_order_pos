@@ -8,6 +8,7 @@ const MenuPage = lazy(() => import('./pages/MenuPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const OrderInfoPage = lazy(() => import('./pages/OrderInfoPage'));
 const OrderNumberPage = lazy(() => import('./pages/OrderNumberPage'));
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const Login = lazy(() => import('./pages/Login'));
 const TablesPage = lazy(() => import('./pages/TablesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
@@ -79,10 +80,9 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('emenu_user');
     sessionStorage.removeItem('emenu_table');
-    // Fallback to guest mode so customer can still browse menu
-    const guestUser = { phone: 'Guest Customer', isGuest: true };
-    localStorage.setItem('emenu_user', JSON.stringify(guestUser));
-    setUser(guestUser);
+    localStorage.removeItem('emenu_token');
+    setUser(null);
+    window.location.href = '/login';
   };
 
   return (
@@ -94,11 +94,22 @@ function App() {
             path="/login" 
             element={
               user && !user.isGuest ? (
-                user.role === 'self-pos-billing' || user.role === 'self_pos_billing' ? (
-                  <Navigate to="/" replace />
-                ) : (
-                  <Navigate to="/tables" replace />
-                )
+                (() => {
+                  let enableTables = true;
+                  try {
+                    const cachedStr = localStorage.getItem('emenu_pos_settings');
+                    if (cachedStr) {
+                      const s = JSON.parse(cachedStr);
+                      const val = s?.hardware_and_preferences?.is_enable_tables ?? s?.is_enable_tables ?? s?.isEnableTables;
+                      if (val === false || val === 'false' || val === 0 || val === '0') enableTables = false;
+                    }
+                  } catch {}
+                  
+                  if (user.role === 'self-pos-billing' || user.role === 'self_pos_billing' || !enableTables) {
+                    return <Navigate to="/" replace />;
+                  }
+                  return <Navigate to="/tables" replace />;
+                })()
               ) : (
                 <Login onLogin={handleLogin} />
               )
@@ -123,6 +134,10 @@ function App() {
           <Route 
             path="/order-number" 
             element={<OrderNumberPage />} 
+          />
+          <Route 
+            path="/track-order" 
+            element={<TrackOrderPage />} 
           />
           <Route 
             path="/tables" 

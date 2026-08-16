@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Printer, ShoppingBag, Clock, Download, UtensilsCrossed, Grid } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Printer, ShoppingBag, Clock, UtensilsCrossed, Grid } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import ReceiptBillPrint, { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
+import OrderStatusBadge from '../components/OrderStatusBadge';
 
 const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const queryParams = new URLSearchParams(location.search);
+  const urlOrderId = queryParams.get('id') || queryParams.get('order_id') || queryParams.get('track_id');
 
   const savedUser = localStorage.getItem('emenu_user');
   const userObj = savedUser ? JSON.parse(savedUser) : null;
@@ -21,17 +27,14 @@ const OrderNumberPage: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const fetchedRef = useRef(false);
-
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
     const fetchLatestDataFromBackend = async () => {
       try {
         const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || 9;
+        const targetOrderId = urlOrderId || orderInfo?.order_id;
+        if (!targetOrderId) return;
 
-        // Fetch POS Settings (if not cached) and Orders in parallel ONCE
+        // Fetch POS Settings (if not cached) and Orders in parallel
         const savedSettingsStr = localStorage.getItem('emenu_pos_settings');
         const [settingsRes, ordersRes] = await Promise.all([
           savedSettingsStr ? null : fetch(`${API_BASE_URL}/settings/pos/${restaurantId}`).catch(() => null),
@@ -47,27 +50,27 @@ const OrderNumberPage: React.FC = () => {
           }
         }
 
-        const targetOrderId = orderInfo?.order_id;
-        if (!targetOrderId || !ordersRes || !ordersRes.ok) return;
+        if (ordersRes && ordersRes.ok) {
+          const data = await ordersRes.json();
+          const rawOrders = Array.isArray(data) ? data : (data?.data || []);
+          const cleanTarget = String(targetOrderId).replace(/^#/i, '').trim();
+          const freshOrder = rawOrders.find((o: any) => String(o.order_id).replace(/^#/i, '').trim() === cleanTarget);
 
-        const data = await ordersRes.json();
-        if (data && data.status === true && Array.isArray(data.data)) {
-          const freshOrder = data.data.find((o: any) => String(o.order_id) === String(targetOrderId));
           if (freshOrder) {
             const updated = {
               order_id: freshOrder.order_id,
-              table: freshOrder.table_name || 'Walk-In',
-              guest_name: freshOrder.guest_name,
-              phone: freshOrder.phone,
+              table: freshOrder.table_name || freshOrder.table_number || 'Walk-In',
+              guest_name: freshOrder.guest_name || freshOrder.staff_name || 'Customer',
+              phone: freshOrder.phone || '',
               items: freshOrder.items || [],
-              subTotal: freshOrder.bill?.subtotal || 0,
-              tax: freshOrder.bill?.tax_amount || 0,
+              subTotal: freshOrder.bill?.subtotal || freshOrder.subtotal || 0,
+              tax: freshOrder.bill?.tax_amount || freshOrder.tax_amount || 0,
               serviceCharge: freshOrder.bill?.service_charge !== undefined 
                 ? parseFloat(freshOrder.bill.service_charge) 
                 : (orderInfo?.serviceCharge ?? 0),
-              total: freshOrder.bill?.grand_total || 0,
+              total: freshOrder.bill?.grand_total || freshOrder.total || 0,
               order_status: freshOrder.order_status || freshOrder.status || 'PENDING',
-              created_at: freshOrder.created_at
+              created_at: freshOrder.created_at || freshOrder.time
             };
             setOrderInfo(updated);
             localStorage.setItem('emenu_last_order', JSON.stringify(updated));
@@ -79,7 +82,7 @@ const OrderNumberPage: React.FC = () => {
     };
 
     fetchLatestDataFromBackend();
-  }, []);
+  }, [location.search]);
 
   if (!orderInfo) {
     return (
@@ -100,10 +103,6 @@ const OrderNumberPage: React.FC = () => {
   }
 
   const { order_id, table, guest_name, phone, items = [], subTotal = 0, tax = 0, total = 0, created_at } = orderInfo;
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handleTakeNewOrder = () => {
     sessionStorage.removeItem('emenu_table');
@@ -142,103 +141,29 @@ const OrderNumberPage: React.FC = () => {
   const sgstAmt = taxTotal / 2;
   const grandTotalNum = parseFloat(total) > 0 ? parseFloat(total) : (subTotalNum + serviceAmt + taxTotal);
 
-  const handleDownloadBill = () => {
-    const subtotal = subTotalNum;
-    const taxTotal = subtotal * (taxRate / 100);
-    const halfTaxRate = (taxRate / 2).toFixed(1);
-    const cgstAmt = taxTotal / 2;
-    const sgstAmt = taxTotal / 2;
-    const serviceAmt = subtotal * (serviceChargeRate / 100);
-    const grandTotal = grandTotalNum || (subtotal + taxTotal + serviceAmt);
-
-    const restaurantNameStr = posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant';
-    const addressStr = posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel';
-    const cityStateStr = [posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057';
-    const gstinStr = posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5';
-    const fssaiStr = posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876';
-
-    const lines = [
-      restaurantNameStr,
-      addressStr,
-      cityStateStr,
-      `GSTIN: ${gstinStr}`,
-      `FSSAI NO: ${fssaiStr}`,
-      "--------------------------------------------------",
-      `Bill No: ${order_id}                   Date: ${cleanDate}`,
-      `${table ? `Dine In: ${String(table).includes('Table') ? table : `Table #${table}`}` : 'Type: DINE-IN'}                  Waiter: Ravi`,
-      "--------------------------------------------------",
-      "Item                             Qty.   Price   Amount",
-      "--------------------------------------------------"
-    ];
-
-    (items || []).forEach((item: any) => {
-      const name = (item.name || 'Item').padEnd(28, ' ').substring(0, 28);
-      const qty = String(item.quantity || item.qty || 1).padStart(3, ' ');
-      const price = Number(item.price || item.unit_price || 0).toFixed(2).padStart(7, ' ');
-      const amt = (Number(item.price || item.unit_price || 0) * Number(item.quantity || item.qty || 1)).toFixed(2).padStart(7, ' ');
-      lines.push(`${name} ${qty} ${price} ${amt}`);
+  const handlePrint = () => {
+    printThermalReceiptDirect({
+      orderId: order_id,
+      dateStr: cleanDate,
+      tableName: table || 'Walk-In',
+      staffName: orderInfo?.staff_name || orderInfo?.order_meta?.staff_name || 'Staff',
+      guestName: guest_name,
+      items: items.map((item: any) => ({
+        name: item.name,
+        quantity: parseInt(item.quantity || item.qty) || 1,
+        price: Number(item.unit_price || item.price || 0),
+        total_price: Number(item.total_price || ((item.unit_price || item.price || 0) * (item.quantity || 1)))
+      })),
+      subtotal: subTotalNum,
+      taxRate: taxRate,
+      cgstAmt: cgstAmt,
+      sgstAmt: sgstAmt,
+      serviceChargeRate: serviceChargeRate,
+      serviceChargeAmt: serviceAmt,
+      grandTotal: grandTotalNum,
+      restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info
     });
-
-    lines.push("--------------------------------------------------");
-    lines.push(`Total Qty: ${totalQty}               Sub Total  ${subtotal.toFixed(2)}`);
-    lines.push(`                                    CGST ${halfTaxRate}%   ${cgstAmt.toFixed(2)}`);
-    lines.push(`                                    SGST ${halfTaxRate}%   ${sgstAmt.toFixed(2)}`);
-    if (serviceAmt > 0) {
-      lines.push(`                          Service Charge ${serviceChargeRate}%   ${serviceAmt.toFixed(2)}`);
-    }
-    lines.push("--------------------------------------------------");
-    lines.push(`Grand Total (INR)                         ${grandTotal.toFixed(2)}`);
-    lines.push("--------------------------------------------------");
-    lines.push("");
-    lines.push("             Thank you & Visit Again              ");
-    lines.push("--------------------------------------------------");
-
-    let contentStream = `BT /F1 10 Tf 20 760 Td 14 TL\n`;
-    lines.forEach((line) => {
-      const safeLine = line.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-      contentStream += `(${safeLine}) Tj T*\n`;
-    });
-    contentStream += `ET`;
-
-    const pdfRaw = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 450 800] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
-endobj
-4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
-endobj
-5 0 obj
-<< /Length ${contentStream.length} >>
-stream
-${contentStream}
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000246 00000 n 
-0000000318 00000 n 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-${400 + contentStream.length}
-%%EOF`;
-
-    const blob = new Blob([pdfRaw], { type: 'application/pdf' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Bill_Receipt_${order_id}.pdf`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    window.print();
   };
    const handleOrderMore = () => {
     if (table) {
@@ -330,9 +255,8 @@ ${400 + contentStream.length}
             if (isCancelled) {
               return (
                 <div className="relative overflow-hidden bg-gradient-to-br from-rose-50/90 via-red-50/40 to-white border border-rose-200/70 rounded-2xl p-3 sm:p-6 text-center space-y-2 shadow-xs">
-                  <div className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-rose-200 text-rose-700 text-[11px] sm:text-xs font-bold shadow-2xs mb-1 max-w-full">
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600 flex-shrink-0"></span>
-                    <span>Order Cancelled</span>
+                  <div className="flex justify-center mb-1">
+                    <OrderStatusBadge status={currentStatus} />
                   </div>
 
                   <h3 className="text-base sm:text-xl font-black text-rose-950 tracking-tight">
@@ -505,111 +429,31 @@ ${400 + contentStream.length}
         </div>
       </div>
 
-      {/* DEDICATED THERMAL POS RECEIPT (Exact POS Receipt template & logic from restaurant_pos_react) */}
-      <div id="thermal-pos-receipt" className="hidden font-mono text-black text-[11px] leading-[1.3] w-[80mm] max-w-full mx-auto p-2 bg-white">
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '6px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
-          <div style={{ fontSize: '10px' }}>{posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
-          <div style={{ fontSize: '10px' }}>
-            {[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
-          </div>
-          <div style={{ fontSize: '10px' }}>GSTIN: {posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
-          <div style={{ fontSize: '10px' }}>FSSAI NO: {posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Customer Info */}
-        {guest_name && (
-          <>
-            <div style={{ fontSize: '10px' }}>
-              Customer Name: {guest_name} {phone ? `(${phone})` : ''}
-            </div>
-            <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-          </>
-        )}
-
-        {/* Bill Meta */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-          <span>Bill No: {order_id}</span>
-          <span>Date: {cleanDate}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-          <span>{table ? `Dine In: ${String(table).includes('Table') ? table : `Table #${table}`}` : 'Type: DINE-IN'}</span>
-          <span>Waiter: Staff</span>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Table Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10px' }}>
-          <span style={{ flex: 1, textAlign: 'left' }}>Item</span>
-          <span style={{ width: '32px', textAlign: 'center' }}>Qty.</span>
-          <span style={{ width: '55px', textAlign: 'right' }}>Price</span>
-          <span style={{ width: '60px', textAlign: 'right' }}>Amount</span>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Items List */}
-        {items.map((item: any, idx: number) => {
-          const qty = parseInt(item.quantity || item.qty) || 1;
-          const unitPrice = parseFloat(item.price || item.unit_price || 0);
-          const itemAmount = unitPrice * qty;
-          return (
-            <div key={idx} style={{ marginBottom: '3px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-                <span style={{ flex: 1, textAlign: 'left', wordBreak: 'break-word' }}>{item.name}</span>
-                <span style={{ width: '32px', textAlign: 'center' }}>{qty}</span>
-                <span style={{ width: '55px', textAlign: 'right' }}>{unitPrice.toFixed(2)}</span>
-                <span style={{ width: '60px', textAlign: 'right' }}>{itemAmount.toFixed(2)}</span>
-              </div>
-              {item.notes && !item.notes.includes('Session Order') && (
-                <div style={{ fontSize: '9px', color: '#333', fontStyle: 'italic', paddingLeft: '4px' }}>* {item.notes}</div>
-              )}
-            </div>
-          );
-        })}
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
-
-        {/* Totals Section */}
-        <div style={{ fontSize: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span>Total Qty: {totalQty}</span>
-            <span>Sub Total &nbsp;&nbsp;{subTotalNum.toFixed(2)}</span>
-          </div>
-          {taxTotal > 0 && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
-                <span>CGST {(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;{cgstAmt.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
-                <span>SGST {(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;{sgstAmt.toFixed(2)}</span>
-              </div>
-            </>
-          )}
-          {serviceAmt > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
-              <span>Service Charge {serviceChargeRate}% &nbsp;&nbsp;{serviceAmt.toFixed(2)}</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '11px', marginTop: '4px' }}>
-            <span>Grand Total (INR)</span>
-            <span>{grandTotalNum.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0 4px 0' }}></div>
-
-        {/* Footer Greeting */}
-        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: '500', padding: '2px 0' }}>
-          Thank you & Visit Again
-        </div>
-
-        <div style={{ borderTop: '1px dashed #000', margin: '4px 0' }}></div>
-      </div>
+      {/* Unified Receipt Bill Print Component */}
+      <ReceiptBillPrint
+        orderId={order_id}
+        dateStr={cleanDate}
+        tableName={table ? (String(table).includes('Table') ? table : `Table #${table}`) : 'DINE-IN'}
+        staffName="Staff"
+        guestName={guest_name}
+        items={items}
+        subtotal={subTotalNum}
+        taxRate={taxRate}
+        cgstAmt={cgstAmt}
+        sgstAmt={sgstAmt}
+        serviceChargeRate={serviceChargeRate}
+        serviceChargeAmt={serviceAmt}
+        grandTotal={grandTotalNum}
+        restaurantInfo={{
+          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name,
+          address: posSettings?.address || posSettings?.restaurant_info?.address,
+          city: posSettings?.city || posSettings?.restaurant_info?.city,
+          state: posSettings?.state || posSettings?.restaurant_info?.state,
+          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode,
+          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number,
+          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number
+        }}
+      />
 
       {/* Curved Center-Raised FAB Bottom Navigation Bar (Hidden for self-pos-billing) */}
       {!isSelfPosBilling && (
@@ -633,14 +477,7 @@ ${400 + contentStream.length}
               return null;
             })()}
 
-            {/* Download Tab */}
-            <button 
-              onClick={handleDownloadBill}
-              className="flex flex-col items-center justify-center px-2 text-gray-500 hover:text-emerald-600 transition-colors cursor-pointer group"
-            >
-              <Download size={20} className="group-hover:scale-110 transition-transform text-emerald-600" />
-              <span className="text-[10px] font-extrabold tracking-wider uppercase mt-0.5 text-gray-600">Download</span>
-            </button>
+
 
             {/* MENU TAB (Always visible for Guest Customers on mobile; responsive for staff) */}
             <button 

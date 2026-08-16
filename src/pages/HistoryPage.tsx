@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Receipt, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Receipt, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Printer, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
+import OrderStatusBadge from '../components/OrderStatusBadge';
+import ReceiptBillPrint, { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 
 interface OrderHistoryItem {
   order_id: string;
@@ -40,10 +42,74 @@ const HistoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH'>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'COMPLETED' | 'PENDING' | 'CANCELLED'>('ALL');
+
+  // Single Unified Calendar Modal State (Matches restaurant_pos 1-to-1)
+  const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false);
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(() => new Date());
+  const [tempStartDate, setTempStartDate] = useState<string>('');
+  const [tempEndDate, setTempEndDate] = useState<string>('');
+
+  const openCalendarModal = () => {
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+    if (startDate) {
+      setCalendarViewDate(new Date(startDate));
+    } else {
+      setCalendarViewDate(new Date());
+    }
+    setShowCalendarModal(true);
+  };
+
+  const handleDateClick = (dateStr: string) => {
+    if (!tempStartDate || (tempStartDate && tempEndDate)) {
+      setTempStartDate(dateStr);
+      setTempEndDate('');
+    } else if (tempStartDate && !tempEndDate) {
+      if (dateStr >= tempStartDate) {
+        setTempEndDate(dateStr);
+      } else {
+        setTempStartDate(dateStr);
+        setTempEndDate('');
+      }
+    }
+  };
+
+  const applyCalendarRange = () => {
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate || tempStartDate);
+    setShowCalendarModal(false);
+  };
+
+  const clearDateRange = () => {
+    setStartDate('');
+    setEndDate('');
+    setTempStartDate('');
+    setTempEndDate('');
+  };
+
+  const getCalendarDays = () => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days: ({ dayNum: number; dateStr: string } | null)[] = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(year, month, d);
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      days.push({ dayNum: d, dateStr: `${yyyy}-${mm}-${dd}` });
+    }
+    return days;
+  };
 
   const handleOpenOrderPlacedPage = (order: any) => {
     localStorage.setItem('emenu_last_order', JSON.stringify({
@@ -139,134 +205,25 @@ const HistoryPage: React.FC = () => {
     fetchOrderHistory();
   }, []);
 
-  const handleDownloadBill = (order: any) => {
-    const cleanDate = order.created_at 
-      ? new Date(order.created_at.includes(' ') ? order.created_at.replace(' ', 'T') : order.created_at).toLocaleString('en-GB')
-      : new Date().toLocaleString('en-GB');
-
-    const taxRate = parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5);
-    const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
-    const items = order.items || [];
-    const itemsSubtotal = items.reduce((sum: number, item: any) => {
-      const q = parseInt(item.quantity || item.qty) || 1;
-      const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
-      return sum + (unitP * q);
-    }, 0);
-
-    const subtotal = Number(order.bill?.subtotal ?? order.subTotal ?? order.subtotal ?? itemsSubtotal);
-    const serviceAmt = Number(order.bill?.service_charge ?? order.serviceCharge ?? ((subtotal * serviceChargeRate) / 100));
-    const taxTotal = Number(order.bill?.tax_amount ?? order.tax ?? (((subtotal + serviceAmt) * taxRate) / 100));
-    const halfTaxRate = (taxRate / 2).toFixed(1);
-    const cgstAmt = taxTotal / 2;
-    const sgstAmt = taxTotal / 2;
-    const grandTotal = Number(order.bill?.grand_total ?? order.total ?? order.grand_total ?? (subtotal + serviceAmt + taxTotal));
-    const totalQty = items.reduce((sum: number, item: any) => sum + (parseInt(item.quantity || item.qty) || 1), 0);
-
-    const restaurantNameStr = posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant';
-    const addressStr = posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel';
-    const cityStateStr = [posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057';
-    const gstinStr = posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5';
-    const fssaiStr = posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876';
-
-    const lines = [
-      restaurantNameStr,
-      addressStr,
-      cityStateStr,
-      `GSTIN: ${gstinStr}`,
-      `FSSAI NO: ${fssaiStr}`,
-      "--------------------------------------------------",
-      `Bill No: ${order.order_id}                   Date: ${cleanDate}`,
-      `Dine In: ${order.table_name || 'N/A'}                  Waiter: Ravi`,
-      "--------------------------------------------------",
-      "Item                             Qty.   Price   Amount",
-      "--------------------------------------------------"
-    ];
-
-    (order.items || []).forEach((item: any) => {
-      const name = (item.name || 'Item').padEnd(28, ' ').substring(0, 28);
-      const qty = String(item.quantity || item.qty || 1).padStart(3, ' ');
-      const price = Number(item.unit_price || item.price || 0).toFixed(2).padStart(7, ' ');
-      const amt = (Number(item.total_price || (Number(item.unit_price || item.price || 0) * (item.quantity || 1)))).toFixed(2).padStart(7, ' ');
-      lines.push(`${name} ${qty} ${price} ${amt}`);
-    });
-
-    lines.push("--------------------------------------------------");
-    lines.push(`Total Qty: ${totalQty}               Sub Total  ${subtotal.toFixed(2)}`);
-    lines.push(`                                    CGST ${halfTaxRate}%   ${cgstAmt.toFixed(2)}`);
-    lines.push(`                                    SGST ${halfTaxRate}%   ${sgstAmt.toFixed(2)}`);
-    if (serviceChargeRate > 0) {
-      lines.push(`                          Service Charge ${serviceChargeRate}%   ${serviceAmt.toFixed(2)}`);
-    }
-    lines.push("--------------------------------------------------");
-    lines.push(`Grand Total (INR)                         ${grandTotal.toFixed(2)}`);
-    lines.push("--------------------------------------------------");
-    lines.push("");
-    lines.push("             Thank you & Visit Again              ");
-    lines.push("--------------------------------------------------");
-
-    let contentStream = `BT /F1 10 Tf 20 760 Td 14 TL\n`;
-    lines.forEach((line) => {
-      const safeLine = line.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-      contentStream += `(${safeLine}) Tj T*\n`;
-    });
-    contentStream += `ET`;
-
-    const pdfRaw = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 450 800] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
-endobj
-4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
-endobj
-5 0 obj
-<< /Length ${contentStream.length} >>
-stream
-${contentStream}
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000246 00000 n 
-0000000318 00000 n 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-${400 + contentStream.length}
-%%EOF`;
-
-    const blob = new Blob([pdfRaw], { type: 'application/pdf' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Bill_Receipt_${order.order_id}.pdf`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
+  const [printOrderData, setPrintOrderData] = useState<any>(null);
 
   const handlePrintOrder = (order: any) => {
     const cleanDate = order.created_at 
       ? new Date(order.created_at.includes(' ') ? order.created_at.replace(' ', 'T') : order.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
       : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
-    const items = order.items || [];
-    const totalQty = items.reduce((sum: number, item: any) => sum + (parseInt(item.quantity || item.qty) || 1), 0);
-    
-    // Fallback subtotal calculation from items if order.bill is empty
-    const itemsSubtotal = items.reduce((sum: number, item: any) => {
+    const items = (order.items || []).map((item: any) => {
       const q = parseInt(item.quantity || item.qty) || 1;
       const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
-      return sum + (unitP * q);
-    }, 0);
-
+      return {
+        name: item.name,
+        quantity: q,
+        price: unitP,
+        total_price: Number(item.total_price || (unitP * q))
+      };
+    });
+    
+    const itemsSubtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
     const taxRate = parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5);
     const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
 
@@ -277,141 +234,33 @@ ${400 + contentStream.length}
     const sgstAmt = taxTotal / 2;
     const grandTotalNum = Number(order.bill?.grand_total ?? order.total ?? order.grand_total ?? (subTotalNum + serviceAmt + taxTotal));
 
-    const itemsRowsHtml = items.map((item: any) => {
-      const qty = parseInt(item.quantity || item.qty) || 1;
-      const unitPrice = Number(item.unit_price || item.price || 0);
-      const itemAmount = Number(item.total_price || (unitPrice * qty));
-      return `
-        <div style="margin-bottom: 3px;">
-          <div style="display: flex; justify-content: space-between; font-size: 10px;">
-            <span style="flex: 1; text-align: left; word-break: break-word;">${item.name}</span>
-            <span style="width: 32px; text-align: center;">${qty}</span>
-            <span style="width: 55px; text-align: right;">${unitPrice.toFixed(2)}</span>
-            <span style="width: 60px; text-align: right;">${itemAmount.toFixed(2)}</span>
-          </div>
-          ${(item.notes && !item.notes.includes('Session Order')) ? `<div style="font-size: 9px; color: #333; font-style: italic; padding-left: 4px;">* ${item.notes}</div>` : ''}
-        </div>
-      `;
-    }).join('');
+    const printData = {
+      orderId: order.order_id,
+      dateStr: cleanDate,
+      tableName: order.table_name || 'Walk-In',
+      staffName: order.staff_name || 'Staff',
+      guestName: order.guest_name,
+      items: items,
+      subtotal: subTotalNum,
+      taxRate: taxRate,
+      cgstAmt: cgstAmt,
+      sgstAmt: sgstAmt,
+      serviceChargeRate: serviceChargeRate,
+      serviceChargeAmt: serviceAmt,
+      grandTotal: grandTotalNum,
+      restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info || {
+        name: posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT',
+        address: posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel',
+        city: posSettings?.city || posSettings?.restaurant_info?.city || 'Mumbai',
+        state: posSettings?.state || posSettings?.restaurant_info?.state || 'MH',
+        pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode || '',
+        gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || '27AAAAA0000A1Z5',
+        fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || '10019022009876'
+      }
+    };
 
-    const receiptHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>POS Receipt #${order.order_id}</title>
-        <style>
-          @page { size: 80mm auto; margin: 0; }
-          body {
-            font-family: monospace, sans-serif;
-            width: 80mm;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 8px;
-            color: #000;
-            background: #fff;
-            font-size: 11px;
-            line-height: 1.3;
-          }
-        </style>
-      </head>
-      <body>
-        <div style="text-align: center; margin-bottom: 6px;">
-          <div style="font-size: 14px; font-weight: bold;">${posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
-          <div style="font-size: 10px;">${posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
-          <div style="font-size: 10px;">
-            ${[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
-          </div>
-          <div style="font-size: 10px;">GSTIN: ${posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
-          <div style="font-size: 10px;">FSSAI NO: ${posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        ${order.guest_name ? `
-          <div style="font-size: 10px;">
-            Customer Name: ${order.guest_name} ${order.phone ? `(${order.phone})` : ''}
-          </div>
-          <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-        ` : ''}
-
-        <div style="display: flex; justify-content: space-between; font-size: 10px;">
-          <span>Bill No: ${order.order_id}</span>
-          <span>Date: ${cleanDate}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px;">
-          <span>${order.table_name ? `Dine In: ${order.table_name}` : 'Type: DINE-IN'}</span>
-          <span>Waiter: Ravi</span>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
-          <span style="flex: 1; text-align: left;">Item</span>
-          <span style="width: 32px; text-align: center;">Qty.</span>
-          <span style="width: 55px; text-align: right;">Price</span>
-          <span style="width: 60px; text-align: right;">Amount</span>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        ${itemsRowsHtml}
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-        <div style="font-size: 10px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span>Total Qty: ${totalQty}</span>
-            <span>Sub Total &nbsp;&nbsp;${subTotalNum.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-            <span>CGST ${((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}% &nbsp;&nbsp;${cgstAmt.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-            <span>SGST ${((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}% &nbsp;&nbsp;${sgstAmt.toFixed(2)}</span>
-          </div>
-          ${serviceAmt > 0 ? `
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-              <span>Service Charge ${serviceChargeRate}% &nbsp;&nbsp;${serviceAmt.toFixed(2)}</span>
-            </div>
-          ` : ''}
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 4px;">
-            <span>Grand Total (INR)</span>
-            <span>${grandTotalNum.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 6px 0 4px 0;"></div>
-
-        <div style="text-align: center; font-size: 11px; font-weight: 500; padding: 2px 0;">
-          Thank you & Visit Again
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() { window.close(); }, 500);
-          };
-        </script>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank', 'width=420,height=600');
-    if (printWindow) {
-      printWindow.document.write(receiptHtml);
-      printWindow.document.close();
-    }
-  };
-
-  const getStatusBadgeClass = (status: string) => {
-    const s = (status || '').toUpperCase();
-    if (s === 'PAID' || s === 'COMPLETED' || s === 'CONFIRMED') return 'bg-emerald-50 text-emerald-600 border border-emerald-200/50';
-    if (s === 'CANCELLED') return 'bg-rose-50 text-rose-600 border border-rose-200/50';
-    if (s === 'PENDING') return 'bg-amber-50 text-amber-600 border border-amber-200/50';
-    if (s === 'PREPARING' || s === 'SERVED') return 'bg-sky-50 text-sky-600 border border-sky-200/50';
-    return 'bg-gray-50 text-gray-500 border border-gray-200';
+    setPrintOrderData(printData);
+    printThermalReceiptDirect(printData);
   };
 
   const filteredOrders = orders.filter((order: any) => {
@@ -455,26 +304,49 @@ ${400 + contentStream.length}
         if (!isSameDay) return false;
       }
 
+      if (dateFilter === 'YESTERDAY') {
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+        const isYesterday = 
+          orderDate.getDate() === yesterday.getDate() &&
+          orderDate.getMonth() === yesterday.getMonth() &&
+          orderDate.getFullYear() === yesterday.getFullYear();
+        if (!isYesterday) return false;
+      }
+
       if (dateFilter === 'THIS_WEEK') {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(today.getDate() - 7);
         if (orderDate < oneWeekAgo) return false;
       }
+
+      if (dateFilter === 'THIS_MONTH') {
+        const isThisMonth = 
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getFullYear() === today.getFullYear();
+        if (!isThisMonth) return false;
+      }
     }
 
-    // 2. Status Filter
+    // 3. Status Filter
     if (statusFilter !== 'ALL') {
       const status = (order.resolved_status || order.order_status || '').toUpperCase();
       const paymentStatus = (order.bill?.payment_status || '').toUpperCase();
 
-      if (statusFilter === 'PAID') {
+      if (statusFilter === 'PAID' || statusFilter === 'COMPLETED') {
         const isPaid = status === 'PAID' || status === 'COMPLETED' || paymentStatus === 'PAID';
         if (!isPaid) return false;
       }
 
       if (statusFilter === 'PENDING') {
         const isPaid = status === 'PAID' || status === 'COMPLETED' || paymentStatus === 'PAID';
-        if (isPaid) return false;
+        const isCancelled = status === 'CANCELLED' || status === 'REJECTED';
+        if (isPaid || isCancelled) return false;
+      }
+
+      if (statusFilter === 'CANCELLED') {
+        const isCancelled = status === 'CANCELLED' || status === 'REJECTED';
+        if (!isCancelled) return false;
       }
     }
 
@@ -507,9 +379,9 @@ ${400 + contentStream.length}
         </div>
 
         {/* Mobile & Desktop Responsive Date Filter Toolbar */}
-        <div className="flex flex-col gap-2.5 mb-5 select-none">
-          {/* Top Row: Scrollable Quick Presets */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 min-w-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 mb-5 select-none">
+          {/* Scrollable Quick Presets (Left Side) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 min-w-0 flex-1">
             <button
               onClick={() => { setDateFilter('ALL'); setStatusFilter('ALL'); setStartDate(''); setEndDate(''); }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
@@ -533,6 +405,17 @@ ${400 + contentStream.length}
             </button>
 
             <button
+              onClick={() => { setDateFilter(dateFilter === 'YESTERDAY' ? 'ALL' : 'YESTERDAY'); setStartDate(''); setEndDate(''); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'YESTERDAY' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              📆 Yesterday
+            </button>
+
+            <button
               onClick={() => { setDateFilter(dateFilter === 'THIS_WEEK' ? 'ALL' : 'THIS_WEEK'); setStartDate(''); setEndDate(''); }}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
                 dateFilter === 'THIS_WEEK' && !startDate && !endDate
@@ -540,7 +423,18 @@ ${400 + contentStream.length}
                   : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
               }`}
             >
-              📆 This Week
+              📊 This Week
+            </button>
+
+            <button
+              onClick={() => { setDateFilter(dateFilter === 'THIS_MONTH' ? 'ALL' : 'THIS_MONTH'); setStartDate(''); setEndDate(''); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                dateFilter === 'THIS_MONTH' && !startDate && !endDate
+                  ? 'bg-[#0077b6] text-white border-[#0077b6] shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200/80 hover:bg-gray-50'
+              }`}
+            >
+              🗓️ This Month
             </button>
 
             <div className="h-4 w-[1px] bg-gray-300 mx-0.5 flex-shrink-0"></div>
@@ -553,7 +447,7 @@ ${400 + contentStream.length}
                   : 'bg-white text-emerald-700 border-emerald-200/80 hover:bg-emerald-50'
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Paid
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed
             </button>
 
             <button
@@ -566,47 +460,48 @@ ${400 + contentStream.length}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pending
             </button>
+
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'CANCELLED' ? 'ALL' : 'CANCELLED')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                statusFilter === 'CANCELLED'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  : 'bg-white text-rose-700 border-rose-200/80 hover:bg-rose-50'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Cancelled
+            </button>
           </div>
 
-          {/* Custom Date Range Pill Bar (Fits 100% width on Mobile without clipping) */}
-          <div className="flex items-center gap-1.5 w-full bg-white p-1.5 rounded-xl border border-gray-200 shadow-2xs">
-            <div className="flex-1 min-w-0 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/60 focus-within:border-[#0077b6] transition-colors">
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase">From</span>
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (e.target.value) setDateFilter('ALL');
-                }}
-                className="w-full bg-transparent text-[11px] sm:text-xs font-semibold text-gray-800 outline-none cursor-pointer p-0"
-              />
-            </div>
-
-            <span className="text-gray-300 font-extrabold text-xs px-0.5">→</span>
-
-            <div className="flex-1 min-w-0 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/60 focus-within:border-[#0077b6] transition-colors">
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase">To</span>
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  if (e.target.value) setDateFilter('ALL');
-                }}
-                className="w-full bg-transparent text-[11px] sm:text-xs font-semibold text-gray-800 outline-none cursor-pointer p-0"
-              />
-            </div>
-
-            {(startDate || endDate) && (
-              <button 
-                onClick={() => { setStartDate(''); setEndDate(''); }}
-                className="p-1 px-2 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer flex-shrink-0"
-                title="Clear date filter"
-              >
-                Clear ✕
-              </button>
-            )}
+          {/* Single Unified Calendar Range Button (Right Side on Desktop / Same Line) */}
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <button
+              type="button"
+              onClick={openCalendarModal}
+              className="w-full md:w-auto flex items-center justify-between gap-3 px-3.5 py-1.5 bg-white hover:bg-gray-50 text-gray-800 font-bold rounded-xl border border-gray-200 shadow-2xs hover:border-[#0077b6] transition-all cursor-pointer min-w-[200px]"
+            >
+              <span className="flex items-center gap-2 truncate">
+                <span className="text-[#0077b6] text-xs">📅</span>
+                {startDate ? (
+                  <span className="text-xs font-black text-gray-900">
+                    {startDate} {endDate && endDate !== startDate ? `→ ${endDate}` : ''}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-500 font-semibold">Select Date Range...</span>
+                )}
+              </span>
+              {(startDate || endDate) ? (
+                <span
+                  onClick={(e) => { e.stopPropagation(); clearDateRange(); }}
+                  className="text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-1.5 py-0.5 rounded-md ml-1 border border-rose-200 cursor-pointer"
+                  title="Clear Date Filter"
+                >
+                  ✕
+                </span>
+              ) : (
+                <ChevronDown size={14} className="text-gray-400 ml-1 shrink-0" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -683,19 +578,17 @@ ${400 + contentStream.length}
                               </span>
                             </td>
                           )}
-                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-[11px] sm:text-xs text-gray-500 font-medium whitespace-nowrap">
+                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-[11px] sm:text-xs text-gray-800 font-bold whitespace-nowrap">
                             {cleanDate}
                           </td>
-                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs text-gray-600 font-medium max-w-[130px] sm:max-w-xs truncate" title={itemsSummary}>
+                          <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs text-gray-900 font-bold max-w-[130px] sm:max-w-xs truncate" title={itemsSummary}>
                             {itemsSummary}
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-black text-gray-900 whitespace-nowrap">
                             ₹{Number(order.bill?.grand_total || 0).toFixed(2)}
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4">
-                            <span className={`text-[9px] sm:text-[10px] font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider border whitespace-nowrap ${getStatusBadgeClass(isSelfPosBilling ? 'COMPLETED' : order.resolved_status)}`}>
-                              {isSelfPosBilling ? 'COMPLETED' : (order.resolved_status || 'N/A')}
-                            </span>
+                            <OrderStatusBadge status={isSelfPosBilling ? 'COMPLETED' : order.resolved_status} />
                           </td>
                           <td className="px-3 sm:px-5 py-3 sm:py-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
@@ -722,13 +615,6 @@ ${400 + contentStream.length}
                                   >
                                     <Printer size={14} />
                                   </button>
-                                  <button 
-                                    className="p-1.5 hover:bg-[#0077b6]/10 text-[#0077b6] bg-[#0077b6]/5 rounded-lg transition-colors border border-[#0077b6]/20 cursor-pointer"
-                                    onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
-                                    title="Download Bill"
-                                  >
-                                    <Download size={14} />
-                                  </button>
                                 </>
                               )}
                               <button 
@@ -750,17 +636,17 @@ ${400 + contentStream.length}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 items-start w-full">
                                 {/* Left Side: Items Detail */}
                                 <div className="w-full">
-                                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 sm:mb-3 flex items-center gap-1.5">
+                                  <h4 className="text-[11px] font-extrabold text-gray-700 uppercase tracking-widest mb-2 sm:mb-3 flex items-center gap-1.5">
                                     <Receipt size={13} /> Ordered Items List
                                   </h4>
                                   <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 space-y-2.5 shadow-inner">
                                     {(order.items || []).map((item, idx) => (
                                       <div key={idx} className="flex justify-between items-center text-xs sm:text-sm">
                                         <div className="flex flex-col min-w-0 pr-2">
-                                          <span className="font-semibold text-gray-800 truncate">{item.name}</span>
-                                          <span className="text-[11px] sm:text-xs text-gray-400">Price: ₹{Number(item.unit_price).toFixed(2)}</span>
+                                          <span className="font-bold text-gray-900 truncate">{item.name}</span>
+                                          <span className="text-[11px] sm:text-xs text-gray-700 font-semibold">Price: ₹{Number(item.unit_price).toFixed(2)}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 sm:gap-4 font-bold text-gray-700 flex-shrink-0">
+                                        <div className="flex items-center gap-2 sm:gap-4 font-bold text-gray-900 flex-shrink-0">
                                           <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px]">x{item.quantity}</span>
                                           <span>₹{(Number(item.total_price || item.unit_price * item.quantity)).toFixed(2)}</span>
                                         </div>
@@ -772,30 +658,30 @@ ${400 + contentStream.length}
                 {/* Right Side: Billing Breakdown */}
                                 {order.bill && (
                                   <div className="bg-white border border-dashed border-gray-300 rounded-xl p-3.5 sm:p-5 shadow-sm w-full md:max-w-sm md:ml-auto">
-                                    <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest border-b pb-2 mb-3 text-center">
+                                    <h4 className="text-[11px] font-extrabold text-gray-700 uppercase tracking-widest border-b pb-2 mb-3 text-center">
                                       Billing breakdown
                                     </h4>
-                                    <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                                    <div className="space-y-2 text-xs sm:text-sm text-gray-900">
                                       <div className="flex justify-between">
-                                        <span>Subtotal</span>
-                                        <span className="font-medium text-gray-800">₹{Number(order.bill.subtotal).toFixed(2)}</span>
+                                        <span className="font-bold text-gray-900">Subtotal</span>
+                                        <span className="font-bold text-gray-900">₹{Number(order.bill.subtotal).toFixed(2)}</span>
                                       </div>
-                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-500 pl-2">
+                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-800 font-semibold pl-2">
                                         <span>CGST ({((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}%)</span>
                                         <span>+₹{(Number(order.bill.tax_amount || 0) / 2).toFixed(2)}</span>
                                       </div>
-                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-500 pl-2">
+                                      <div className="flex justify-between text-[11px] sm:text-xs text-gray-800 font-semibold pl-2">
                                         <span>SGST ({((parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5)) / 2).toFixed(1)}%)</span>
                                         <span>+₹{(Number(order.bill.tax_amount || 0) / 2).toFixed(2)}</span>
                                       </div>
                                       {Number(order.bill.service_charge) > 0 && (
-                                        <div className="flex justify-between text-[11px] sm:text-xs text-gray-500">
+                                        <div className="flex justify-between text-[11px] sm:text-xs text-gray-800 font-semibold">
                                           <span>Service Charge ({posSettings?.financials?.service_charge_percentage || posSettings?.serviceCharge || 5}%)</span>
                                           <span>+₹{Number(order.bill.service_charge).toFixed(2)}</span>
                                         </div>
                                       )}
                                       {order.bill.discount_amount > 0 && (
-                                        <div className="flex justify-between text-[11px] sm:text-xs text-red-500">
+                                        <div className="flex justify-between text-[11px] sm:text-xs text-red-600 font-bold">
                                           <span>Discount</span>
                                           <span>-₹{Number(order.bill.discount_amount).toFixed(2)}</span>
                                         </div>
@@ -804,9 +690,7 @@ ${400 + contentStream.length}
                                         <span>Grand Total</span>
                                         <span className="text-[#0077b6]">₹{Number(order.bill.grand_total).toFixed(2)}</span>
                                       </div>
-                                      <div className="text-[9px] text-center text-gray-400 font-bold tracking-wide uppercase pt-2">
-                                        Payment state: {isSelfPosBilling ? 'PAID' : order.bill.payment_status} | Bill: {isSelfPosBilling ? 'COMPLETED' : order.bill.bill_status}
-                                      </div>
+
 
                                       {/* Print & Download Action Buttons (Hidden for self-pos-billing) */}
                                       {!isSelfPosBilling && (
@@ -815,17 +699,10 @@ ${400 + contentStream.length}
                                             <>
                                               <button 
                                                 onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }}
-                                                className="flex-1 py-1.5 px-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                                                className="w-full py-1.5 px-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
                                               >
                                                 <Printer size={13} />
                                                 <span>Print Bill</span>
-                                              </button>
-                                              <button 
-                                                onClick={(e) => { e.stopPropagation(); handleDownloadBill(order); }}
-                                                className="flex-1 py-1.5 px-2 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
-                                              >
-                                                <Download size={13} />
-                                                <span>Download Bill</span>
                                               </button>
                                             </>
                                           ) : (
@@ -852,6 +729,134 @@ ${400 + contentStream.length}
           </div>
         )}
       </main>
+
+      {/* ── Single Unified Range Calendar Modal (Matches restaurant_pos 1-to-1) ── */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-3">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-150 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+              <h3 className="font-extrabold text-sm flex items-center gap-2">
+                <span>📅</span>
+                <span>Select Date Range</span>
+              </h3>
+              <button
+                onClick={() => setShowCalendarModal(false)}
+                className="text-gray-400 hover:text-white font-black text-lg p-1 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Calendar Controls & Grid */}
+            <div className="p-4 space-y-3">
+              {/* Month Header Navigation */}
+              <div className="flex items-center justify-between px-1">
+                <button
+                  type="button"
+                  onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all"
+                >
+                  ‹
+                </button>
+                <span className="font-extrabold text-gray-900 text-sm">
+                  {calendarViewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* Weekday Labels */}
+              <div className="grid grid-cols-7 text-center gap-1">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d, i) => (
+                  <span key={i} className="text-[11px] font-extrabold text-gray-400 uppercase">{d}</span>
+                ))}
+              </div>
+
+              {/* Calendar Days Grid */}
+              <div className="grid grid-cols-7 text-center gap-1">
+                {getCalendarDays().map((item, idx) => {
+                  if (!item) return <div key={idx} />;
+                  const isStart = tempStartDate === item.dateStr;
+                  const isEnd = tempEndDate === item.dateStr;
+                  const inRange = tempStartDate && tempEndDate && item.dateStr > tempStartDate && item.dateStr < tempEndDate;
+                  const isSelected = isStart || isEnd;
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => handleDateClick(item.dateStr)}
+                      className={`h-9 flex items-center justify-center cursor-pointer transition-all ${
+                        inRange ? 'bg-slate-100' : ''
+                      } ${
+                        isStart ? 'rounded-l-full' : ''
+                      } ${
+                        isEnd ? 'rounded-r-full' : ''
+                      } ${
+                        !inRange && !isSelected ? 'rounded-full' : ''
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 flex items-center justify-center font-bold text-xs rounded-full transition-all ${
+                          isSelected ? 'bg-slate-900 text-white shadow-sm' : inRange ? 'text-slate-900 font-black' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {item.dayNum}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Selected Info Summary */}
+              <div className="p-2.5 rounded-xl text-center border bg-slate-50 border-slate-200/80">
+                <span className="text-xs font-semibold text-slate-800">
+                  {tempStartDate ? (
+                    <>
+                      Selected: <strong className="text-slate-950 font-black">{tempStartDate}</strong> {tempEndDate ? `to ${tempEndDate}` : '(Select End Date)'}
+                    </>
+                  ) : (
+                    'Click a date to select Start Date'
+                  )}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempStartDate('');
+                    setTempEndDate('');
+                  }}
+                  className="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl border border-gray-200 transition-all cursor-pointer"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={applyCalendarRange}
+                  className="flex-1 py-2 px-3 bg-[#0077b6] hover:bg-[#005f92] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                >
+                  Apply Range
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unified Thermal Receipt Print Component */}
+      {printOrderData && (
+        <div className="hidden print:block">
+          <ReceiptBillPrint {...printOrderData} />
+        </div>
+      )}
     </div>
   );
 };

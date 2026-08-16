@@ -331,13 +331,14 @@ const OrderInfoPage: React.FC = () => {
         const rawCheckOrders = Array.isArray(ordersCheckData) ? ordersCheckData : (ordersCheckData?.data || []);
         const isTableOccupiedNow = rawCheckOrders.some((o: any) => {
           const cleanOrderTable = String(o.table_name || o.table_number || o.table_number_id || '').replace(/[^0-9]/g, '');
-          const isPending = (o.order_status || o.status || '').toUpperCase() === 'PENDING';
-          const isUnpaid = (o.bill?.payment_status || '').toUpperCase() !== 'PAID';
-          return cleanOrderTable !== '' && cleanOrderTable === cleanTableNum && isPending && isUnpaid;
+          const st = (o.order_status || o.status || '').toUpperCase();
+          const isActive = st === 'PENDING' || st === 'PREPARING' || st === 'READY' || st === 'CONFIRMED' || st === 'IN_PROGRESS';
+          const isUnpaid = (o.bill?.payment_status || o.payment_status || '').toUpperCase() !== 'PAID';
+          return cleanOrderTable !== '' && cleanOrderTable === cleanTableNum && isActive && isUnpaid;
         });
 
         if (isTableOccupiedNow && !existingOrderId) {
-          toast.error(`Table #${cleanTableNum} was just occupied. Please select an available table.`);
+          toast.error(`Table #${cleanTableNum} is currently occupied with an active order. Please select an available table.`);
           setLoading(false);
           return;
         }
@@ -502,16 +503,18 @@ const OrderInfoPage: React.FC = () => {
       <div className="bodymiddle flex justify-center min-h-[calc(100vh-4rem-5rem)] px-1 sm:px-4 py-1.5 sm:py-6">
         <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-6 shadow-none sm:shadow-sm border-0 sm:border border-gray-200/80 space-y-4 sm:space-y-6 flex flex-col justify-between">
 
-          {/* Restaurant Header Info */}
-          <div className="restaurant-info bg-gray-50/80 rounded-xl p-3 sm:p-4 border border-gray-100">
-            <h2 className="text-lg font-black text-gray-900 mb-1 tracking-tight">BIG BEN RESTAURANT</h2>
-            <p className="text-xs text-gray-600 flex items-start gap-1.5 my-1">
-              <span>📍</span> <span>1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)</span>
-            </p>
-            <p className="text-xs text-gray-600 flex items-center gap-1.5 my-1">
-              <span>📞</span> <span>+91-9876543212</span>
-            </p>
-          </div>
+          {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
+          {isGuestCustomer && (
+            <div className="restaurant-info bg-gray-50/80 rounded-xl p-3 sm:p-4 border border-gray-100">
+              <h2 className="text-lg font-black text-gray-900 mb-1 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
+              <p className="text-xs text-gray-600 flex items-start gap-1.5 my-1">
+                <span>📍</span> <span>{posSettings?.restaurant_info?.address || '1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)'}</span>
+              </p>
+              <p className="text-xs text-gray-600 flex items-center gap-1.5 my-1">
+                <span>📞</span> <span>{posSettings?.restaurant_info?.phone || '+91-9876543212'}</span>
+              </p>
+            </div>
+          )}
 
           {/* Order Type & Table Badges */}
           <div className={`grid ${isEnableTables ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>

@@ -3,6 +3,8 @@ import { Trash2, ShoppingBag, ArrowLeft, Info, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, getRestaurantId } from '../config';
+import BillSummaryModal from '../components/BillSummaryModal';
+import { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -215,7 +217,6 @@ const CartPage: React.FC = () => {
     setSubmittingBilling(true);
     try {
       const storedTable = sessionStorage.getItem('emenu_table') || '';
-      const cleanTableNum = String(storedTable).replace(/[^0-9]/g, '') || '1';
       const restaurantId = getRestaurantId();
 
       const payloadItems = cartItems.map(item => ({
@@ -278,131 +279,36 @@ const CartPage: React.FC = () => {
         created_at: new Date().toISOString()
       }));
 
-      // Trigger instant real-time thermal receipt print matching exact POS standard format
-      const printWindow = window.open('', '_blank', 'width=420,height=600');
-      if (printWindow) {
-        const totalQty = cartItems.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
-        const cgstAmt = taxAmt / 2;
-        const sgstAmt = taxAmt / 2;
-        const cleanDate = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-
-        const itemsRowsHtml = cartItems.map((item: any) => {
-          const unitPrice = parseFloat(item.price || 0);
-          const itemAmount = unitPrice * (item.quantity || 1);
-          return `
-            <div style="margin-bottom: 3px;">
-              <div style="display: flex; justify-content: space-between; font-size: 10px;">
-                <span style="flex: 1; text-align: left; word-break: break-word;">${item.name}</span>
-                <span style="width: 32px; text-align: center;">${item.quantity || 1}</span>
-                <span style="width: 55px; text-align: right;">${unitPrice.toFixed(2)}</span>
-                <span style="width: 60px; text-align: right;">${itemAmount.toFixed(2)}</span>
-              </div>
-              ${item.notes ? `<div style="font-size: 9px; color: #333; font-style: italic; padding-left: 4px;">* ${item.notes}</div>` : ''}
-            </div>
-          `;
-        }).join('');
-
-        const receiptHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>POS Receipt #${orderNum}</title>
-            <style>
-              @page { size: 80mm auto; margin: 0; }
-              body {
-                font-family: monospace, sans-serif;
-                width: 80mm;
-                max-width: 100%;
-                margin: 0 auto;
-                padding: 8px;
-                color: #000;
-                background: #fff;
-                font-size: 11px;
-                line-height: 1.3;
-              }
-            </style>
-          </head>
-          <body>
-            <div style="text-align: center; margin-bottom: 6px;">
-              <div style="font-size: 14px; font-weight: bold;">${posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'Big Ben Restaurant'}</div>
-              <div style="font-size: 10px;">${posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel'}</div>
-              <div style="font-size: 10px;">
-                ${[posSettings?.city || posSettings?.restaurant_info?.city, posSettings?.state || posSettings?.restaurant_info?.state, posSettings?.pincode || posSettings?.restaurant_info?.pincode].filter(Boolean).join(', ') || 'pune, MH, 411057'}
-              </div>
-              <div style="font-size: 10px;">GSTIN: ${posSettings?.gstin || posSettings?.restaurant_info?.gstin || posSettings?.restaurant_info?.gst_number || '27AAAAA0000A1Z5'}</div>
-              <div style="font-size: 10px;">FSSAI NO: ${posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || posSettings?.restaurant_info?.fssai_number || '10019022009876'}</div>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            <div style="display: flex; justify-content: space-between; font-size: 10px;">
-              <span>Bill No: ${orderNum}</span>
-              <span>Date: ${cleanDate}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 10px;">
-              <span>Type: COUNTER BILLING</span>
-              <span>Staff: ${userObj?.name || 'Counter'}</span>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
-              <span style="flex: 1; text-align: left;">Item</span>
-              <span style="width: 32px; text-align: center;">Qty.</span>
-              <span style="width: 55px; text-align: right;">Price</span>
-              <span style="width: 60px; text-align: right;">Amount</span>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            ${itemsRowsHtml}
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-            <div style="font-size: 10px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                <span>Total Qty: ${totalQty}</span>
-                <span>Sub Total &nbsp;&nbsp;${subtotal.toFixed(2)}</span>
-              </div>
-              ${taxRate > 0 ? `
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-                  <span>CGST ${(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;${cgstAmt.toFixed(2)}</span>
-                </div>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-                  <span>SGST ${(taxRate / 2).toFixed(1)}% &nbsp;&nbsp;${sgstAmt.toFixed(2)}</span>
-                </div>
-              ` : ''}
-              ${serviceChargeAmt > 0 ? `
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 2px;">
-                  <span>Service Charge ${serviceChargeRate}% &nbsp;&nbsp;${serviceChargeAmt.toFixed(2)}</span>
-                </div>
-              ` : ''}
-              <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 4px;">
-                <span>Grand Total (INR)</span>
-                <span>${grandTotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 6px 0 4px 0;"></div>
-
-            <div style="text-align: center; font-size: 11px; font-weight: 500; padding: 2px 0;">
-              Thank you & Visit Again
-            </div>
-
-            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-
-            <script>
-              window.onload = function() {
-                window.print();
-                setTimeout(function() { window.close(); }, 500);
-              };
-            </script>
-          </body>
-          </html>
-        `;
-        printWindow.document.write(receiptHtml);
-        printWindow.document.close();
-      }
+      // Trigger instant real-time silent thermal receipt print matching exact POS standard format
+      printThermalReceiptDirect({
+        orderId: orderNum,
+        dateStr: new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+        tableName: 'Counter Billing',
+        staffName: userObj?.name || 'Counter Staff',
+        guestName: userObj?.name || 'Self POS Counter',
+        items: cartItems.map((item: any) => ({
+          name: item.name,
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || 0),
+          total_price: parseFloat(item.price || 0) * (item.quantity || 1)
+        })),
+        subtotal: subtotal,
+        taxRate: taxRate,
+        cgstAmt: taxAmt / 2,
+        sgstAmt: taxAmt / 2,
+        serviceChargeRate: serviceChargeRate,
+        serviceChargeAmt: serviceChargeAmt,
+        grandTotal: grandTotal,
+        restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info || {
+          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT',
+          address: posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel',
+          city: posSettings?.city || posSettings?.restaurant_info?.city || 'Mumbai',
+          state: posSettings?.state || posSettings?.restaurant_info?.state || 'MH',
+          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode || '',
+          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || '27AAAAA0000A1Z5',
+          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || '10019022009876'
+        }
+      });
 
       saveCart({});
       toast.success("Bill Printed & Order Placed!");
@@ -444,7 +350,7 @@ const CartPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const [isServiceChargeIncluded, setIsServiceChargeIncluded] = useState(true);
+  const [isServiceChargeIncluded] = useState(true);
   const cartItems = Object.values(cart);
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const serviceChargeRate = posSettings.serviceCharge || 0.0;
@@ -676,9 +582,16 @@ const CartPage: React.FC = () => {
           {/* Desktop Bottom Footer */}
           {isSelfPosBilling ? (
             <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-emerald-600 p-[15px] shadow-md">
-              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
-                <span>Self POS Billing - Total {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Direct Bill Generation</span>
+              <div 
+                onClick={() => setIsBillSheetOpen(true)}
+                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view detailed Bill Summary"
+              >
+                <span>Total - {grandTotal.toFixed(2)} Rs</span>
+                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                  <FileText size={13} />
+                  <span>Bill Summary</span>
+                </span>
               </div>
               <button 
                 onClick={handleSelfPosPlaceOrder}
@@ -690,9 +603,16 @@ const CartPage: React.FC = () => {
             </div>
           ) : !isGuestCustomer && existingOrderId ? (
             <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md">
-              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
+              <div 
+                onClick={() => setIsBillSheetOpen(true)}
+                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view detailed Bill Summary"
+              >
                 <span>Update Order - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Plus Taxes ({taxRate}% GST)</span>
+                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                  <FileText size={13} />
+                  <span>Bill Summary ({taxRate}% GST)</span>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <button 
@@ -711,106 +631,44 @@ const CartPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <Link 
-              to="/order-info" 
-              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] no-underline shadow-md"
+            <div 
+              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#0077b6] p-[15px] shadow-md"
             >
-              <div className="cart-button text-[16px] text-white font-bold flex items-center gap-2">
+              <div 
+                onClick={() => setIsBillSheetOpen(true)}
+                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view detailed Bill Summary"
+              >
                 <span>Confirm Order - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-normal">Plus Taxes ({taxRate}% GST)</span>
+                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                  <FileText size={13} />
+                  <span>Bill Summary ({taxRate}% GST)</span>
+                </span>
               </div>
-              <span className="text-white text-lg font-bold">→</span>
-            </Link>
+              <Link 
+                to="/order-info" 
+                className="bg-white text-[#0077b6] hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all no-underline shadow-md border border-white/40 flex items-center gap-1.5"
+              >
+                <span>Confirm Order</span>
+                <span className="text-lg font-bold">→</span>
+              </Link>
+            </div>
           )}
         </>
       )}
 
-      {/* Modal / Bottom Sheet for Bill Breakdown */}
-      {isBillSheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 animate-fade-in" onClick={() => setIsBillSheetOpen(false)}>
-          <div className="w-full sm:max-w-[360px] rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0077b6]">
-                  <FileText size={16} />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 tracking-tight">Bill Summary</h3>
-              </div>
-              <button 
-                onClick={() => setIsBillSheetOpen(false)} 
-                className="text-gray-400 hover:text-gray-700 text-lg font-bold p-1 cursor-pointer transition-colors"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs text-gray-600 py-1">
-              {/* Itemized List of Cart Dishes */}
-              <div className="space-y-1.5 border-b border-gray-100 pb-2.5 max-h-40 overflow-y-auto">
-                {cartItems.map((item: any) => {
-                  const itemLineTotal = (item.price * item.quantity).toFixed(2);
-                  return (
-                    <div key={item.id} className="flex justify-between items-center text-gray-800">
-                      <span className="font-semibold truncate max-w-[200px]">
-                        {item.name} <span className="text-gray-500 font-normal">× {item.quantity}</span>
-                      </span>
-                      <span className="font-bold text-gray-900">{itemLineTotal} Rs</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {serviceChargeRate > 0 && (
-                <div className="flex justify-between items-center text-gray-700 font-medium py-1 border-b border-gray-100">
-                  <div className="flex items-center gap-1.5">
-                    <span>Service Charge ({serviceChargeRate}%)</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsServiceChargeIncluded(!isServiceChargeIncluded)}
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold transition-all cursor-pointer ${
-                        isServiceChargeIncluded 
-                          ? 'bg-rose-100 text-rose-600 hover:bg-rose-200 border border-rose-200' 
-                          : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
-                      }`}
-                      title={isServiceChargeIncluded ? "Click to remove Service Charge" : "Click to include Service Charge"}
-                    >
-                      {isServiceChargeIncluded ? '✕ Remove' : '+ Add'}
-                    </button>
-                  </div>
-                  <span className={`font-bold ${isServiceChargeIncluded ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
-                    {isServiceChargeIncluded ? `+${serviceChargeAmt.toFixed(2)} Rs` : '0.00 Rs'}
-                  </span>
-                </div>
-              )}
-
-              {taxRate > 0 && (
-                <>
-                  <div className="flex justify-between items-center text-gray-500 pl-2 text-[11px]">
-                    <span>CGST ({(taxRate / 2).toFixed(1)}%)</span>
-                    <span>+{cgstAmt.toFixed(2)} Rs</span>
-                  </div>
-                  <div className="flex justify-between items-center text-gray-500 pl-2 text-[11px]">
-                    <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
-                    <span>+{sgstAmt.toFixed(2)} Rs</span>
-                  </div>
-                </>
-              )}
-
-              <div className="border-t border-dashed border-gray-200 pt-2.5 flex justify-between items-center text-sm font-extrabold text-gray-900">
-                <span>To Pay (Grand Total)</span>
-                <span className="text-[#0077b6] text-base">{grandTotal.toFixed(2)} Rs</span>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setIsBillSheetOpen(false)}
-              className="w-full py-2.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-95 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md"
-            >
-              Got It
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Unified Bill Summary Modal Component */}
+      <BillSummaryModal 
+        isOpen={isBillSheetOpen}
+        onClose={() => setIsBillSheetOpen(false)}
+        subtotal={subtotal}
+        taxRate={taxRate}
+        cgstAmt={cgstAmt}
+        sgstAmt={sgstAmt}
+        serviceChargeRate={serviceChargeRate}
+        serviceChargeAmt={serviceChargeAmt}
+        grandTotal={grandTotal}
+      />
 
       {/* Modal */}
       {isModalOpen && (
