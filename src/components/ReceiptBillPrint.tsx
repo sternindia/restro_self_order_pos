@@ -68,131 +68,139 @@ export const printThermalReceiptDirect = (props: ReceiptBillProps) => {
     `;
   }).join('');
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <title>Bill #${cleanOrderId}</title>
-      <style>
-        @page { size: 80mm auto; margin: 0mm; }
-        html, body {
-          width: 80mm;
-          margin: 0;
-          padding: 0;
-          background: #ffffff;
-          font-family: monospace, Courier, monospace;
-          color: #000000;
-          font-size: 11px;
-        }
-        .wrapper {
-          width: 80mm;
-          padding: 4mm 3mm;
-          box-sizing: border-box;
-        }
-        .divider {
-          border-bottom: 1px dashed #444;
-          margin: 4px 0;
-        }
-        .flex-between {
-          display: flex;
-          justify-content: space-between;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="wrapper">
-        <div style="text-align:center;">
-          <div style="font-size:13px; font-weight:bold; text-transform:uppercase;">${resName}</div>
-          <div style="font-size:9.5px; line-height:1.2;">${resAddr}</div>
-          <div style="font-size:9.5px;">${resCityState}</div>
-          <div style="font-size:9.5px; font-weight:bold;">GSTIN: ${gstin}</div>
-          <div style="font-size:9.5px;">FSSAI NO: ${fssai}</div>
-        </div>
+  const receiptInnerContentHtml = `
+    <div style="width:80mm; padding:3mm; box-sizing:border-box; background:#fff; font-family:monospace, Courier, monospace; color:#000; font-size:11px; margin:0 auto;">
+      <div style="text-align:center;">
+        <div style="font-size:13px; font-weight:bold; text-transform:uppercase;">${resName}</div>
+        <div style="font-size:9.5px; line-height:1.2;">${resAddr}</div>
+        <div style="font-size:9.5px;">${resCityState}</div>
+        <div style="font-size:9.5px; font-weight:bold;">GSTIN: ${gstin}</div>
+        <div style="font-size:9.5px;">FSSAI NO: ${fssai}</div>
+      </div>
 
-        <div class="divider"></div>
+      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
 
-        <div style="font-size:10px;">
-          <div class="flex-between"><span>Bill No: <strong>#${cleanOrderId}</strong></span><span>Date: ${displayDate}</span></div>
-          <div class="flex-between"><span>Table: <strong>${props.tableName || 'DINE-IN'}</strong></span><span>Staff: ${props.staffName || 'Staff'}</span></div>
-          ${props.guestName ? `<div>Customer: ${props.guestName}</div>` : ''}
-        </div>
+      <div style="font-size:10px;">
+        <div style="display:flex; justify-content:space-between;"><span>Bill No: <strong>#${cleanOrderId}</strong></span><span>Date: ${displayDate}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Table: <strong>${props.tableName || 'DINE-IN'}</strong></span><span>Staff: ${props.staffName || 'Staff'}</span></div>
+        ${props.guestName ? `<div>Customer: ${props.guestName}</div>` : ''}
+      </div>
 
-        <div class="divider"></div>
+      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
 
-        <div class="flex-between" style="font-size:10.5px; font-weight:bold; border-bottom:1px solid #333; padding-bottom:2px;">
-          <span style="width:50%;">Item</span>
-          <span style="width:16.66%; text-align:center;">Qty</span>
-          <span style="width:16.66%; text-align:right;">Price</span>
-          <span style="width:16.66%; text-align:right;">Amt</span>
-        </div>
+      <div style="display:flex; justify-content:space-between; font-size:10.5px; font-weight:bold; border-bottom:1px solid #333; padding-bottom:2px;">
+        <span style="width:50%;">Item</span>
+        <span style="width:16.66%; text-align:center;">Qty</span>
+        <span style="width:16.66%; text-align:right;">Price</span>
+        <span style="width:16.66%; text-align:right;">Amt</span>
+      </div>
 
-        <div>${itemsHtml}</div>
+      <div>${itemsHtml}</div>
 
-        <div class="divider"></div>
+      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
 
-        <div style="font-size:10.5px;">
-          <div class="flex-between"><span>Total Qty: ${totalQty}</span><span style="font-weight:bold;">Sub Total: ₹${subtotal.toFixed(2)}</span></div>
-          ${serviceChargeRate > 0 && serviceChargeAmt > 0 ? `<div class="flex-between"><span>Service Charge (${serviceChargeRate}%)</span><span>+₹${serviceChargeAmt.toFixed(2)}</span></div>` : ''}
-          ${taxRate > 0 ? `
-            <div class="flex-between"><span>CGST (${halfTaxRate}%)</span><span>+₹${calculatedCgst.toFixed(2)}</span></div>
-            <div class="flex-between"><span>SGST (${halfTaxRate}%)</span><span>+₹${calculatedSgst.toFixed(2)}</span></div>
-          ` : ''}
-          <div class="divider"></div>
-          <div class="flex-between" style="font-size:12px; font-weight:bold;">
-            <span>Grand Total (INR)</span>
-            <span>₹${grandTotal.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div style="text-align:center; font-size:9.5px; font-weight:bold; margin-top:4px;">
-          Thank you & Visit Again!
+      <div style="font-size:10.5px;">
+        <div style="display:flex; justify-content:space-between;"><span>Total Qty: ${totalQty}</span><span style="font-weight:bold;">Sub Total: ₹${subtotal.toFixed(2)}</span></div>
+        ${serviceChargeRate > 0 && serviceChargeAmt > 0 ? `<div style="display:flex; justify-content:space-between;"><span>Service Charge (${serviceChargeRate}%)</span><span>+₹${serviceChargeAmt.toFixed(2)}</span></div>` : ''}
+        ${taxRate > 0 ? `
+          <div style="display:flex; justify-content:space-between;"><span>CGST (${halfTaxRate}%)</span><span>+₹${calculatedCgst.toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>SGST (${halfTaxRate}%)</span><span>+₹${calculatedSgst.toFixed(2)}</span></div>
+        ` : ''}
+        <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold;">
+          <span>Grand Total (INR)</span>
+          <span>₹${grandTotal.toFixed(2)}</span>
         </div>
       </div>
-    </body>
-    </html>
+
+      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
+
+      <div style="text-align:center; font-size:9.5px; font-weight:bold; margin-top:4px;">
+        Thank you & Visit Again!
+      </div>
+    </div>
   `;
 
-  try {
-    let iframe = document.getElementById('silent-thermal-print-frame') as HTMLIFrameElement;
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = 'silent-thermal-print-frame';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-    }
+  // Inject or update thermal receipt overlay directly in DOM for 100% universal print isolation
+  let overlay = document.getElementById('thermal-receipt-print-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'thermal-receipt-print-overlay';
+    document.body.appendChild(overlay);
+  }
 
-    const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(html);
-      iframeDoc.close();
-
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch (e) {
-          const win = window.open('', '_blank', 'width=380,height=600');
-          if (win) {
-            win.document.write(html);
-            win.document.close();
-            win.focus();
-            win.print();
-            setTimeout(() => win.close(), 500);
-          }
+  // Global Print CSS rule ensuring background pages are completely hidden during print
+  let styleEl = document.getElementById('thermal-print-global-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'thermal-print-global-style';
+    styleEl.innerHTML = `
+      @media print {
+        @page {
+          size: 80mm auto;
+          margin: 0mm;
         }
+        body > *:not(#thermal-receipt-print-overlay) {
+          display: none !important;
+        }
+        #thermal-receipt-print-overlay, #thermal-receipt-print-overlay * {
+          display: block !important;
+          visibility: visible !important;
+        }
+        #thermal-receipt-print-overlay {
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 80mm !important;
+          max-width: 80mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          box-sizing: border-box !important;
+        }
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+
+  overlay.innerHTML = receiptInnerContentHtml;
+
+  // Execute print
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        if (overlay) overlay.innerHTML = '';
+      }, 1000);
+    }, 150);
+  } else {
+    // Desktop Window Popup Fallback / IFrame
+    const win = window.open('', '_blank', 'width=380,height=600');
+    if (win) {
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Bill #${cleanOrderId}</title>
+          <style>
+            @page { size: 80mm auto; margin: 0mm; }
+            html, body { margin: 0; padding: 0; background: #fff; width: 80mm; }
+          </style>
+        </head>
+        <body>${receiptInnerContentHtml}</body>
+        </html>
+      `);
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        win.print();
+        setTimeout(() => win.close(), 500);
       }, 250);
+    } else {
+      window.print();
     }
-  } catch (err) {
-    window.print();
   }
 };
 
