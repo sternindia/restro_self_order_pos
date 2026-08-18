@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import Header from '../components/Header';
 import OrderStatusBadge from '../components/OrderStatusBadge';
-import ReceiptBillPrint, { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
+import { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
+import ReceiptModal from '../components/ReceiptModal';
 
 interface OrderHistoryItem {
   order_id: string;
@@ -73,7 +74,17 @@ const HistoryPage: React.FC = () => {
     setShowCalendarModal(true);
   };
 
+  const getTodayStr = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  const todayStr = getTodayStr();
+
   const handleDateClick = (dateStr: string) => {
+    if (dateStr > todayStr) return;
     if (!tempStartDate || (tempStartDate && tempEndDate)) {
       setTempStartDate(dateStr);
       setTempEndDate('');
@@ -246,62 +257,67 @@ const HistoryPage: React.FC = () => {
     fetchOrderHistory();
   }, []);
 
-  const [printOrderData, setPrintOrderData] = useState<any>(null);
+  const [selectedHistoryOrder, setSelectedHistoryOrder] = useState<any>(null);
 
   const handlePrintOrder = (order: any) => {
-    const cleanDate = order.created_at 
-      ? new Date(order.created_at.includes(' ') ? order.created_at.replace(' ', 'T') : order.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-      : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    const isThermalOn = posSettings?.enableThermalPrinting ?? posSettings?.enable_thermal_printing ?? true;
+    if (isThermalOn) {
+      const cleanDate = order.created_at 
+        ? new Date(order.created_at.includes(' ') ? order.created_at.replace(' ', 'T') : order.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+        : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
-    const items = (order.items || []).map((item: any) => {
-      const q = parseInt(item.quantity || item.qty) || 1;
-      const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
-      return {
-        name: item.name,
-        quantity: q,
-        price: unitP,
-        total_price: Number(item.total_price || (unitP * q))
+      const items = (order.items || []).map((item: any) => {
+        const q = parseInt(item.quantity || item.qty) || 1;
+        const unitP = Number(item.unit_price || item.price || (item.total_price ? item.total_price / q : 0));
+        return {
+          name: item.name,
+          quantity: q,
+          price: unitP,
+          total_price: Number(item.total_price || (unitP * q))
+        };
+      });
+      
+      const itemsSubtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+      const taxRate = parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5);
+      const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
+
+      const subTotalNum = Number(order.bill?.subtotal ?? order.subTotal ?? order.subtotal ?? itemsSubtotal);
+      const serviceAmt = Number(order.bill?.service_charge ?? order.serviceCharge ?? ((subTotalNum * serviceChargeRate) / 100));
+      const taxTotal = Number(order.bill?.tax_amount ?? order.tax ?? ((subTotalNum * taxRate) / 100));
+      const cgstAmt = taxTotal / 2;
+      const sgstAmt = taxTotal / 2;
+      const grandTotalNum = Number(order.bill?.grand_total ?? order.total ?? order.grand_total ?? (subTotalNum + serviceAmt + taxTotal));
+
+      const printData = {
+        orderId: order.order_id,
+        dateStr: cleanDate,
+        tableName: order.table_name || 'Walk-In',
+        staffName: order.staff_name || 'Staff',
+        guestName: order.guest_name,
+        items: items,
+        subtotal: subTotalNum,
+        taxRate: taxRate,
+        cgstAmt: cgstAmt,
+        sgstAmt: sgstAmt,
+        serviceChargeRate: serviceChargeRate,
+        serviceChargeAmt: serviceAmt,
+        grandTotal: grandTotalNum,
+        restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info || {
+          name: posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT',
+          address: posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel',
+          city: posSettings?.city || posSettings?.restaurant_info?.city || 'Mumbai',
+          state: posSettings?.state || posSettings?.restaurant_info?.state || 'MH',
+          pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode || '',
+          gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || '27AAAAA0000A1Z5',
+          fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || '10019022009876'
+        }
       };
-    });
-    
-    const itemsSubtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-    const taxRate = parseFloat(posSettings?.financials?.tax_rate_percentage ?? posSettings?.taxRate ?? 5);
-    const serviceChargeRate = parseFloat(posSettings?.financials?.service_charge_percentage ?? posSettings?.serviceCharge ?? 0);
 
-    const subTotalNum = Number(order.bill?.subtotal ?? order.subTotal ?? order.subtotal ?? itemsSubtotal);
-    const serviceAmt = Number(order.bill?.service_charge ?? order.serviceCharge ?? ((subTotalNum * serviceChargeRate) / 100));
-    const taxTotal = Number(order.bill?.tax_amount ?? order.tax ?? ((subTotalNum * taxRate) / 100));
-    const cgstAmt = taxTotal / 2;
-    const sgstAmt = taxTotal / 2;
-    const grandTotalNum = Number(order.bill?.grand_total ?? order.total ?? order.grand_total ?? (subTotalNum + serviceAmt + taxTotal));
+      printThermalReceiptDirect(printData);
+      return;
+    }
 
-    const printData = {
-      orderId: order.order_id,
-      dateStr: cleanDate,
-      tableName: order.table_name || 'Walk-In',
-      staffName: order.staff_name || 'Staff',
-      guestName: order.guest_name,
-      items: items,
-      subtotal: subTotalNum,
-      taxRate: taxRate,
-      cgstAmt: cgstAmt,
-      sgstAmt: sgstAmt,
-      serviceChargeRate: serviceChargeRate,
-      serviceChargeAmt: serviceAmt,
-      grandTotal: grandTotalNum,
-      restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info || {
-        name: posSettings?.restaurantName || posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT',
-        address: posSettings?.address || posSettings?.restaurant_info?.address || '1st Flr, Sun Mill Compound, Lower Parel',
-        city: posSettings?.city || posSettings?.restaurant_info?.city || 'Mumbai',
-        state: posSettings?.state || posSettings?.restaurant_info?.state || 'MH',
-        pincode: posSettings?.pincode || posSettings?.restaurant_info?.pincode || '',
-        gstin: posSettings?.gstin || posSettings?.restaurant_info?.gstin || '27AAAAA0000A1Z5',
-        fssai: posSettings?.fssaiNo || posSettings?.restaurant_info?.fssai_no || '10019022009876'
-      }
-    };
-
-    setPrintOrderData(printData);
-    printThermalReceiptDirect(printData);
+    setSelectedHistoryOrder(order);
   };
 
   const filteredOrders = orders.filter((order: any) => {
@@ -867,25 +883,40 @@ const HistoryPage: React.FC = () => {
             {/* Calendar Controls & Grid */}
             <div className="p-4 space-y-3">
               {/* Month Header Navigation */}
-              <div className="flex items-center justify-between px-1">
-                <button
-                  type="button"
-                  onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all"
-                >
-                  ‹
-                </button>
-                <span className="font-extrabold text-gray-900 text-sm">
-                  {calendarViewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all"
-                >
-                  ›
-                </button>
-              </div>
+              {(() => {
+                const todayObj = new Date();
+                const isCurrentMonthOrFuture = calendarViewDate.getFullYear() > todayObj.getFullYear() || 
+                  (calendarViewDate.getFullYear() === todayObj.getFullYear() && calendarViewDate.getMonth() >= todayObj.getMonth());
+                
+                return (
+                  <div className="flex items-center justify-between px-1">
+                    <button
+                      type="button"
+                      onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-800 text-sm transition-all cursor-pointer"
+                    >
+                      ‹
+                    </button>
+                    <span className="font-extrabold text-gray-900 text-sm">
+                      {calendarViewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isCurrentMonthOrFuture}
+                      onClick={() => {
+                        if (!isCurrentMonthOrFuture) {
+                          setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1));
+                        }
+                      }}
+                      className={`w-8 h-8 flex items-center justify-center rounded-full font-extrabold text-sm transition-all ${
+                        isCurrentMonthOrFuture ? 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 cursor-pointer'
+                      }`}
+                    >
+                      ›
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Weekday Labels */}
               <div className="grid grid-cols-7 text-center gap-1">
@@ -898,6 +929,7 @@ const HistoryPage: React.FC = () => {
               <div className="grid grid-cols-7 text-center gap-1">
                 {getCalendarDays().map((item, idx) => {
                   if (!item) return <div key={idx} />;
+                  const isFuture = item.dateStr > todayStr;
                   const isStart = tempStartDate === item.dateStr;
                   const isEnd = tempEndDate === item.dateStr;
                   const inRange = tempStartDate && tempEndDate && item.dateStr > tempStartDate && item.dateStr < tempEndDate;
@@ -906,8 +938,10 @@ const HistoryPage: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      onClick={() => handleDateClick(item.dateStr)}
-                      className={`h-9 flex items-center justify-center cursor-pointer transition-all ${
+                      onClick={() => !isFuture && handleDateClick(item.dateStr)}
+                      className={`h-9 flex items-center justify-center transition-all ${
+                        isFuture ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
+                      } ${
                         inRange ? 'bg-[#FFF0E6]' : ''
                       } ${
                         isStart && tempEndDate ? 'bg-[#FFF0E6] rounded-l-full' : ''
@@ -923,6 +957,8 @@ const HistoryPage: React.FC = () => {
                             ? 'bg-[#f05a24] text-white shadow-2xs font-black'
                             : inRange
                             ? 'text-[#f05a24] font-black'
+                            : isFuture
+                            ? 'text-gray-300 font-normal'
                             : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
@@ -971,12 +1007,11 @@ const HistoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Unified Thermal Receipt Print Component */}
-      {printOrderData && (
-        <div className="hidden print:block">
-          <ReceiptBillPrint {...printOrderData} />
-        </div>
-      )}
+      <ReceiptModal 
+        selectedHistoryOrder={selectedHistoryOrder}
+        setSelectedHistoryOrder={setSelectedHistoryOrder}
+        posSettings={posSettings}
+      />
     </div>
   );
 };
