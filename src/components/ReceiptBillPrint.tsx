@@ -2,8 +2,10 @@ import React from 'react';
 
 export interface ReceiptItem {
   name: string;
-  quantity: number;
-  price: number;
+  quantity?: number;
+  qty?: number;
+  price?: number;
+  unit_price?: number;
   total_price?: number;
 }
 
@@ -33,7 +35,7 @@ export interface ReceiptBillProps {
   };
 }
 
-export const printThermalReceiptDirect = (props: ReceiptBillProps) => {
+export const printThermalReceiptDirect = async (props: ReceiptBillProps) => {
   const cleanOrderId = String(props.orderId).replace(/^#/i, '');
   const displayDate = props.dateStr || new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   const taxRate = props.taxRate ?? 5.0;
@@ -54,152 +56,112 @@ export const printThermalReceiptDirect = (props: ReceiptBillProps) => {
   const gstin = restaurantInfo?.gstin || '27AAAAA0000A1Z5';
   const fssai = restaurantInfo?.fssai || '10019022009876';
 
-  const itemsHtml = items.map((item) => {
-    const qty = Number(item.quantity) || 1;
-    const price = Number(item.price) || 0;
-    const lineTotal = item.total_price !== undefined ? Number(item.total_price) : price * qty;
-    return `
-      <div style="display:flex; justify-content:space-between; font-size:10.5px; padding:1.5px 0;">
-        <span style="width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">${item.name}</span>
-        <span style="width:16.66%; text-align:center;">${qty}</span>
-        <span style="width:16.66%; text-align:right;">${price.toFixed(2)}</span>
-        <span style="width:16.66%; text-align:right; font-weight:bold;">${lineTotal.toFixed(2)}</span>
-      </div>
-    `;
-  }).join('');
+  const ESC = '\x1b', GS = '\x1d';
 
-  const receiptInnerContentHtml = `
-    <div style="width:80mm; padding:3mm; box-sizing:border-box; background:#fff; font-family:monospace, Courier, monospace; color:#000; font-size:11px; margin:0 auto;">
-      <div style="text-align:center;">
-        <div style="font-size:13px; font-weight:bold; text-transform:uppercase;">${resName}</div>
-        <div style="font-size:9.5px; line-height:1.2;">${resAddr}</div>
-        <div style="font-size:9.5px;">${resCityState}</div>
-        <div style="font-size:9.5px; font-weight:bold;">GSTIN: ${gstin}</div>
-        <div style="font-size:9.5px;">FSSAI NO: ${fssai}</div>
-      </div>
+  const padRow = (left: string, right: string, width = 42) => {
+    const l = String(left || '');
+    const r = String(right || '');
+    const spaces = width - l.length - r.length;
+    if (spaces > 0) return l + ' '.repeat(spaces) + r;
+    return l.slice(0, Math.max(0, width - r.length - 1)) + ' ' + r;
+  };
 
-      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
+  // ESC/POS Reset & Small/Compact Font B (\x1b!\x01) for crisp, non-wrapping 58mm layout
+  let receipt = `${ESC}@${ESC}!\x01${ESC}a\x01${ESC}E\x01${resName.slice(0, 42)}\n${ESC}E\x00`;
 
-      <div style="font-size:10px;">
-        <div style="display:flex; justify-content:space-between;"><span>Bill No: <strong>#${cleanOrderId}</strong></span><span>Date: ${displayDate}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>Table: <strong>${props.tableName || 'DINE-IN'}</strong></span><span>Staff: ${props.staffName || 'Staff'}</span></div>
-        ${props.guestName ? `<div>Customer: ${props.guestName}</div>` : ''}
-      </div>
-
-      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
-
-      <div style="display:flex; justify-content:space-between; font-size:10.5px; font-weight:bold; border-bottom:1px solid #333; padding-bottom:2px;">
-        <span style="width:50%;">Item</span>
-        <span style="width:16.66%; text-align:center;">Qty</span>
-        <span style="width:16.66%; text-align:right;">Price</span>
-        <span style="width:16.66%; text-align:right;">Amt</span>
-      </div>
-
-      <div>${itemsHtml}</div>
-
-      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
-
-      <div style="font-size:10.5px;">
-        <div style="display:flex; justify-content:space-between;"><span>Total Qty: ${totalQty}</span><span style="font-weight:bold;">Sub Total: ₹${subtotal.toFixed(2)}</span></div>
-        ${serviceChargeRate > 0 && serviceChargeAmt > 0 ? `<div style="display:flex; justify-content:space-between;"><span>Service Charge (${serviceChargeRate}%)</span><span>+₹${serviceChargeAmt.toFixed(2)}</span></div>` : ''}
-        ${taxRate > 0 ? `
-          <div style="display:flex; justify-content:space-between;"><span>CGST (${halfTaxRate}%)</span><span>+₹${calculatedCgst.toFixed(2)}</span></div>
-          <div style="display:flex; justify-content:space-between;"><span>SGST (${halfTaxRate}%)</span><span>+₹${calculatedSgst.toFixed(2)}</span></div>
-        ` : ''}
-        <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
-        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold;">
-          <span>Grand Total (INR)</span>
-          <span>₹${grandTotal.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <div style="border-bottom: 1px dashed #444; margin: 4px 0;"></div>
-
-      <div style="text-align:center; font-size:9.5px; font-weight:bold; margin-top:4px;">
-        Thank you & Visit Again!
-      </div>
-    </div>
-  `;
-
-  // Inject or update thermal receipt overlay directly in DOM for 100% universal print isolation
-  let overlay = document.getElementById('thermal-receipt-print-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'thermal-receipt-print-overlay';
-    document.body.appendChild(overlay);
+  if (resAddr) {
+    const addrWords = resAddr.split(' ');
+    let line = '';
+    addrWords.forEach(w => {
+      if ((line + ' ' + w).trim().length <= 42) {
+        line = (line + ' ' + w).trim();
+      } else {
+        receipt += `${line}\n`;
+        line = w;
+      }
+    });
+    if (line) receipt += `${line}\n`;
   }
 
-  // Global Print CSS rule ensuring background pages are completely hidden during print
-  let styleEl = document.getElementById('thermal-print-global-style');
-  if (!styleEl) {
-    styleEl = document.createElement('style');
-    styleEl.id = 'thermal-print-global-style';
-    styleEl.innerHTML = `
-      @media print {
-        @page {
-          size: 80mm auto;
-          margin: 0mm;
-        }
-        body > *:not(#thermal-receipt-print-overlay) {
-          display: none !important;
-        }
-        #thermal-receipt-print-overlay, #thermal-receipt-print-overlay * {
-          display: block !important;
-          visibility: visible !important;
-        }
-        #thermal-receipt-print-overlay {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 80mm !important;
-          max-width: 80mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #ffffff !important;
-          box-sizing: border-box !important;
+  if (resCityState) {
+    receipt += `${resCityState.slice(0, 42)}\n`;
+  }
+  if (gstin) receipt += `GSTIN: ${gstin}\n`;
+  if (fssai) receipt += `FSSAI NO: ${fssai}\n`;
+
+  receipt += `------------------------------------------\n${ESC}a\x00`;
+
+  if (props.guestName) {
+    receipt += `Name: ${props.guestName}\n`;
+    receipt += `------------------------------------------\n`;
+  }
+
+  receipt += `${padRow(`Bill No: ${cleanOrderId}`, `Date: ${displayDate}`, 42)}\n`;
+  receipt += `${padRow(`Dine In: ${props.tableName || 'DINE-IN'}`, `Cashier: ${props.staffName || 'Staff'}`, 42)}\n`;
+  receipt += `------------------------------------------\n`;
+  receipt += `${"Item".padEnd(20, ' ')}${" Qty. "}${" Price  "}${"  Amount"}\n`;
+  receipt += `------------------------------------------\n`;
+
+  items.forEach((item: any) => {
+    const qty = Number(item.quantity || item.qty) || 1;
+    const unitPrice = Number(item.price || item.unit_price) || 0;
+    const itemAmount = item.total_price !== undefined ? Number(item.total_price) : unitPrice * qty;
+
+    const rawName = String(item.name || 'Item').replace(/\s*\([^)]*Active Order[^)]*\)/gi, '').trim();
+    const nameStr = rawName.slice(0, 20).padEnd(20, ' ');
+    const qtyStr = `  ${String(qty)}`.padEnd(6, ' ');
+    const priceStr = unitPrice.toFixed(2).padStart(7, ' ') + ' ';
+    const amtStr = itemAmount.toFixed(2).padStart(8, ' ');
+
+    receipt += `${nameStr}${qtyStr}${priceStr}${amtStr}\n`;
+    if (rawName.length > 21) {
+      receipt += `  ${rawName.slice(21, 40)}\n`;
+    }
+    if (item.selectedVariant) {
+      receipt += `  Opt: ${item.selectedVariant.name}\n`;
+    }
+    if (item.notes && !item.notes.includes('Session Order') && !item.notes.includes('Active Order')) {
+      receipt += `  * ${item.notes}\n`;
+    }
+  });
+
+  receipt += `------------------------------------------\n`;
+  receipt += `${padRow(`Total Qty: ${totalQty}`, `Sub Total ${subtotal.toFixed(2)}`, 42)}\n`;
+  receipt += `${padRow(`  CGST ${halfTaxRate}%`, calculatedCgst.toFixed(2), 42)}\n`;
+  receipt += `${padRow(`  SGST ${halfTaxRate}%`, calculatedSgst.toFixed(2), 42)}\n`;
+  if (serviceChargeRate > 0 && serviceChargeAmt > 0) {
+    receipt += `${padRow(`  Service Charge ${serviceChargeRate}%`, serviceChargeAmt.toFixed(2), 42)}\n`;
+  }
+  receipt += `------------------------------------------\n`;
+  receipt += `${ESC}E\x01${padRow('Grand Total(INR)', grandTotal.toFixed(2), 42)}\n${ESC}E\x00`;
+  receipt += `------------------------------------------\n${ESC}a\x01Thank you & Visit Again\n------------------------------------------\n\n\n\n${GS}V\x41\x03`;
+
+  console.log('--- REAL-TIME THERMAL PRINTER RAW OUTPUT (42 CHARS) ---\n' + receipt);
+
+  const encoder = new TextEncoder();
+  const encodedData = encoder.encode(receipt);
+
+  // 1. TRY WEB SERIAL
+  const navAny = navigator as any;
+  if (navAny.serial) {
+    try {
+      const availablePorts = await navAny.serial.getPorts();
+      let port = availablePorts[0];
+      if (!port) {
+        port = await navAny.serial.requestPort();
+      }
+      if (port) {
+        await port.open({ baudRate: 9600 });
+        const writer = port.writable?.getWriter();
+        if (writer) {
+          await writer.write(encodedData);
+          writer.releaseLock();
+          await port.close();
+          return;
         }
       }
-    `;
-    document.head.appendChild(styleEl);
-  }
-
-  overlay.innerHTML = receiptInnerContentHtml;
-
-  // Execute print
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) {
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        if (overlay) overlay.innerHTML = '';
-      }, 1000);
-    }, 150);
-  } else {
-    // Desktop Window Popup Fallback / IFrame
-    const win = window.open('', '_blank', 'width=380,height=600');
-    if (win) {
-      win.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Bill #${cleanOrderId}</title>
-          <style>
-            @page { size: 80mm auto; margin: 0mm; }
-            html, body { margin: 0; padding: 0; background: #fff; width: 80mm; }
-          </style>
-        </head>
-        <body>${receiptInnerContentHtml}</body>
-        </html>
-      `);
-      win.document.close();
-      win.focus();
-      setTimeout(() => {
-        win.print();
-        setTimeout(() => win.close(), 500);
-      }, 250);
-    } else {
-      window.print();
+    } catch (err: any) {
+      console.warn('Serial print error:', err?.message);
     }
   }
 };

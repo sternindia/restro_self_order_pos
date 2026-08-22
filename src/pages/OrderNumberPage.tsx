@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import ReceiptBillPrint, { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 import OrderStatusBadge from '../components/OrderStatusBadge';
+import ReceiptModal from '../components/ReceiptModal';
 
 const OrderNumberPage: React.FC = () => {
   const navigate = useNavigate();
@@ -141,29 +142,36 @@ const OrderNumberPage: React.FC = () => {
   const sgstAmt = taxTotal / 2;
   const grandTotalNum = parseFloat(total) > 0 ? parseFloat(total) : (subTotalNum + serviceAmt + taxTotal);
 
+  const [selectedHistoryOrder, setSelectedHistoryOrder] = useState<any>(null);
+
   const handlePrint = () => {
-    printThermalReceiptDirect({
-      orderId: order_id,
-      dateStr: cleanDate,
-      tableName: table || 'Walk-In',
-      staffName: orderInfo?.staff_name || orderInfo?.order_meta?.staff_name || 'Staff',
-      guestName: guest_name,
-      items: items.map((item: any) => ({
-        name: item.name,
-        quantity: parseInt(item.quantity || item.qty) || 1,
-        price: Number(item.unit_price || item.price || 0),
-        total_price: Number(item.total_price || ((item.unit_price || item.price || 0) * (item.quantity || 1)))
-      })),
-      subtotal: subTotalNum,
-      taxRate: taxRate,
-      cgstAmt: cgstAmt,
-      sgstAmt: sgstAmt,
-      serviceChargeRate: serviceChargeRate,
-      serviceChargeAmt: serviceAmt,
-      grandTotal: grandTotalNum,
-      restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info
-    });
-    window.print();
+    const isThermalOn = posSettings?.enableThermalPrinting ?? posSettings?.enable_thermal_printing ?? true;
+    if (isThermalOn) {
+      printThermalReceiptDirect({
+        orderId: order_id,
+        dateStr: cleanDate,
+        tableName: table || 'Walk-In',
+        staffName: orderInfo?.staff_name || orderInfo?.order_meta?.staff_name || 'Staff',
+        guestName: guest_name,
+        items: items.map((item: any) => ({
+          name: item.name,
+          quantity: parseInt(item.quantity || item.qty) || 1,
+          price: Number(item.unit_price || item.price || 0),
+          total_price: Number(item.total_price || ((item.unit_price || item.price || 0) * (item.quantity || 1)))
+        })),
+        subtotal: subTotalNum,
+        taxRate: taxRate,
+        cgstAmt: cgstAmt,
+        sgstAmt: sgstAmt,
+        serviceChargeRate: serviceChargeRate,
+        serviceChargeAmt: serviceAmt,
+        grandTotal: grandTotalNum,
+        restaurantInfo: posSettings?.restaurantInfo || posSettings?.business_info
+      });
+      return;
+    }
+
+    setSelectedHistoryOrder(orderInfo);
   };
   const handleOrderMore = () => {
     if (table) {
@@ -532,6 +540,12 @@ const OrderNumberPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Receipt Preview Modal */}
+      <ReceiptModal 
+        selectedHistoryOrder={selectedHistoryOrder}
+        setSelectedHistoryOrder={setSelectedHistoryOrder}
+        posSettings={posSettings}
+      />
     </div>
   );
 };
