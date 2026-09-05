@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3 } from 'lucide-react';
+import { Bell, Menu as MenuIcon, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3, LayoutDashboard, Package } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
 
@@ -96,10 +96,10 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || roleAlias === 'super_admin' || roleAlias === 'admin';
   const isStaffUser = user && !isGuestUser;
   const displayRole = user?.role_name || (
-    roleAlias === 'super_admin' ? 'Super Admin' : 
-    roleAlias === 'admin' ? 'Admin' : 
-    roleAlias === 'waiter' ? 'Waiter' : 
-    roleAlias === 'self_billing_pos' ? 'POS Billing' : ''
+    roleAlias === 'super_admin' ? 'Super Admin' :
+      roleAlias === 'admin' ? 'Admin' :
+        roleAlias === 'waiter' ? 'Waiter' :
+          roleAlias === 'self_billing_pos' ? 'POS Billing' : ''
   );
 
   const handleLogoutClick = () => {
@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
     <>
       <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-[#FFFBF8] px-3 sm:px-8 shadow-xs border-b border-[#F0E6DF] select-none">
         {/* LEFT: Restaurant Logo & Table Status */}
-        <div 
+        <div
           onClick={() => navigate('/')}
           className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity min-w-0"
         >
@@ -147,19 +147,19 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             <Link
               to="/"
               className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
-                  ? 'bg-white text-[#f05a24] shadow-2xs'
-                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                ? 'bg-white text-[#f05a24] shadow-2xs'
+                : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
               <Utensils size={14} />
               <span>Menu</span>
             </Link>
-            {isWaiter && isEnableTables && (
+            {(isWaiter || roleAlias === 'admin' || roleAlias === 'super_admin') && isEnableTables && (
               <Link
                 to="/tables"
                 className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
-                    ? 'bg-white text-[#f05a24] shadow-2xs'
-                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                  ? 'bg-white text-[#f05a24] shadow-2xs'
+                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
                   }`}
               >
                 <Grid size={14} />
@@ -169,8 +169,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             <Link
               to="/history"
               className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
-                  ? 'bg-white text-[#f05a24] shadow-2xs'
-                  : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                ? 'bg-white text-[#f05a24] shadow-2xs'
+                : 'text-gray-800 hover:text-gray-950 font-extrabold'
                 }`}
             >
               <Clock size={14} />
@@ -179,10 +179,30 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
               <>
                 <Link
+                  to="/dashboard"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/dashboard'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <LayoutDashboard size={14} />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  to="/stock"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/stock'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <Package size={14} />
+                  <span>Stocks</span>
+                </Link>
+                <Link
                   to="/manage-menu"
                   className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/manage-menu'
-                      ? 'bg-white text-[#f05a24] shadow-2xs'
-                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
                     }`}
                 >
                   <Edit3 size={14} />
@@ -191,8 +211,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 <Link
                   to="/settings"
                   className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
-                      ? 'bg-white text-[#f05a24] shadow-2xs'
-                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
                     }`}
                 >
                   <Settings size={14} />
@@ -207,7 +227,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {/* User Profile Badge */}
           {isStaffUser && (
-            <div 
+            <div
               className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-gray-800 bg-[#FAF6F0] hover:bg-[#FFF0E6] px-3 py-1.5 rounded-xl border border-[#F0E6DF] transition-all cursor-pointer shadow-2xs"
               title={`Logged in as: ${user?.username || user?.name || user?.user_name || 'Staff User'}`}
             >
@@ -294,21 +314,21 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/'
-                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Utensils size={18} />
                   <span>Menu</span>
                 </Link>
 
-                {isWaiter && isEnableTables && (
+                {(isWaiter || roleAlias === 'admin' || roleAlias === 'super_admin') && isEnableTables && (
                   <Link
                     to="/tables"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/tables'
-                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
                     <Grid size={18} />
@@ -320,8 +340,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/history"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/history'
-                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Clock size={18} />
@@ -331,11 +351,33 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
                   <>
                     <Link
+                      to="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/dashboard'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <LayoutDashboard size={18} />
+                      <span>Dashboard</span>
+                    </Link>
+                    <Link
+                      to="/stock"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/stock'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <Package size={18} />
+                      <span>Item Stocks</span>
+                    </Link>
+                    <Link
                       to="/manage-menu"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/manage-menu'
-                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                          : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       <Edit3 size={18} />
@@ -345,8 +387,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                       to="/settings"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/settings'
-                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                          : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       <Settings size={18} />
@@ -411,9 +453,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </div>
                 <h3 className="text-sm font-bold text-gray-900">Track Order Status</h3>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={() => setIsTrackModalOpen(false)} 
+                onClick={() => setIsTrackModalOpen(false)}
                 className="text-gray-400 hover:text-gray-700 text-lg font-bold p-1 cursor-pointer"
               >
                 &times;
@@ -425,7 +467,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 <label className="block text-xs font-bold text-gray-700 mb-1">
                   Enter Order ID
                 </label>
-                <input 
+                <input
                   type="text"
                   placeholder="e.g. 1042 or 987654"
                   value={trackInputId}

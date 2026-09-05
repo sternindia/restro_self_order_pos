@@ -68,7 +68,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         handleSuccessfulLogin(data.data);
         return;
       }
-      
+
       if (data && data.message && !data.data) {
         setError(data.message);
         return;
@@ -109,7 +109,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="relative w-full max-w-md bg-white border border-[#F0E6DF] rounded-2xl shadow-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-2xl">
-        
+
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#FFF0E6] border border-[#f05a24]/20 rounded-2xl mb-4 text-3xl shadow-inner">
@@ -119,52 +119,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             Staff & Waiter <span className="text-[#f05a24]">Portal</span>
           </h2>
           <p className="text-gray-500 text-xs sm:text-sm font-medium">Sign in with staff credentials to manage table orders</p>
-        </div>
-
-        {/* Demo Credentials Info Box */}
-        <div className="mb-6 p-3.5 bg-[#FFF0E6]/60 border border-[#f05a24]/20 rounded-xl space-y-2.5">
-          <div className="text-xs font-extrabold text-[#f05a24] uppercase tracking-wider flex items-center justify-between">
-            <span>💡 Staff Quick Login Roles</span>
-            <span className="text-[10px] bg-[#f05a24]/10 px-2 py-0.5 rounded-md text-[#f05a24] font-bold">Auto-fill</span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleFillRole('8965984722', '12345678')}
-              className="p-2 bg-white hover:bg-[#FFF0E6] border border-[#f05a24]/20 hover:border-[#f05a24]/40 rounded-xl text-left transition-all active:scale-95 cursor-pointer shadow-2xs group"
-            >
-              <div className="text-[11px] font-extrabold text-gray-900 group-hover:text-[#f05a24]">👑 Admin (Self POS)</div>
-              <div className="text-[10px] text-gray-500 font-semibold mt-0.5">8965984722</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillRole('8965984720', '12345678')}
-              className="p-2 bg-white hover:bg-[#FFF0E6] border border-[#f05a24]/20 hover:border-[#f05a24]/40 rounded-xl text-left transition-all active:scale-95 cursor-pointer shadow-2xs group"
-            >
-              <div className="text-[11px] font-extrabold text-gray-900 group-hover:text-[#f05a24]">💼 Manager (Self POS)</div>
-              <div className="text-[10px] text-gray-500 font-semibold mt-0.5">8965984720</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillRole('7878787878', '12345678')}
-              className="p-2 bg-white hover:bg-[#FFF0E6] border border-[#f05a24]/20 hover:border-[#f05a24]/40 rounded-xl text-left transition-all active:scale-95 cursor-pointer shadow-2xs group"
-            >
-              <div className="text-[11px] font-extrabold text-gray-900 group-hover:text-[#f05a24]">⚡ Cashier (Self POS)</div>
-              <div className="text-[10px] text-gray-500 font-semibold mt-0.5">7878787878</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillRole('8989898989', '12345678')}
-              className="p-2 bg-white hover:bg-[#FFF0E6] border border-[#f05a24]/20 hover:border-[#f05a24]/40 rounded-xl text-left transition-all active:scale-95 cursor-pointer shadow-2xs group"
-            >
-              <div className="text-[11px] font-extrabold text-[#f05a24]">🍽️ Waiter (Self Order)</div>
-              <div className="text-[10px] text-gray-500 font-semibold mt-0.5">8989898989</div>
-            </button>
-          </div>
         </div>
 
         {/* Alert Error */}
@@ -236,8 +190,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         {/* Footer */}
         <div className="mt-6 text-center space-y-2">
-          <a 
-            href="/" 
+          <a
+            href="/"
             className="inline-block text-xs font-extrabold text-[#f05a24] hover:underline"
           >
             ← Browsing as Customer? Click here to view Menu

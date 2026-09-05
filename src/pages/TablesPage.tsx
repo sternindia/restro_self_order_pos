@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RotateCw, Receipt, Plus, CreditCard, Check, Clock } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import { RotateCw, Receipt, Plus, CreditCard, Check, Clock, X, Layers, Users as UsersIcon } from 'lucide-react';
+import { API_BASE_URL, getRestaurantId } from '../config';
+import { toast } from 'react-toastify';
 import Header from '../components/Header';
 import TableStatusBadge from '../components/TableStatusBadge';
 
@@ -33,6 +34,19 @@ const TablesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEnableTables, setIsEnableTables] = useState<boolean>(true);
   const fetchedRef = React.useRef(false);
+
+  // Add Table state
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [newTableNum, setNewTableNum] = useState<string>('');
+  const [newTableCap, setNewTableCap] = useState<string>('4');
+  const [newTableFloor, setNewTableFloor] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Role check: Only admin & super_admin can add tables
+  const savedUser = localStorage.getItem('emenu_user');
+  const currentUser = savedUser ? JSON.parse(savedUser) : null;
+  const roleAlias = (currentUser?.role_alias || currentUser?.role || '').toLowerCase();
+  const isAdmin = roleAlias === 'admin' || roleAlias === 'super_admin';
 
   const fetchTables = async () => {
     try {
@@ -297,20 +311,86 @@ const TablesPage: React.FC = () => {
     return `${hrs}h ${remMins}m`;
   };
 
+  const handleAddTable = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanName = newTableNum.trim();
+    if (!cleanName) {
+      toast.warning('Please enter a table name or number.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const savedUser = localStorage.getItem('emenu_user');
+      const userObj = savedUser ? JSON.parse(savedUser) : null;
+      const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || getRestaurantId() || 9;
+
+      const payload: any = {
+        restaurent_id: parseInt(String(restaurantId), 10),
+        restaurant_id: parseInt(String(restaurantId), 10),
+        table_name: cleanName,
+        capacity: parseInt(newTableCap, 10) || 4
+      };
+      if (newTableFloor.trim()) {
+        payload.floor = newTableFloor.trim();
+      }
+
+      const response = await fetch(`${API_BASE_URL}/tables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.message || `Failed to create table (HTTP ${response.status})`);
+      }
+
+      toast.success(data?.message || 'Table created successfully!');
+      setShowAddModal(false);
+      setNewTableNum('');
+      setNewTableCap('4');
+      setNewTableFloor('');
+      await fetchTables();
+    } catch (err: any) {
+      console.error('Failed to create table:', err);
+      toast.error(err.message || 'Failed to add table.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF6F0] font-sans pb-[3vh]">
       <Header />
 
       <div className="mt-5 px-[3%] py-5 max-w-[1400px] mx-auto box-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800 m-0">Table Status</h2>
-          <button 
-            onClick={fetchTables} 
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F0E6DF] rounded-[8px] shadow-2xs hover:bg-gray-50 text-gray-700 text-sm font-semibold transition-all active:scale-95 cursor-pointer"
-          >
-            <RotateCw size={14} className={loading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 mb-5 sm:mb-6">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-lg sm:text-2xl font-black text-gray-900 m-0 tracking-tight whitespace-nowrap">Table Status</h2>
+            <span className="bg-[#FFF0E6] text-[#f05a24] text-[11px] sm:text-xs font-black px-2 sm:px-2.5 py-0.5 rounded-full border border-[#f05a24]/20 whitespace-nowrap">
+              {tables.filter(t => t.status === 'Occupied').length}/{tables.length} Active
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <button 
+              onClick={fetchTables} 
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white border border-[#F0E6DF] rounded-xl shadow-2xs hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer"
+            >
+              <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : ''} />
+              <span>Refresh</span>
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white rounded-xl shadow-md shadow-[#f05a24]/20 text-xs sm:text-sm font-black transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                <Plus size={15} />
+                <span>Add Table</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {!isEnableTables ? (
@@ -428,6 +508,122 @@ const TablesPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add New Table Modal */}
+      {isAdmin && showAddModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in"
+          onClick={() => !isSubmitting && setShowAddModal(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-[#F0E6DF] space-y-5 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-[#FFF0E6] text-[#f05a24] flex items-center justify-center text-xl font-black">
+                  🪑
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-900 leading-tight">Add New Table</h3>
+                  <p className="text-xs text-gray-400 font-medium">Create a table for table ordering & reservations</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                disabled={isSubmitting}
+                className="w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleAddTable} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                  Table Name or Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Table #4 or VIP-1"
+                  value={newTableNum}
+                  onChange={(e) => setNewTableNum(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                  Capacity (Seats) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                    <UsersIcon size={16} />
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    required
+                    value={newTableCap}
+                    onChange={(e) => setNewTableCap(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                  Floor / Section <span className="text-gray-400 font-medium">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                    <Layers size={16} />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="e.g. Ground Floor, Rooftop, First Floor"
+                    value={newTableFloor}
+                    onChange={(e) => setNewTableFloor(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={isSubmitting}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !newTableNum.trim()}
+                  className="flex-1 py-2.5 px-4 bg-[#f05a24] hover:bg-[#d94815] text-white text-xs font-black rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RotateCw size={14} className="animate-spin" />
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    <span>+ Add Table</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

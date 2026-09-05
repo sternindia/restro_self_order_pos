@@ -14,6 +14,8 @@ const TablesPage = lazy(() => import('./pages/TablesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ManageMenuPage = lazy(() => import('./pages/ManageMenuPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const StockPage = lazy(() => import('./pages/StockPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -159,6 +161,32 @@ function App() {
           <Route 
             path="/manage-menu" 
             element={user && !user.isGuest ? <ManageMenuPage /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              user && !user.isGuest && (
+                (user?.role_alias || user?.role || '').toLowerCase() === 'admin' || 
+                (user?.role_alias || user?.role || '').toLowerCase() === 'super_admin'
+              ) ? (
+                <DashboardPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+          <Route 
+            path="/stock" 
+            element={
+              user && !user.isGuest && (
+                (user?.role_alias || user?.role || '').toLowerCase() === 'admin' || 
+                (user?.role_alias || user?.role || '').toLowerCase() === 'super_admin'
+              ) ? (
+                <StockPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
           />
         </Routes>
       </Suspense>
