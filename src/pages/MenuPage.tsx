@@ -374,7 +374,7 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   );
 
   return (
-    <div className="index-body min-h-screen bg-[#FAF6F0] pb-24 md:pb-28">
+    <div className="index-body min-h-screen bg-[#F8FAFC] pb-24 md:pb-28">
       <Header onLogout={onLogout} />
 
       {/* Search Bar */}

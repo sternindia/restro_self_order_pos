@@ -103,12 +103,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F0] p-4 font-sans relative selection:bg-[#f05a24]/20">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-4 font-sans relative selection:bg-[#f05a24]/20">
       {/* Decorative background gradients */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#f05a24]/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="relative w-full max-w-md bg-white border border-[#F0E6DF] rounded-2xl shadow-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-2xl">
+      <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl p-6 sm:p-8 transition-all duration-300 hover:shadow-2xl">
 
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">

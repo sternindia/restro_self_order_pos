@@ -180,7 +180,7 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] font-sans pb-12">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-12">
       <Header />
 
       <div className="mt-4 px-[3%] py-4 max-w-[1000px] mx-auto box-border">
@@ -349,7 +349,7 @@ const SettingsPage: React.FC = () => {
                   </div>
 
                   {/* Serves Liquor Block */}
-                  <div className="p-3 bg-[#FAF6F0]/70 rounded-xl border border-[#F0E6DF] space-y-2">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5 cursor-pointer" htmlFor="servesLiquorCheck">
                         <GlassWater size={16} className="text-[#f05a24]" />
@@ -396,7 +396,7 @@ const SettingsPage: React.FC = () => {
 
                   <div className="space-y-2">
                     {/* Thermal Printing Switch */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#F0E6DF] bg-[#FAF6F0]/70">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
                       <div>
                         <label className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 cursor-pointer" htmlFor="serialPrinterCheck">
                           <Printer size={15} className="text-gray-700" />
@@ -414,7 +414,7 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     {/* Auto-Clean Tables Switch */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#F0E6DF] bg-[#FAF6F0]/70">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
                       <div>
                         <label className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 cursor-pointer" htmlFor="autoCleanCheck">
                           <Sparkles size={15} className="text-amber-500" />
@@ -432,7 +432,7 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     {/* Enable Tables Switch */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#F0E6DF] bg-[#FAF6F0]/70">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
                       <div>
                         <label className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 cursor-pointer" htmlFor="enableTablesCheck">
                           <LayoutGrid size={15} className="text-[#f05a24]" />

@@ -117,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
   return (
     <>
-      <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-[#FFFBF8] px-3 sm:px-8 shadow-xs border-b border-[#F0E6DF] select-none">
+      <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-white px-3 sm:px-8 shadow-xs border-b border-slate-200 select-none">
         {/* LEFT: Restaurant Logo & Table Status */}
         <div
           onClick={() => navigate('/')}
@@ -228,13 +228,13 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           {/* User Profile Badge */}
           {isStaffUser && (
             <div
-              className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-gray-800 bg-[#FAF6F0] hover:bg-[#FFF0E6] px-3 py-1.5 rounded-xl border border-[#F0E6DF] transition-all cursor-pointer shadow-2xs"
+              className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer shadow-2xs"
               title={`Logged in as: ${user?.username || user?.name || user?.user_name || 'Staff User'}`}
             >
               <User size={15} className="text-[#f05a24]" />
               <span className="max-w-[110px] truncate font-extrabold">{user?.username || user?.name || user?.user_name || 'Staff'}</span>
               {displayRole && (
-                <span className="bg-[#f05a24] text-white text-[9px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">
+                <span className="bg-amber-100 text-amber-800 border border-amber-300/80 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
                   {displayRole}
                 </span>
               )}
@@ -261,7 +261,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
           {isStaffUser && (
             <button
               onClick={handleLogoutClick}
-              className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
+              className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
               title="Logout Account"
             >
               <LogOut size={18} />
@@ -402,9 +402,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             {/* Drawer Footer */}
             <div className="pt-4 border-t border-gray-100 space-y-3">
               {/* User Profile Card */}
-              <div className="bg-[#FAF6F0] p-3 rounded-2xl border border-[#F0E6DF] space-y-2">
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#f05a24] text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
                     <User size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -413,7 +413,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                         {user?.username || user?.name || user?.user_name || 'Admin'}
                       </p>
                       {displayRole && (
-                        <span className="bg-[#f05a24]/10 text-[#f05a24] border border-[#f05a24]/20 text-[9px] px-1.5 py-0.2 rounded-md font-extrabold uppercase shrink-0">
+                        <span className="bg-amber-100 text-amber-800 border border-amber-300/80 text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase shrink-0">
                           {displayRole}
                         </span>
                       )}
@@ -431,9 +431,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                     setIsMobileMenuOpen(false);
                     handleLogoutClick();
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white font-extrabold text-xs rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-98 group"
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold text-xs rounded-xl border border-rose-200 transition-all cursor-pointer shadow-2xs active:scale-98 group"
                 >
-                  <LogOut size={16} className="text-[#f05a24] group-hover:text-white transition-colors" />
+                  <LogOut size={16} className="text-rose-600" />
                   <span>Logout Account</span>
                 </button>
               )}

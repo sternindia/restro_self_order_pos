@@ -322,7 +322,7 @@ const StockPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Header />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">

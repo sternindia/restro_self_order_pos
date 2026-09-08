@@ -372,8 +372,8 @@ const CartPage: React.FC = () => {
   const grandTotal = subtotal + serviceChargeAmt + taxAmt;
 
   return (
-    <div className="cart-body min-h-screen bg-[#FAF6F0] pb-24 md:pb-8">
-      <div className="header-cart sticky top-0 z-50 flex h-11 md:h-[10vh] w-full items-center justify-between bg-[#FFFBF8] px-3 md:px-[3%] py-1 md:py-[1.5%] shadow-xs border-b border-[#F0E6DF]">
+    <div className="cart-body min-h-screen bg-[#F8FAFC] pb-24 md:pb-8">
+      <div className="header-cart sticky top-0 z-50 flex h-11 md:h-[10vh] w-full items-center justify-between bg-white px-3 md:px-[3%] py-1 md:py-[1.5%] shadow-xs border-b border-slate-200">
         <div className="backpluscart flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="back-arrow text-gray-700 hover:text-black cursor-pointer p-1 rounded-full hover:bg-gray-100 transition-all">
             <ArrowLeft size={22} />

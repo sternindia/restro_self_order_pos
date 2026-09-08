@@ -155,12 +155,12 @@ const DashboardPage: React.FC = () => {
     const maxQtySold = topItems.reduce((max: number, i: any) => Math.max(max, i.quantity_sold || 0), 1);
 
     return (
-        <div className="min-h-screen bg-[#FAF6F0] flex flex-col font-sans">
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
             <Header />
 
             <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
                 {/* Header Banner Card - Compact on Mobile */}
-                <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xs border border-[#F0E6DF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xs border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <div className="flex items-center gap-1.5 mb-1">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/20">

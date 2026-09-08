@@ -88,8 +88,8 @@ const OrderNumberPage: React.FC = () => {
 
   if (!orderInfo) {
     return (
-      <div className="numberBody min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-[#F0E6DF] max-w-sm w-full">
+      <div className="numberBody min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-sm w-full">
           <div className="text-5xl mb-4">🍽️</div>
           <h2 className="text-lg font-bold text-gray-800 mb-1">No active order found</h2>
           <p className="text-xs text-gray-500 mb-6">You haven't placed any order yet in this session.</p>
@@ -182,7 +182,7 @@ const OrderNumberPage: React.FC = () => {
   };
 
   return (
-    <div className="numberBody min-h-screen bg-[#FAF6F0] font-sans pb-32">
+    <div className="numberBody min-h-screen bg-[#F8FAFC] font-sans pb-32">
       {/* Thermal POS Receipt Print Styles */}
       <style>{`
         @media print {
@@ -344,7 +344,7 @@ const OrderNumberPage: React.FC = () => {
           })()}
 
           {/* Customer & Timestamp Info */}
-          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-800 bg-[#FAF6F0]/70 p-3.5 sm:p-4 rounded-xl border border-[#F0E6DF] gap-2">
+          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm text-gray-800 bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 gap-2">
             <div>
               <span className="text-gray-700 font-bold">Customer: </span>
               <span className="font-extrabold text-gray-900">{guest_name || 'Guest Customer'}</span>

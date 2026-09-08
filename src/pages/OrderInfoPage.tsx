@@ -488,9 +488,9 @@ const OrderInfoPage: React.FC = () => {
   };
 
   return (
-    <div className="infobody min-h-screen bg-[#FAF6F0] font-sans pb-32">
+    <div className="infobody min-h-screen bg-[#F8FAFC] font-sans pb-32">
       {/* Top Header */}
-      <div className="header-info sticky top-0 z-50 flex h-11 md:h-16 w-full items-center bg-[#FFFBF8] px-3 md:px-8 shadow-xs border-b border-[#F0E6DF]">
+      <div className="header-info sticky top-0 z-50 flex h-11 md:h-16 w-full items-center bg-white px-3 md:px-8 shadow-xs border-b border-slate-200">
         <button
           onClick={() => navigate(-1)}
           className="back-arrow mr-2.5 p-1.5 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -501,11 +501,11 @@ const OrderInfoPage: React.FC = () => {
       </div>
 
       <div className="bodymiddle flex justify-center px-2 sm:px-4 py-2 sm:py-6">
-        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-3 sm:space-y-5 flex flex-col">
+        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-slate-200 space-y-3 sm:space-y-5 flex flex-col">
 
           {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
           {isGuestCustomer && (
-            <div className="restaurant-info bg-[#FAF6F0]/60 rounded-xl p-2.5 sm:p-4 border border-[#F0E6DF]">
+            <div className="restaurant-info bg-slate-50 rounded-xl p-2.5 sm:p-4 border border-slate-200">
               <h2 className="text-base sm:text-lg font-black text-gray-900 mb-0.5 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
               <p className="text-[11px] sm:text-xs text-gray-600 flex items-start gap-1 my-0.5">
                 <span>📍</span> <span>{posSettings?.restaurant_info?.address || '1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)'}</span>
@@ -596,7 +596,7 @@ const OrderInfoPage: React.FC = () => {
           </div>
 
           {/* Billing Summary Box */}
-          <div className="summary bg-[#FAF6F0]/60 rounded-xl p-3 sm:p-4 border border-[#F0E6DF] text-xs sm:text-sm space-y-2 sm:space-y-2.5">
+          <div className="summary bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200 text-xs sm:text-sm space-y-2 sm:space-y-2.5">
             <div className="flex items-center justify-between border-b border-gray-200/80 pb-2">
               <span className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] sm:text-xs">Order Summary</span>
               <span className="text-[11px] font-bold text-gray-800">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>

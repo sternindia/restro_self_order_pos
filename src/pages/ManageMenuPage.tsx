@@ -332,7 +332,7 @@ const ManageMenuPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] font-sans pb-12">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-12">
       <Header />
 
       <div className="mt-4 px-[3%] py-4 max-w-[1200px] mx-auto box-border">

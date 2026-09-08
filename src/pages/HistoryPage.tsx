@@ -428,7 +428,7 @@ const HistoryPage: React.FC = () => {
   }, [filteredOrders, currentPage]);
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] font-sans pb-10">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-10">
       <Header />
       
       <main className="w-full max-w-7xl mx-auto px-2 sm:px-6 py-4 sm:py-8">
@@ -609,7 +609,7 @@ const HistoryPage: React.FC = () => {
           <div className="bg-white rounded-xl sm:rounded-2xl border border-[#F0E6DF] sm:overflow-hidden shadow-xs">
             <div className="overflow-x-auto w-full [-webkit-overflow-scrolling:touch]">
               <table className="w-full text-left border-collapse min-w-[580px] sm:min-w-full">
-                <thead className="bg-[#FAF6F0]/70 border-b border-[#F0E6DF]">
+                <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-3 sm:px-5 py-3 text-[11px] sm:text-xs font-black text-gray-500 uppercase tracking-wider">ID</th>
                     {isEnableTables && (
@@ -635,8 +635,8 @@ const HistoryPage: React.FC = () => {
                       <React.Fragment key={order.order_id}>
                         {/* Table Main Row */}
                         <tr 
-                          className={`hover:bg-[#FAF6F0]/40 transition-colors cursor-pointer select-none ${
-                            isExpanded ? 'bg-[#FAF6F0]/50' : ''
+                          className={`hover:bg-slate-50/80 transition-colors cursor-pointer select-none ${
+                            isExpanded ? 'bg-slate-50' : ''
                           }`}
                           onClick={() => toggleExpand(order.order_id)}
                         >
@@ -807,7 +807,7 @@ const HistoryPage: React.FC = () => {
 
             {/* Pagination Controls Bar */}
             {filteredOrders.length > 0 && (
-              <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 px-3 sm:px-5 py-3 bg-[#FAF6F0]/70 border-t border-[#F0E6DF] text-xs font-bold text-gray-700 w-full overflow-hidden">
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 px-3 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 text-xs font-bold text-gray-700 w-full overflow-hidden">
                 <div className="text-center sm:text-left text-[11px] sm:text-xs">
                   Showing <span className="font-extrabold text-gray-900">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredOrders.length)}</span> to{' '}
                   <span className="font-extrabold text-gray-900">{Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)}</span> of{' '}
@@ -970,7 +970,7 @@ const HistoryPage: React.FC = () => {
               </div>
 
               {/* Selected Info Summary */}
-              <div className="p-2.5 rounded-xl text-center border bg-[#FAF6F0] border-[#F0E6DF]">
+              <div className="p-2.5 rounded-xl text-center border bg-slate-50 border-slate-200">
                 <span className="text-xs font-semibold text-slate-800">
                   {tempStartDate ? (
                     <>

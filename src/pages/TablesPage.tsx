@@ -99,15 +99,15 @@ const TablesPage: React.FC = () => {
       if (!tablesRes.ok) {
         throw new Error(`HTTP error! Status: ${tablesRes.status}`);
       }
-      
+
       const data = await tablesRes.json();
-      
+
       let orderHistory: any[] = [];
       if (ordersRes && ordersRes.ok) {
         try {
           const ordersData = await ordersRes.json();
-          orderHistory = Array.isArray(ordersData) 
-            ? ordersData 
+          orderHistory = Array.isArray(ordersData)
+            ? ordersData
             : (ordersData && Array.isArray(ordersData.data) ? ordersData.data : []);
         } catch (e) {
           console.warn("Failed to parse orders response:", e);
@@ -149,7 +149,7 @@ const TablesPage: React.FC = () => {
           const orderTableId = String(oh.table_number_id || '');
 
           return (cleanTableNum && cleanOrderTableNum && cleanTableNum === cleanOrderTableNum) ||
-                 (cleanTableId && orderTableId && cleanTableId === orderTableId);
+            (cleanTableId && orderTableId && cleanTableId === orderTableId);
         });
 
         const statusRaw = String(item.status || 'Available').toUpperCase();
@@ -362,23 +362,24 @@ const TablesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] font-sans pb-[3vh]">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-[3vh]">
       <Header />
 
       <div className="mt-5 px-[3%] py-5 max-w-[1400px] mx-auto box-border">
         <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 mb-5 sm:mb-6">
           <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-lg sm:text-2xl font-black text-gray-900 m-0 tracking-tight whitespace-nowrap">Table Status</h2>
-            <span className="bg-[#FFF0E6] text-[#f05a24] text-[11px] sm:text-xs font-black px-2 sm:px-2.5 py-0.5 rounded-full border border-[#f05a24]/20 whitespace-nowrap">
-              {tables.filter(t => t.status === 'Occupied').length}/{tables.length} Active
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 m-0 tracking-tight whitespace-nowrap">Table Status</h2>
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full border border-emerald-200/80 shadow-2xs whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>{tables.filter(t => t.status === 'Occupied').length}/{tables.length} Active</span>
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
-            <button 
-              onClick={fetchTables} 
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white border border-[#F0E6DF] rounded-xl shadow-2xs hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer"
+            <button
+              onClick={fetchTables}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-xl shadow-2xs hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer"
             >
-              <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : ''} />
+              <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : 'text-slate-500'} />
               <span>Refresh</span>
             </button>
             {isAdmin && (
@@ -394,14 +395,14 @@ const TablesPage: React.FC = () => {
         </div>
 
         {!isEnableTables ? (
-          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-[#F0E6DF] shadow-xs max-w-md mx-auto my-6">
+          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto my-6">
             <div className="text-5xl mb-3">🪑</div>
-            <h3 className="text-lg font-black text-gray-900 mb-1">Tables Management Disabled</h3>
-            <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+            <h3 className="text-lg font-black text-slate-900 mb-1">Tables Management Disabled</h3>
+            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
               Table management is currently turned off in your restaurant POS Control Settings.
             </p>
-            <button 
-              onClick={() => navigate('/')} 
+            <button
+              onClick={() => navigate('/')}
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
             >
               Go to Menu View →
@@ -415,9 +416,9 @@ const TablesPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 py-3 sm:py-5">
             {tables.map((table) => {
               return (
-                <div 
-                  key={table.table_id} 
-                  className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-[#F0E6DF] flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
+                <div
+                  key={table.table_id}
+                  className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-slate-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
                   onClick={() => handleTableSelect(table.table_number)}
                 >
                   <div className="absolute top-0 right-0">
@@ -425,29 +426,29 @@ const TablesPage: React.FC = () => {
                   </div>
 
                   {/* Table Header */}
-                  <div className="text-left pt-1 sm:pt-0 border-b border-gray-100/80 pb-1.5">
-                    <h3 className="text-xs xs:text-sm sm:text-xl font-black text-gray-900 leading-tight truncate pr-14 sm:pr-20">
+                  <div className="text-left pt-1 sm:pt-0 border-b border-slate-100 pb-1.5">
+                    <h3 className="text-xs xs:text-sm sm:text-xl font-black text-slate-900 leading-tight truncate pr-14 sm:pr-20">
                       {table.table_number}
                     </h3>
-                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold mt-0.5">
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-0.5">
                       {table.capacity} Seats
                     </p>
                   </div>
 
                   {/* Occupied Session Box */}
                   {table.status === 'Occupied' && table.current_session && (
-                    <div className="bg-[#FAF6F0]/70 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-[#F0E6DF]">
+                    <div className="bg-slate-50 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-slate-200/80">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400 font-medium">Server</span>
-                        <span className="font-bold text-gray-800 truncate max-w-[65px] sm:max-w-none">{table.current_session.staff_name || 'Staff'}</span>
+                        <span className="text-slate-400 font-medium">Server</span>
+                        <span className="font-bold text-slate-800 truncate max-w-[65px] sm:max-w-none">{table.current_session.staff_name || 'Staff'}</span>
                       </div>
                       <div className="flex justify-between items-center text-amber-600 font-bold">
                         <span className="flex items-center gap-1"><Clock size={10} className="shrink-0" /> Elapsed</span>
                         <span>{getMinutesElapsed(table.current_session.updated_at)}</span>
                       </div>
-                      <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 mt-0.5">
-                        <span className="text-gray-500 font-medium">Total</span>
-                        <span className="font-black text-[#f05a24] text-xs sm:text-base">
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-200/80 mt-0.5">
+                        <span className="text-slate-500 font-medium">Total</span>
+                        <span className="font-black text-slate-900 text-xs sm:text-base">
                           ₹{(table.current_session.current_total || 0).toFixed(2)}
                         </span>
                       </div>
@@ -455,17 +456,17 @@ const TablesPage: React.FC = () => {
                   )}
 
                   {table.status === 'Dirty' && (
-                    <div className="bg-rose-50/60 rounded-xl p-1.5 text-center text-[10px] sm:text-xs text-rose-600 font-extrabold border border-rose-100">
+                    <div className="bg-amber-50/80 rounded-xl p-1.5 text-center text-[10px] sm:text-xs text-amber-700 font-extrabold border border-amber-200">
                       Needs Cleaning
                     </div>
                   )}
 
                   {table.status === 'Reserved' && table.current_session && (
-                    <div className="bg-purple-50/60 rounded-xl p-1.5 flex flex-col gap-0.5 text-[10px] sm:text-xs border border-purple-100">
-                      <div className="flex items-center gap-1 text-purple-700 font-semibold">
+                    <div className="bg-indigo-50/80 rounded-xl p-1.5 flex flex-col gap-0.5 text-[10px] sm:text-xs border border-indigo-200">
+                      <div className="flex items-center gap-1 text-indigo-700 font-semibold">
                         <Clock size={10} className="shrink-0" /> 7:30 PM
                       </div>
-                      <div className="font-bold text-purple-900 truncate">
+                      <div className="font-bold text-indigo-900 truncate">
                         {table.current_session.customer_name || 'Reserved'}
                       </div>
                     </div>
@@ -481,23 +482,23 @@ const TablesPage: React.FC = () => {
 
                     {table.status === 'Occupied' && (
                       <div className="grid grid-cols-2 gap-1.5 w-full">
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#121417] hover:bg-black text-white border border-[#121417] shadow-xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
                           <Plus size={11} /> <span className="truncate">ADD</span>
                         </button>
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-2xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
+                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-50 text-emerald-800 border border-emerald-300/90 hover:bg-emerald-100 hover:border-emerald-400 shadow-xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
                           <CreditCard size={11} className="text-emerald-700" /> <span className="truncate">PAID</span>
                         </button>
                       </div>
                     )}
 
                     {table.status === 'Dirty' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-slate-600 hover:bg-slate-700 text-white shadow-2xs active:scale-95" onClick={() => handleMarkCleaned(table.table_number)}>
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-amber-500 hover:bg-amber-600 text-white shadow-2xs active:scale-95" onClick={() => handleMarkCleaned(table.table_number)}>
                         <Check size={12} /> CLEANED
                       </button>
                     )}
 
                     {table.status === 'Reserved' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
+                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-indigo-500 hover:bg-indigo-600 text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
                         <Check size={12} /> ARRIVED
                       </button>
                     )}
@@ -511,11 +512,11 @@ const TablesPage: React.FC = () => {
 
       {/* Add New Table Modal */}
       {isAdmin && showAddModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in"
           onClick={() => !isSubmitting && setShowAddModal(false)}
         >
-          <div 
+          <div
             className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-[#F0E6DF] space-y-5 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
