@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShoppingCart, BellRing, PhoneCall, Search, SlidersHorizontal, 
-  Heart, Utensils, ShoppingBag, LayoutGrid, MoreHorizontal, 
-  X, BarChart3, UtensilsCrossed, Package, Users, User, 
-  Settings, HelpCircle, Info, ChevronRight, Plus, Minus, ArrowRight
-} from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, BellRing, PhoneCall, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { API_BASE_URL } from '../config';
+import MobileMenuPage from '../mobileview/MobileMenuPage';
 
 const getDietaryType = (item: any): 'Veg' | 'Non-Veg' | 'Egg' => {
   const nameLower = (item.item_name || '').toLowerCase();
@@ -31,29 +27,8 @@ const getDietaryType = (item: any): 'Veg' | 'Non-Veg' | 'Egg' => {
   return 'Veg';
 };
 
-const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
-  const navigate = useNavigate();
+const DesktopMenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string>('ALL');
-  const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('emenu_favorites');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const toggleFavorite = (itemId: string) => {
-    setFavorites(prev => {
-      const next = { ...prev, [itemId]: !prev[itemId] };
-      localStorage.setItem('emenu_favorites', JSON.stringify(next));
-      return next;
-    });
-  };
-
   const [isCallWaiterOpen, setIsCallWaiterOpen] = useState(false);
   const [waiterAlertMsg, setWaiterAlertMsg] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -266,27 +241,36 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
     return { ...cat, items };
   }).filter(cat => cat.items.length > 0);
 
-
-  const ShipWheelSVG = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="3" />
-      <line x1="12" y1="1" x2="12" y2="4" />
-      <line x1="12" y1="20" x2="12" y2="23" />
-      <line x1="1" y1="12" x2="4" y2="12" />
-      <line x1="20" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
-      <line x1="17.66" y1="17.66" x2="19.78" y2="19.78" />
-      <line x1="19.78" y1="4.22" x2="17.66" y2="6.34" />
-      <line x1="6.34" y1="17.66" x2="4.22" y2="19.78" />
-    </svg>
-  );
-
   const SteamingPotSVG = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
       <path d="M7 3.5C7 2.5 8 2 8 1.5M12 3.5C12 2.5 13 2 13 1.5M16 3.5C16 2.5 17 2 17 1.5" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
       <path d="M4 10C4 8.89543 4.89543 8 6 8H18C19.1046 8 20 8.89543 20 10V11C20 15.4183 16.4183 19 12 19C7.58172 19 4 15.4183 4 11V10Z" fill="#F05A24" fillOpacity="0.18" stroke="#f05a24" strokeWidth="2"/>
       <path d="M2 10.5H22" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const SkewersSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <circle cx="7" cy="7" r="3.2" fill="#F05A24" fillOpacity="0.2" stroke="#f05a24" strokeWidth="2"/>
+      <circle cx="12" cy="12" r="3.2" fill="#F05A24" fillOpacity="0.2" stroke="#f05a24" strokeWidth="2"/>
+      <circle cx="17" cy="17" r="3.2" fill="#F05A24" fillOpacity="0.2" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M3 3L21 21" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const CurryBowlSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <path d="M3 11C3 9.89543 3.89543 9 5 9H19C20.1046 9 21 9.89543 21 11V12C21 16.4183 17.4183 20 13 20H11C6.58172 20 3 16.4183 3 12V11Z" fill="#F05A24" fillOpacity="0.18" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M1 11H3M21 11H23" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M8 6C8 5 9 4.5 9 4M15 6C15 5 16 4.5 16 4" stroke="#f05a24" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  );
+
+  const DrinkSVG = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <path d="M6 8L8.2 20H15.8L18 8H6Z" fill="#F05A24" fillOpacity="0.18" stroke="#f05a24" strokeWidth="2"/>
+      <path d="M5 8H19" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M15 2L11 8" stroke="#f05a24" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   );
 
@@ -297,212 +281,90 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
     </svg>
   );
 
-  const getItemImage = (item: any, categoryName: string = ''): string => {
-    if (item.image_url && item.image_url.startsWith('http')) return item.image_url;
-    if (item.image && item.image.startsWith('http')) return item.image;
-
-    const name = (item.item_name || '').toLowerCase();
-    const cat = categoryName.toLowerCase();
-
-    // Biryani matches reference image closely
-    if (name.includes('veg biryani') || (cat.includes('biryani') && name.includes('veg'))) {
-      return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop&q=80';
-    }
-    if (name.includes('chicken biryani') || name.includes('non veg biryani') || name.includes('mutton biryani')) {
-      return 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?w=500&auto=format&fit=crop&q=80';
-    }
-    if (name.includes('egg biryani')) {
-      return 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=500&auto=format&fit=crop&q=80';
-    }
-    if (name.includes('biryani') || cat.includes('biryani') || name.includes('pulao') || name.includes('rice')) {
-      return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop&q=80';
-    }
-
-    // Starters / Tikka
-    if (name.includes('paneer tikka')) {
-      return 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=500&auto=format&fit=crop&q=80';
-    }
-    if (name.includes('chicken tikka') || name.includes('kebab') || name.includes('tandoori') || name.includes('wings')) {
-      return 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=500&auto=format&fit=crop&q=80';
-    }
-    if (cat.includes('starter') || name.includes('roll') || name.includes('crispy') || name.includes('fries') || name.includes('pakora')) {
-      return 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=500&auto=format&fit=crop&q=80';
-    }
-
-    // Curries / Main Course
-    if (name.includes('butter chicken') || name.includes('chicken curry') || name.includes('mutton curry')) {
-      return 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=500&auto=format&fit=crop&q=80';
-    }
-    if (name.includes('paneer') || name.includes('dal') || name.includes('curry') || name.includes('masala') || cat.includes('main')) {
-      return 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=500&auto=format&fit=crop&q=80';
-    }
-
-    // Breads / Naan
-    if (name.includes('naan') || name.includes('roti') || name.includes('paratha') || name.includes('kulcha') || cat.includes('bread')) {
-      return 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=500&auto=format&fit=crop&q=80';
-    }
-
-    // Chinese / Noodles
-    if (name.includes('noodle') || name.includes('fried rice') || name.includes('manchurian') || name.includes('momo') || cat.includes('chinese')) {
-      return 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=500&auto=format&fit=crop&q=80';
-    }
-
-    // Beverages / Drinks
-    if (name.includes('shake') || name.includes('juice') || name.includes('mojito') || name.includes('lassi') || name.includes('soda') || cat.includes('drink') || cat.includes('beverage')) {
-      return 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&auto=format&fit=crop&q=80';
-    }
-    if (name.includes('coffee') || name.includes('tea') || name.includes('chai')) {
-      return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80';
-    }
-
-    // Desserts
-    if (name.includes('jamun') || name.includes('halwa') || name.includes('ice cream') || name.includes('cake') || name.includes('sweet') || cat.includes('dessert')) {
-      return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&auto=format&fit=crop&q=80';
-    }
-
-    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80';
-  };
-
-  const getCategoryThumbnail = (categoryName: string = ''): string => {
-    const c = categoryName.toLowerCase();
-    if (c.includes('biryani')) return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=120&auto=format&fit=crop&q=80';
-    if (c.includes('starter') || c.includes('snack') || c.includes('appetizer')) return 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=120&auto=format&fit=crop&q=80';
-    if (c.includes('main') || c.includes('curry') || c.includes('gravy')) return 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=120&auto=format&fit=crop&q=80';
-    if (c.includes('beverage') || c.includes('drink') || c.includes('juice')) return 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=120&auto=format&fit=crop&q=80';
-    if (c.includes('dessert') || c.includes('sweet') || c.includes('ice')) return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=120&auto=format&fit=crop&q=80';
-    if (c.includes('chinese') || c.includes('noodle')) return 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=120&auto=format&fit=crop&q=80';
-    if (c.includes('bread') || c.includes('roti') || c.includes('naan')) return 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=120&auto=format&fit=crop&q=80';
-    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80';
+  const getCategoryIcon = (name: string = '') => {
+    const n = name.toLowerCase();
+    if (n.includes('biryani') || n.includes('rice') || n.includes('pulao')) return <SteamingPotSVG />;
+    if (n.includes('starter') || n.includes('tikka') || n.includes('kebab') || n.includes('snack') || n.includes('appetizer')) return <SkewersSVG />;
+    if (n.includes('curry') || n.includes('main') || n.includes('gravy') || n.includes('dal') || n.includes('paneer')) return <CurryBowlSVG />;
+    if (n.includes('drink') || n.includes('beverage') || n.includes('juice') || n.includes('shake') || n.includes('tea') || n.includes('coffee')) return <DrinkSVG />;
+    return <SteamingPotSVG />;
   };
 
   const MenuSection = ({ title, items }: { title: string; items: any[] }) => (
     <section 
       id={`category-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`} 
-      className="mx-3 sm:mx-6 mt-6 scroll-mt-24"
+      className="mx-3 sm:mx-6 mt-4 rounded-2xl bg-white p-4 sm:p-5 border border-[#F0E6DF] shadow-[0_2px_12px_rgba(0,0,0,0.03)] scroll-mt-20"
     >
-      {/* Category Section Header matching reference image: Title on Left, "View All >" on Right */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-base sm:text-xl font-black text-gray-900 tracking-tight">{title}</h2>
-        <button 
-          type="button"
-          onClick={() => {
-            setActiveCategory(title);
-            const el = document.getElementById(`category-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-          className="text-xs sm:text-sm font-bold text-gray-700 hover:text-[#f05a24] flex items-center gap-0.5 cursor-pointer transition-colors"
-        >
-          <span>View All</span>
-          <ChevronRight size={15} />
-        </button>
+      {/* Category Header with Dynamic Realistic Vector SVG Icon */}
+      <div className="flex flex-col mb-3 w-max">
+        <div className="flex items-center gap-2">
+          {getCategoryIcon(title)}
+          <h2 className="text-base sm:text-lg font-extrabold text-[#1A1A1A] tracking-tight">{title}</h2>
+        </div>
+        <div className="h-[2.5px] bg-[#f05a24] rounded-full w-full mt-0.5"></div>
       </div>
 
-      {/* 2-Column Grid on Mobile / Small Screen (Matching Reference Mockup!) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Item List (Directly inside section card, NO double inner box) */}
+      <div className="divide-y divide-gray-100">
         {items.map((item) => {
           const dietaryType = getDietaryType(item);
           const priceNum = parseFloat(item.price || '0');
           const qty = getQuantityInCart(item.item_id);
-          const isFav = !!favorites[item.item_id];
-          const dishImg = getItemImage(item, title);
-
           return (
-            <div 
-              key={item.item_id} 
-              className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex flex-col group"
-            >
-              {/* Dish Image with Overlays */}
-              <div className="relative w-full aspect-square bg-slate-100 overflow-hidden">
-                <img 
-                  src={dishImg} 
-                  alt={item.item_name} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-
-                {/* Top-Left Dietary Badge */}
-                <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs p-1 rounded-md shadow-xs flex items-center justify-center">
+            <div key={item.item_id} className="flex items-center justify-between py-3.5 first:pt-1 last:pb-1">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                <div className="flex-shrink-0">
                   {dietaryType === 'Veg' && (
-                    <div className="w-3.5 h-3.5 border-2 border-emerald-600 flex items-center justify-center rounded-xs bg-white" title="Veg">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
+                    <div className="w-4 h-4 border-2 border-[#00B074] flex items-center justify-center p-0.5 rounded-sm bg-white" title="Veg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#00B074]"></span>
                     </div>
                   )}
                   {dietaryType === 'Non-Veg' && (
-                    <div className="w-3.5 h-3.5 border-2 border-rose-600 flex items-center justify-center rounded-xs bg-white" title="Non-Veg">
-                      <div className="w-1.5 h-1.5 rounded-full bg-rose-600"></div>
+                    <div className="w-4 h-4 border-2 border-[#E53935] flex items-center justify-center p-0.5 rounded-sm bg-white" title="Non-Veg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#E53935]"></span>
                     </div>
                   )}
                   {dietaryType === 'Egg' && (
-                    <div className="w-3.5 h-3.5 border-2 border-amber-500 flex items-center justify-center rounded-xs bg-white" title="Egg">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                    <div className="w-4 h-4 border-2 border-[#FFB300] flex items-center justify-center p-0.5 rounded-sm bg-white" title="Egg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB300]"></span>
                     </div>
                   )}
                 </div>
 
-                {/* Top-Right Favorite Heart Button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(item.item_id);
-                  }}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-xs text-white flex items-center justify-center transition-all active:scale-90 cursor-pointer shadow-xs"
-                  title={isFav ? "Remove from Favorites" : "Add to Favorites"}
-                >
-                  <Heart 
-                    size={14} 
-                    className={isFav ? "fill-rose-500 text-rose-500" : "text-white"} 
-                  />
-                </button>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-bold text-[#1E1F24] leading-snug">{item.item_name}</h3>
+                  <p className="text-xs font-bold text-[#f05a24] mt-0.5">₹{priceNum.toFixed(2)}</p>
+                </div>
               </div>
 
-              {/* Dish Info & Add Action */}
-              <div className="p-2.5 sm:p-3 flex flex-col flex-1 justify-between gap-1.5">
-                <div>
-                  <h3 
-                    className="text-xs sm:text-sm font-extrabold text-gray-900 leading-snug line-clamp-1 group-hover:text-[#f05a24] transition-colors" 
-                    title={item.item_name}
-                  >
-                    {item.item_name}
-                  </h3>
-                </div>
-
-                <div className="flex items-center justify-between gap-1 pt-1">
-                  <span className="text-xs sm:text-sm font-black text-gray-950 tracking-tight">
-                    ₹{priceNum.toFixed(0)}
-                  </span>
-
-                  {qty > 0 ? (
-                    <div className="flex items-center bg-[#f05a24] text-white rounded-full px-1 py-0.5 shadow-xs">
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(item)}
-                        className="w-5 h-5 flex items-center justify-center text-xs font-black cursor-pointer hover:opacity-80 active:scale-90"
-                      >
-                        −
-                      </button>
-                      <span className="text-[11px] font-black px-1 min-w-[16px] text-center">
-                        {qty}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => addToCart(item)}
-                        className="w-5 h-5 flex items-center justify-center text-xs font-black cursor-pointer hover:opacity-80 active:scale-90"
-                      >
-                        +
-                      </button>
-                    </div>
-                  ) : (
+              <div className="flex-shrink-0">
+                {qty > 0 ? (
+                  <div className="flex items-center border border-[#f05a24]/40 rounded-xl overflow-hidden bg-[#FFF0E6]/60 shadow-2xs">
                     <button
-                      type="button"
+                      onClick={() => removeFromCart(item)}
+                      className="px-2.5 py-1.5 text-[#f05a24] hover:bg-[#f05a24] hover:text-white transition-colors font-black cursor-pointer text-xs"
+                    >
+                      −
+                    </button>
+                    <span className="px-2 py-1.5 text-xs font-black text-[#1E1F24] min-w-[18px] text-center bg-white">
+                      {qty}
+                    </span>
+                    <button
                       onClick={() => addToCart(item)}
-                      className="w-7 h-7 rounded-full bg-[#f05a24] hover:bg-[#d94815] text-white flex items-center justify-center font-black text-base shadow-xs active:scale-90 transition-all cursor-pointer"
-                      title="Add to cart"
+                      className="px-2.5 py-1.5 text-[#f05a24] hover:bg-[#f05a24] hover:text-white transition-colors font-black cursor-pointer text-xs"
                     >
                       +
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => addToCart(item)}
+                    className="flex items-center justify-center gap-1 min-w-[72px] px-3.5 py-1.5 rounded-xl bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white border border-[#f05a24]/30 hover:border-[#f05a24] text-xs font-extrabold tracking-wide transition-all shadow-2xs active:scale-95 cursor-pointer group"
+                  >
+                    <span>ADD</span>
+                    <span className="text-sm font-bold leading-none group-hover:scale-110 transition-transform">+</span>
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -512,166 +374,77 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   );
 
   return (
-    <div className="index-body min-h-screen bg-[#F8FAFC] pb-28 md:pb-28">
+    <div className="index-body min-h-screen bg-[#F8FAFC] pb-24 md:pb-28">
       <Header onLogout={onLogout} />
 
-      {/* Search Bar & Filter Button (Matching Reference Mockup) */}
-      <div className="flex items-center gap-2 mx-3 sm:mx-6 mt-3 sm:mt-4">
-        <div className="relative flex-1">
-          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            placeholder="Search for dishes, drinks, SKUs..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200 bg-white text-xs sm:text-sm text-gray-900 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 shadow-2xs transition-all placeholder:text-gray-400"
-          />
-        </div>
+      {/* Search Bar */}
+      <div className="relative mx-3 sm:mx-6 mt-4">
+        <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          placeholder="Search for dishes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-xs sm:text-sm text-gray-900 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 shadow-2xs transition-all"
+        />
+      </div>
+
+      {/* Filter Toggle Buttons matching reference image */}
+      <div className="flex items-center gap-2.5 px-3 sm:px-6 mt-4 overflow-x-auto select-none no-scrollbar py-1">
         <button
-          type="button"
-          onClick={() => setShowFilters(!showFilters)}
-          className={`p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer flex-shrink-0 shadow-2xs ${
-            showFilters || dietaryFilter !== 'ALL' || specialFilter !== 'ALL'
-              ? 'bg-[#f05a24] text-white border-[#f05a24]'
-              : 'bg-white text-gray-700 border-slate-200 hover:text-[#f05a24] hover:border-[#f05a24]'
-          }`}
-          title="Toggle Filters"
+          onClick={() => { setDietaryFilter('ALL'); setSpecialFilter('ALL'); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'ALL' && specialFilter === 'ALL'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+            }`}
         >
-          <SlidersHorizontal size={18} />
+          <CutleryFilterSVG /> All Items
+        </button>
+
+        <button
+          onClick={() => setDietaryFilter(dietaryFilter === 'VEG' ? 'ALL' : 'VEG')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'VEG'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+            }`}
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span> Veg Only
+        </button>
+
+        <button
+          onClick={() => setDietaryFilter(dietaryFilter === 'NON_VEG' ? 'ALL' : 'NON_VEG')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'NON_VEG'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+            }`}
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span> Non-Veg
+        </button>
+
+        <button
+          onClick={() => setDietaryFilter(dietaryFilter === 'EGG' ? 'ALL' : 'EGG')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${dietaryFilter === 'EGG'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+            }`}
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span> Egg
+        </button>
+
+        <button
+          onClick={() => setSpecialFilter(specialFilter === 'SPECIAL' ? 'ALL' : 'SPECIAL')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${specialFilter === 'SPECIAL'
+              ? 'bg-[#1E1F24] text-white border-[#1E1F24] shadow-xs'
+              : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+            }`}
+        >
+          <span>⭐</span> Bestsellers
         </button>
       </div>
 
-      {/* Category Horizontal Carousel (Matching Reference Mockup: All | Biryani | Starters | Main Course | Beverages...) */}
-      <div className="flex items-center gap-2.5 px-3 sm:px-6 mt-3 overflow-x-auto select-none no-scrollbar py-1.5">
-        {/* "All" Card */}
-        <button
-          type="button"
-          onClick={() => {
-            setActiveCategory('ALL');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className={`flex flex-col items-center justify-center min-w-[68px] w-[70px] h-[78px] rounded-2xl p-1.5 transition-all cursor-pointer flex-shrink-0 text-center select-none ${
-            activeCategory === 'ALL'
-              ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/25 scale-102'
-              : 'bg-white text-gray-800 border border-slate-200/90 hover:bg-slate-50 shadow-2xs'
-          }`}
-        >
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-1 ${activeCategory === 'ALL' ? 'text-white' : 'text-[#f05a24]'}`}>
-            <ShipWheelSVG />
-          </div>
-          <span className="text-[11px] font-extrabold tracking-tight">
-            All
-          </span>
-        </button>
-
-        {/* Categories from backend */}
-        {categories.map((cat: any) => {
-          const isSelected = activeCategory === cat.category_id || activeCategory === cat.category_name;
-          const thumb = getCategoryThumbnail(cat.category_name);
-          const catAnchorId = `category-${cat.category_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-
-          return (
-            <button
-              key={cat.category_id}
-              type="button"
-              onClick={() => {
-                setActiveCategory(cat.category_name);
-                setTimeout(() => {
-                  const el = document.getElementById(catAnchorId);
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
-              }}
-              className={`flex flex-col items-center justify-center min-w-[68px] w-[70px] h-[78px] rounded-2xl p-1.5 transition-all cursor-pointer flex-shrink-0 text-center select-none ${
-                isSelected
-                  ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/25 scale-102'
-                  : 'bg-white text-gray-800 border border-slate-200/90 hover:bg-slate-50 shadow-2xs'
-              }`}
-            >
-              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center mb-1 bg-slate-100 flex-shrink-0">
-                <img 
-                  src={thumb} 
-                  alt={cat.category_name} 
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <span className="text-[10px] font-extrabold tracking-tight truncate w-full px-0.5">
-                {cat.category_name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Expandable Filter Toggle Buttons */}
-      {showFilters && (
-        <div className="flex items-center gap-2 px-3 sm:px-6 mt-2 overflow-x-auto select-none no-scrollbar py-1 animate-in fade-in slide-in-from-top-2">
-          <button
-            type="button"
-            onClick={() => { setDietaryFilter('ALL'); setSpecialFilter('ALL'); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dietaryFilter === 'ALL' && specialFilter === 'ALL'
-                ? 'bg-[#121417] text-white border-[#121417] shadow-xs'
-                : 'bg-white text-gray-800 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <CutleryFilterSVG /> All Items
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDietaryFilter(dietaryFilter === 'VEG' ? 'ALL' : 'VEG')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dietaryFilter === 'VEG'
-                ? 'bg-[#121417] text-white border-[#121417] shadow-xs'
-                : 'bg-white text-gray-800 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Veg Only
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDietaryFilter(dietaryFilter === 'NON_VEG' ? 'ALL' : 'NON_VEG')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dietaryFilter === 'NON_VEG'
-                ? 'bg-[#121417] text-white border-[#121417] shadow-xs'
-                : 'bg-white text-gray-800 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-rose-500"></span> Non-Veg
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setDietaryFilter(dietaryFilter === 'EGG' ? 'ALL' : 'EGG')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              dietaryFilter === 'EGG'
-                ? 'bg-[#121417] text-white border-[#121417] shadow-xs'
-                : 'bg-white text-gray-800 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500"></span> Egg
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSpecialFilter(specialFilter === 'SPECIAL' ? 'ALL' : 'SPECIAL')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
-              specialFilter === 'SPECIAL'
-                ? 'bg-[#121417] text-white border-[#121417] shadow-xs'
-                : 'bg-white text-gray-800 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <span>⭐</span> Bestsellers
-          </button>
-        </div>
-      )}
-
-      {/* Menu Sections Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#f05a24]"></div>
-          <p className="text-gray-500 mt-3 text-xs font-bold">Loading dishes from API...</p>
+          <p className="text-gray-500 mt-3 text-xs font-bold">Loading menu from API...</p>
         </div>
       ) : (
         <>
@@ -685,7 +458,7 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
             ))
           ) : (
             <div className="text-center py-20 text-gray-500 text-xs font-semibold">
-              No items found matching your search.
+              No items found matching your filter selection.
             </div>
           )}
         </>
@@ -700,7 +473,7 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
         return (
           <button
             onClick={() => setIsCallWaiterOpen(true)}
-            className="fixed bottom-24 right-4 z-40 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-white font-bold text-xs p-3 md:px-4 md:py-2.5 rounded-full shadow-xl flex items-center justify-center gap-2 border border-amber-400/80 transition-all cursor-pointer animate-float-glow"
+            className="fixed bottom-20 right-4 z-40 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-white font-bold text-xs p-3 md:px-4 md:py-2.5 rounded-full shadow-xl flex items-center justify-center gap-2 border border-amber-400/80 transition-all cursor-pointer animate-float-glow"
             title="Call Waiter"
           >
             <PhoneCall size={18} className="animate-pulse flex-shrink-0" />
@@ -709,84 +482,14 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
         );
       })()}
 
-      {/* Floating Cart Order Pill (on mobile when items in cart) */}
-      {totalCartCount > 0 && (
-        <div className="fixed bottom-16 left-3 right-3 z-40 max-w-md mx-auto md:hidden">
-          <Link
-            to="/cart"
-            className="flex items-center justify-between bg-[#f05a24] hover:bg-[#d94815] text-white font-black text-xs sm:text-sm py-2.5 px-4 rounded-2xl shadow-xl shadow-[#f05a24]/30 active:scale-98 transition-all no-underline"
-          >
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={16} />
-              <span>View Order ({totalCartCount} {totalCartCount === 1 ? 'item' : 'items'})</span>
-            </div>
-            <div className="flex items-center gap-1 font-black">
-              <span>View Cart</span>
-              <ArrowRight size={14} />
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* FIXED BOTTOM MOBILE NAVIGATION BAR (Matching Mockup Left Screen) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-4 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:hidden">
-        {/* Menu Tab */}
-        <button
-          type="button"
-          onClick={() => {
-            setActiveCategory('ALL');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl bg-orange-50 text-[#f05a24] font-extrabold transition-all cursor-pointer"
-        >
-          <Utensils size={18} />
-          <span className="text-[10px] mt-0.5 font-black">Menu</span>
-        </button>
-
-        {/* Orders Tab */}
-        <Link
-          to="/cart"
-          className="relative flex flex-col items-center justify-center py-1 px-3 rounded-xl text-gray-500 hover:text-gray-900 font-bold transition-all no-underline"
-        >
-          <div className="relative">
-            <ShoppingBag size={18} />
-            {totalCartCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-[#f05a24] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
-                {totalCartCount}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] mt-0.5 font-extrabold">Orders</span>
-        </Link>
-
-        {/* Tables Tab */}
-        <Link
-          to="/tables"
-          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-gray-500 hover:text-gray-900 font-bold transition-all no-underline"
-        >
-          <LayoutGrid size={18} />
-          <span className="text-[10px] mt-0.5 font-extrabold">Tables</span>
-        </Link>
-
-        {/* More Tab (Highlighted in Red in User Mockup!) */}
-        <button
-          type="button"
-          onClick={() => setIsMoreSheetOpen(true)}
-          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-gray-500 hover:text-gray-900 font-bold transition-all cursor-pointer"
-        >
-          <MoreHorizontal size={18} />
-          <span className="text-[10px] mt-0.5 font-extrabold">More</span>
-        </button>
-      </div>
-
-      {/* DESKTOP FLOATING BOTTOM BAR WITH QUICK MENU & CART */}
-      <div className="hidden md:flex fixed bottom-4 left-6 right-6 z-40 items-center justify-between gap-3 max-w-md mx-auto">
+      {/* FLOATING BOTTOM BAR WITH MENU & CART PILLS */}
+      <div className="fixed bottom-3 left-3 right-3 z-40 flex items-center justify-between gap-3 max-w-md mx-auto">
         <button
           onClick={() => setIsMenuOpen(true)}
-          className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-slate-200 text-gray-900 font-extrabold text-xs sm:text-sm py-3 px-5 rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200/90 text-gray-900 font-extrabold text-xs sm:text-sm py-3 px-5 rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer"
         >
           <span className="text-base font-black">☰</span>
-          <span>Categories</span>
+          <span>Menu</span>
         </button>
 
         <Link
@@ -802,188 +505,6 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
           </span>
         </Link>
       </div>
-
-      {/* "MORE OPTIONS" BOTTOM SHEET (Matching Right Screen in Mockup) */}
-      {isMoreSheetOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs p-0 animate-fade-in"
-          onClick={() => setIsMoreSheetOpen(false)}
-        >
-          <div
-            className="w-full sm:max-w-md max-h-[85vh] bg-white rounded-t-3xl p-5 shadow-2xl space-y-3 animate-slide-up flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Pull Handle Pill */}
-            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto flex-shrink-0"></div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 flex-shrink-0">
-              <h3 className="text-lg font-black text-gray-900 tracking-tight">More Options</h3>
-              <button
-                onClick={() => setIsMoreSheetOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Options List */}
-            <div className="overflow-y-auto pr-1 space-y-1 divide-y divide-slate-100 no-scrollbar flex-1">
-              {/* 1. Reports */}
-              <Link
-                to="/history"
-                onClick={() => setIsMoreSheetOpen(false)}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group no-underline"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center shrink-0">
-                    <BarChart3 size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Reports</h4>
-                    <p className="text-xs text-gray-400 font-medium">View sales, orders and analytics</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-
-              {/* 2. Menu Management */}
-              <Link
-                to="/manage-menu"
-                onClick={() => setIsMoreSheetOpen(false)}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group no-underline"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                    <UtensilsCrossed size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Menu Management</h4>
-                    <p className="text-xs text-gray-400 font-medium">Add, edit or manage menu items</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-
-              {/* 3. Stocks */}
-              <Link
-                to="/stock"
-                onClick={() => setIsMoreSheetOpen(false)}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group no-underline"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                    <Package size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Stocks</h4>
-                    <p className="text-xs text-gray-400 font-medium">Manage inventory and stock items</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-
-              {/* 4. Customers */}
-              <div
-                onClick={() => {
-                  setIsMoreSheetOpen(false);
-                  navigate('/history');
-                }}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Customers</h4>
-                    <p className="text-xs text-gray-400 font-medium">View and manage customers</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </div>
-
-              {/* 5. Staff */}
-              <div
-                onClick={() => {
-                  setIsMoreSheetOpen(false);
-                  navigate('/settings');
-                }}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
-                    <User size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Staff</h4>
-                    <p className="text-xs text-gray-400 font-medium">Manage staff and roles</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </div>
-
-              {/* 6. Settings */}
-              <Link
-                to="/settings"
-                onClick={() => setIsMoreSheetOpen(false)}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group no-underline"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0">
-                    <Settings size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Settings</h4>
-                    <p className="text-xs text-gray-400 font-medium">App, printer and outlet settings</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-
-              {/* 7. Help & Support */}
-              <div
-                onClick={() => {
-                  setIsMoreSheetOpen(false);
-                  setIsCallWaiterOpen(true);
-                }}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-red-50 text-red-500 border border-red-100 flex items-center justify-center shrink-0">
-                    <HelpCircle size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">Help & Support</h4>
-                    <p className="text-xs text-gray-400 font-medium">FAQ, contact support</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </div>
-
-              {/* 8. About */}
-              <div
-                onClick={() => {
-                  setIsMoreSheetOpen(false);
-                  alert("Tischly POS v2.0 - Smart Next-Gen Restaurant Management System.\nLicensed to Big Ben Restaurant.");
-                }}
-                className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
-                    <Info size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">About</h4>
-                    <p className="text-xs text-gray-400 font-medium">App version, licenses and info</p>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal for Call Waiter */}
       {isCallWaiterOpen && (
@@ -1092,11 +613,7 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-[#FFF0E6] flex items-center justify-center shrink-0 group-hover:bg-[#f05a24] transition-colors">
-                        {getCategoryThumbnail(category.category_name) ? (
-                          <img src={getCategoryThumbnail(category.category_name)} alt={category.category_name} className="w-full h-full object-cover rounded-md" />
-                        ) : (
-                          <SteamingPotSVG />
-                        )}
+                        {getCategoryIcon(category.category_name)}
                       </div>
                       <span className="text-xs sm:text-sm font-extrabold text-gray-900 group-hover:text-[#f05a24] transition-colors">
                         {category.category_name}
@@ -1119,4 +636,16 @@ const MenuPage: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   );
 };
 
-export default MenuPage;
+export default function MenuPage({ onLogout }: { onLogout?: () => void }) {
+  return (
+    <>
+      <div className="block md:hidden">
+        <MobileMenuPage onLogout={onLogout} />
+      </div>
+
+      <div className="hidden md:block">
+        <DesktopMenuPage onLogout={onLogout} />
+      </div>
+    </>
+  );
+}

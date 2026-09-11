@@ -5,6 +5,8 @@ import { toast } from 'react-toastify';
 import { API_BASE_URL, getRestaurantId } from '../config';
 import BillSummaryModal from '../components/BillSummaryModal';
 import { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
+import { MobileFooter } from '../components/mobile';
+import MobileCartPage from '../mobileview/MobileCartPage';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -226,7 +228,6 @@ const CartPage: React.FC = () => {
 
     setSubmittingBilling(true);
     try {
-      const storedTable = sessionStorage.getItem('emenu_table') || '';
       const restaurantId = getRestaurantId();
 
       const payloadItems = cartItems.map(item => ({
@@ -372,7 +373,41 @@ const CartPage: React.FC = () => {
   const grandTotal = subtotal + serviceChargeAmt + taxAmt;
 
   return (
-    <div className="cart-body min-h-screen bg-[#F8FAFC] pb-24 md:pb-8">
+    <>
+      {/* MOBILE VIEW (< md) */}
+      <div className="block md:hidden">
+        <MobileCartPage
+          cartItems={cartItems}
+          subtotal={subtotal}
+          taxRate={taxRate}
+          taxAmt={taxAmt}
+          cgstAmt={cgstAmt}
+          sgstAmt={sgstAmt}
+          serviceChargeRate={serviceChargeRate}
+          serviceChargeAmt={serviceChargeAmt}
+          grandTotal={grandTotal}
+          onUpdateQuantity={(id, change) => updateQty(id, change)}
+          onRemoveItem={(id) => removeItem(id)}
+          onClearCart={() => setIsClearModalOpen(true)}
+          onProceed={() => {
+            if (isSelfPosBilling) {
+              handleSelfPosPlaceOrder();
+            } else if (!isGuestCustomer && existingOrderId) {
+              handleDirectUpdateOrderInCart();
+            } else {
+              navigate('/order-info');
+            }
+          }}
+          isSelfPosBilling={isSelfPosBilling}
+          submittingBilling={submittingBilling}
+          existingOrderId={existingOrderId}
+          updating={updating}
+          onCancelOrder={() => setShowCancelModal(true)}
+        />
+      </div>
+
+      {/* DESKTOP VIEW (>= md) */}
+      <div className="hidden md:block cart-body min-h-screen bg-[#F8FAFC] pb-24 md:pb-8">
       <div className="header-cart sticky top-0 z-50 flex h-11 md:h-[10vh] w-full items-center justify-between bg-white px-3 md:px-[3%] py-1 md:py-[1.5%] shadow-xs border-b border-slate-200">
         <div className="backpluscart flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="back-arrow text-gray-700 hover:text-black cursor-pointer p-1 rounded-full hover:bg-gray-100 transition-all">
@@ -780,7 +815,9 @@ const CartPage: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
+    </>
   );
 };
 

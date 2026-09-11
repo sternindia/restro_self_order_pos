@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3, LayoutDashboard, Package } from 'lucide-react';
+import { Bell, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3, LayoutDashboard, Package } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
+import { MobileHeader, MobileFooter } from './mobile';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -117,56 +118,14 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
   return (
     <>
-      <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-white px-3 sm:px-8 shadow-xs border-b border-slate-200 select-none">
-        {/* MOBILE VIEW (matches reference mockup: Hamburger | Chef + Tischly POS | Bell + Avatar) */}
-        <div className="flex md:hidden items-center justify-between w-full">
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1.5 text-gray-800 hover:text-[#f05a24] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              title="Open Menu"
-            >
-              <MenuIcon size={22} />
-            </button>
+      {/* COMMON MOBILE HEADER & FOOTER */}
+      <div className="block md:hidden">
+        <MobileHeader onLogout={onLogout} />
+        <MobileFooter />
+      </div>
 
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-lg shadow-2xs">
-                👨‍🍳
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-black text-gray-900 tracking-tight leading-none">
-                  Tischly POS
-                </span>
-                <span className="text-[10px] font-bold text-gray-500 leading-tight mt-0.5 truncate max-w-[130px]">
-                  {restaurantName || 'Big Ben Restaurant'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              id="mobile-notification-btn"
-              onClick={() => alert("No new notifications at this time.")}
-              className="relative p-2 text-gray-700 hover:text-[#f05a24] hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
-              title="Notifications"
-            >
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f05a24] rounded-full ring-2 ring-white"></span>
-            </button>
-
-            <div
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="w-8 h-8 rounded-full bg-slate-200 text-slate-800 border border-slate-300 flex items-center justify-center font-black text-xs cursor-pointer shadow-2xs hover:bg-slate-300 transition-colors"
-              title={user?.username || 'User Profile'}
-            >
-              {user?.username ? user.username.slice(0, 2).toUpperCase() : 'AK'}
-            </div>
-          </div>
-        </div>
-
-        {/* DESKTOP VIEW (>= md: Restaurant Logo & Table Status | Nav Tabs | Action Icons) */}
-        <div className="hidden md:flex items-center justify-between w-full">
+      {/* DESKTOP VIEW (>= md: Restaurant Logo & Table Status | Nav Tabs | Action Icons) */}
+      <div className="hidden md:flex sticky top-0 z-40 h-16 sm:h-18 w-full items-center justify-between bg-white px-3 sm:px-8 shadow-xs border-b border-slate-200 select-none">
           {/* LEFT: Restaurant Logo & Table Status */}
           <div
             onClick={() => navigate('/')}
@@ -316,7 +275,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             )}
           </div>
         </div>
-      </div>
 
       {/* MOBILE & TABLET RIGHT SLIDE-OVER DRAWER */}
       {isMobileMenuOpen && isStaffUser && (

@@ -5,6 +5,7 @@ import { API_BASE_URL, getRestaurantId } from '../config';
 import { toast } from 'react-toastify';
 import Header from '../components/Header';
 import TableStatusBadge from '../components/TableStatusBadge';
+import MobileTablesPage from '../mobileview/MobileTablesPage';
 
 interface TableSession {
   active_order_id?: string;
@@ -362,270 +363,290 @@ const TablesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-[3vh]">
-      <Header />
+    <>
+      {/* MOBILE VIEW (< md) */}
+      <div className="block md:hidden">
+        <MobileTablesPage
+          tables={tables as any}
+          loading={loading}
+          error={error}
+          onSelectTable={handleTableSelect}
+          onAddItems={handleAddItems}
+          onPayNow={handlePayNow}
+          onMarkCleaned={handleMarkCleaned}
+          onRefresh={fetchTables}
+          isAdmin={isAdmin}
+          onOpenAddTable={() => setShowAddModal(true)}
+          getMinutesElapsed={getMinutesElapsed}
+        />
+      </div>
 
-      <div className="mt-5 px-[3%] py-5 max-w-[1400px] mx-auto box-border">
-        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 mb-5 sm:mb-6">
-          <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-lg sm:text-2xl font-black text-slate-900 m-0 tracking-tight whitespace-nowrap">Table Status</h2>
-            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full border border-emerald-200/80 shadow-2xs whitespace-nowrap">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>{tables.filter(t => t.status === 'Occupied').length}/{tables.length} Active</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0 ml-auto">
-            <button
-              onClick={fetchTables}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-xl shadow-2xs hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer"
-            >
-              <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : 'text-slate-500'} />
-              <span>Refresh</span>
-            </button>
-            {isAdmin && (
+      {/* DESKTOP VIEW (>= md) */}
+      <div className="hidden md:block min-h-screen bg-[#F8FAFC] font-sans pb-[3vh]">
+        <Header />
+
+        <div className="mt-5 px-[3%] py-5 max-w-[1400px] mx-auto box-border">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 mb-5 sm:mb-6">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="text-lg sm:text-2xl font-black text-slate-900 m-0 tracking-tight whitespace-nowrap">Table Status</h2>
+              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full border border-emerald-200/80 shadow-2xs whitespace-nowrap">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>{tables.filter(t => t.status === 'Occupied').length}/{tables.length} Active</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
               <button
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white rounded-xl shadow-md shadow-[#f05a24]/20 text-xs sm:text-sm font-black transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                onClick={fetchTables}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white border border-slate-200 rounded-xl shadow-2xs hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer"
               >
-                <Plus size={15} />
-                <span>Add Table</span>
+                <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : 'text-slate-500'} />
+                <span>Refresh</span>
               </button>
-            )}
-          </div>
-        </div>
-
-        {!isEnableTables ? (
-          <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto my-6">
-            <div className="text-5xl mb-3">🪑</div>
-            <h3 className="text-lg font-black text-slate-900 mb-1">Tables Management Disabled</h3>
-            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-              Table management is currently turned off in your restaurant POS Control Settings.
-            </p>
-            <button
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
-            >
-              Go to Menu View →
-            </button>
-          </div>
-        ) : error ? (
-          <div className="text-center py-10 font-bold text-red-500">{error}</div>
-        ) : loading ? (
-          <div className="text-center py-10 font-bold text-[#f05a24]">Loading tables...</div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 py-3 sm:py-5">
-            {tables.map((table) => {
-              return (
-                <div
-                  key={table.table_id}
-                  className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-slate-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
-                  onClick={() => handleTableSelect(table.table_number)}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white rounded-xl shadow-md shadow-[#f05a24]/20 text-xs sm:text-sm font-black transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <div className="absolute top-0 right-0">
-                    <TableStatusBadge status={table.status} variant="corner" />
-                  </div>
+                  <Plus size={15} />
+                  <span>Add Table</span>
+                </button>
+              )}
+            </div>
+          </div>
 
-                  {/* Table Header */}
-                  <div className="text-left pt-1 sm:pt-0 border-b border-slate-100 pb-1.5">
-                    <h3 className="text-xs xs:text-sm sm:text-xl font-black text-slate-900 leading-tight truncate pr-14 sm:pr-20">
-                      {table.table_number}
-                    </h3>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-0.5">
-                      {table.capacity} Seats
-                    </p>
-                  </div>
-
-                  {/* Occupied Session Box */}
-                  {table.status === 'Occupied' && table.current_session && (
-                    <div className="bg-slate-50 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-slate-200/80">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400 font-medium">Server</span>
-                        <span className="font-bold text-slate-800 truncate max-w-[65px] sm:max-w-none">{table.current_session.staff_name || 'Staff'}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-amber-600 font-bold">
-                        <span className="flex items-center gap-1"><Clock size={10} className="shrink-0" /> Elapsed</span>
-                        <span>{getMinutesElapsed(table.current_session.updated_at)}</span>
-                      </div>
-                      <div className="flex justify-between items-center pt-1 border-t border-slate-200/80 mt-0.5">
-                        <span className="text-slate-500 font-medium">Total</span>
-                        <span className="font-black text-slate-900 text-xs sm:text-base">
-                          ₹{(table.current_session.current_total || 0).toFixed(2)}
-                        </span>
-                      </div>
+          {!isEnableTables ? (
+            <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200 shadow-xs max-w-md mx-auto my-6">
+              <div className="text-5xl mb-3">🪑</div>
+              <h3 className="text-lg font-black text-slate-900 mb-1">Tables Management Disabled</h3>
+              <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+                Table management is currently turned off in your restaurant POS Control Settings.
+              </p>
+              <button
+                onClick={() => navigate('/')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+              >
+                Go to Menu View →
+              </button>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10 font-bold text-red-500">{error}</div>
+          ) : loading ? (
+            <div className="text-center py-10 font-bold text-[#f05a24]">Loading tables...</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 py-3 sm:py-5">
+              {tables.map((table) => {
+                return (
+                  <div
+                    key={table.table_id}
+                    className="relative bg-white rounded-2xl p-2.5 sm:p-5 shadow-xs hover:shadow-md border border-slate-200/90 flex flex-col gap-2 transition-all duration-200 cursor-pointer overflow-hidden"
+                    onClick={() => handleTableSelect(table.table_number)}
+                  >
+                    <div className="absolute top-0 right-0">
+                      <TableStatusBadge status={table.status} variant="corner" />
                     </div>
-                  )}
 
-                  {table.status === 'Dirty' && (
-                    <div className="bg-amber-50/80 rounded-xl p-1.5 text-center text-[10px] sm:text-xs text-amber-700 font-extrabold border border-amber-200">
-                      Needs Cleaning
+                    {/* Table Header */}
+                    <div className="text-left pt-1 sm:pt-0 border-b border-slate-100 pb-1.5">
+                      <h3 className="text-xs xs:text-sm sm:text-xl font-black text-slate-900 leading-tight truncate pr-14 sm:pr-20">
+                        {table.table_number}
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-0.5">
+                        {table.capacity} Seats
+                      </p>
                     </div>
-                  )}
 
-                  {table.status === 'Reserved' && table.current_session && (
-                    <div className="bg-indigo-50/80 rounded-xl p-1.5 flex flex-col gap-0.5 text-[10px] sm:text-xs border border-indigo-200">
-                      <div className="flex items-center gap-1 text-indigo-700 font-semibold">
-                        <Clock size={10} className="shrink-0" /> 7:30 PM
-                      </div>
-                      <div className="font-bold text-indigo-900 truncate">
-                        {table.current_session.customer_name || 'Reserved'}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons with Compact Height & Modern Radius for Mobile */}
-                  <div className="flex gap-1.5 sm:gap-2 mt-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
-                    {table.status === 'Available' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
-                        <Receipt size={12} /> OPEN TAB
-                      </button>
-                    )}
-
-                    {table.status === 'Occupied' && (
-                      <div className="grid grid-cols-2 gap-1.5 w-full">
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#121417] hover:bg-black text-white border border-[#121417] shadow-xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
-                          <Plus size={11} /> <span className="truncate">ADD</span>
-                        </button>
-                        <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-50 text-emerald-800 border border-emerald-300/90 hover:bg-emerald-100 hover:border-emerald-400 shadow-xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
-                          <CreditCard size={11} className="text-emerald-700" /> <span className="truncate">PAID</span>
-                        </button>
+                    {/* Occupied Session Box */}
+                    {table.status === 'Occupied' && table.current_session && (
+                      <div className="bg-slate-50 rounded-xl p-1.5 sm:p-2.5 flex flex-col gap-0.5 sm:gap-1 text-[10px] sm:text-xs border border-slate-200/80">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400 font-medium">Server</span>
+                          <span className="font-bold text-slate-800 truncate max-w-[65px] sm:max-w-none">{table.current_session.staff_name || 'Staff'}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-amber-600 font-bold">
+                          <span className="flex items-center gap-1"><Clock size={10} className="shrink-0" /> Elapsed</span>
+                          <span>{getMinutesElapsed(table.current_session.updated_at)}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 border-t border-slate-200/80 mt-0.5">
+                          <span className="text-slate-500 font-medium">Total</span>
+                          <span className="font-black text-slate-900 text-xs sm:text-base">
+                            ₹{(table.current_session.current_total || 0).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
                     )}
 
                     {table.status === 'Dirty' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-amber-500 hover:bg-amber-600 text-white shadow-2xs active:scale-95" onClick={() => handleMarkCleaned(table.table_number)}>
-                        <Check size={12} /> CLEANED
-                      </button>
+                      <div className="bg-amber-50/80 rounded-xl p-1.5 text-center text-[10px] sm:text-xs text-amber-700 font-extrabold border border-amber-200">
+                        Needs Cleaning
+                      </div>
                     )}
 
-                    {table.status === 'Reserved' && (
-                      <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-indigo-500 hover:bg-indigo-600 text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
-                        <Check size={12} /> ARRIVED
-                      </button>
+                    {table.status === 'Reserved' && table.current_session && (
+                      <div className="bg-indigo-50/80 rounded-xl p-1.5 flex flex-col gap-0.5 text-[10px] sm:text-xs border border-indigo-200">
+                        <div className="flex items-center gap-1 text-indigo-700 font-semibold">
+                          <Clock size={10} className="shrink-0" /> 7:30 PM
+                        </div>
+                        <div className="font-bold text-indigo-900 truncate">
+                          {table.current_session.customer_name || 'Reserved'}
+                        </div>
+                      </div>
                     )}
+
+                    {/* Action Buttons with Compact Height & Modern Radius for Mobile */}
+                    <div className="flex gap-1.5 sm:gap-2 mt-auto pt-1 w-full" onClick={(e) => e.stopPropagation()}>
+                      {table.status === 'Available' && (
+                        <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#f05a24] hover:bg-[#d94815] text-white shadow-2xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                          <Receipt size={12} /> OPEN TAB
+                        </button>
+                      )}
+
+                      {table.status === 'Occupied' && (
+                        <div className="grid grid-cols-2 gap-1.5 w-full">
+                          <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-[#121417] hover:bg-black text-white border border-[#121417] shadow-xs active:scale-95" onClick={() => handleAddItems(table.table_number)}>
+                            <Plus size={11} /> <span className="truncate">ADD</span>
+                          </button>
+                          <button className="px-1.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-emerald-50 text-emerald-800 border border-emerald-300/90 hover:bg-emerald-100 hover:border-emerald-400 shadow-xs active:scale-95" onClick={() => handlePayNow(table.table_number)}>
+                            <CreditCard size={11} className="text-emerald-700" /> <span className="truncate">PAID</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {table.status === 'Dirty' && (
+                        <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-amber-500 hover:bg-amber-600 text-white shadow-2xs active:scale-95" onClick={() => handleMarkCleaned(table.table_number)}>
+                          <Check size={12} /> CLEANED
+                        </button>
+                      )}
+
+                      {table.status === 'Reserved' && (
+                        <button className="w-full px-2 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold cursor-pointer flex items-center justify-center gap-1 transition-all duration-200 bg-indigo-500 hover:bg-indigo-600 text-white shadow-2xs active:scale-95" onClick={() => handleMarkArrived(table.table_number)}>
+                          <Check size={12} /> ARRIVED
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Add New Table Modal */}
+        {isAdmin && showAddModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in"
+            onClick={() => !isSubmitting && setShowAddModal(false)}
+          >
+            <div
+              className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-[#F0E6DF] space-y-5 animate-in zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#FFF0E6] text-[#f05a24] flex items-center justify-center text-xl font-black">
+                    🪑
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-gray-900 leading-tight">Add New Table</h3>
+                    <p className="text-xs text-gray-400 font-medium">Create a table for table ordering & reservations</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Add New Table Modal */}
-      {isAdmin && showAddModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in"
-          onClick={() => !isSubmitting && setShowAddModal(false)}
-        >
-          <div
-            className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-[#F0E6DF] space-y-5 animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#FFF0E6] text-[#f05a24] flex items-center justify-center text-xl font-black">
-                  🪑
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-gray-900 leading-tight">Add New Table</h3>
-                  <p className="text-xs text-gray-400 font-medium">Create a table for table ordering & reservations</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                disabled={isSubmitting}
-                className="w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleAddTable} className="space-y-4">
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
-                  Table Name or Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Table #4 or VIP-1"
-                  value={newTableNum}
-                  onChange={(e) => setNewTableNum(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
-                  Capacity (Seats) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
-                    <UsersIcon size={16} />
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    required
-                    value={newTableCap}
-                    onChange={(e) => setNewTableCap(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
-                  Floor / Section <span className="text-gray-400 font-medium">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
-                    <Layers size={16} />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="e.g. Ground Floor, Rooftop, First Floor"
-                    value={newTableFloor}
-                    onChange={(e) => setNewTableFloor(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex items-center gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  className="w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !newTableNum.trim()}
-                  className="flex-1 py-2.5 px-4 bg-[#f05a24] hover:bg-[#d94815] text-white text-xs font-black rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <RotateCw size={14} className="animate-spin" />
-                      <span>Adding...</span>
-                    </>
-                  ) : (
-                    <span>+ Add Table</span>
-                  )}
+                  <X size={18} />
                 </button>
               </div>
-            </form>
+
+              {/* Modal Form */}
+              <form onSubmit={handleAddTable} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                    Table Name or Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Table #4 or VIP-1"
+                    value={newTableNum}
+                    onChange={(e) => setNewTableNum(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                    Capacity (Seats) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                      <UsersIcon size={16} />
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      required
+                      value={newTableCap}
+                      onChange={(e) => setNewTableCap(e.target.value)}
+                      className="w-full pl-9 pr-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                    Floor / Section <span className="text-gray-400 font-medium">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                      <Layers size={16} />
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ground Floor, Rooftop, First Floor"
+                      value={newTableFloor}
+                      onChange={(e) => setNewTableFloor(e.target.value)}
+                      className="w-full pl-9 pr-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="flex items-center gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 px-4 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !newTableNum.trim()}
+                    className="flex-1 py-2.5 px-4 bg-[#f05a24] hover:bg-[#d94815] text-white text-xs font-black rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RotateCw size={14} className="animate-spin" />
+                        <span>Adding...</span>
+                      </>
+                    ) : (
+                      <span>+ Add Table</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 
