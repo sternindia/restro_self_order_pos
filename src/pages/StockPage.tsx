@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import Header from '../components/Header';
+import DesktopLayout from '../components/DesktopLayout';
+import { MobileHeader, MobileFooter } from '../components/mobile';
 import { 
   Package, 
   CheckCircle2, 
@@ -9,14 +10,14 @@ import {
   Search, 
   Plus, 
   Minus, 
-  RefreshCw, 
   SlidersHorizontal,
   X,
   Truck,
   FileText,
   Printer,
   Calendar,
-  Layers
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -203,6 +204,7 @@ const StockPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
   const [reportDateRange, setReportDateRange] = useState<'today' | 'week' | 'month'>('today');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Modal State for Restocking
   const [selectedItemForRestock, setSelectedItemForRestock] = useState<StockItem | null>(null);
@@ -321,63 +323,50 @@ const StockPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
-      <Header />
+  const renderTabSwitcher = () => (
+    <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-xl overflow-x-auto no-scrollbar">
+      <button
+        onClick={() => handleTabChange('inventory')}
+        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          activeTab === 'inventory'
+            ? 'bg-white dark:bg-[#18181b] text-[#ff4b1f] shadow-xs'
+            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+        }`}
+      >
+        <Package size={13} />
+        <span>Live Stock</span>
+      </button>
+      <button
+        onClick={() => handleTabChange('add')}
+        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          activeTab === 'add'
+            ? 'bg-white dark:bg-[#18181b] text-[#ff4b1f] shadow-xs'
+            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+        }`}
+      >
+        <Plus size={13} />
+        <span>+ Add Item</span>
+      </button>
+      <button
+        onClick={() => handleTabChange('report')}
+        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+          activeTab === 'report'
+            ? 'bg-white dark:bg-[#18181b] text-[#ff4b1f] shadow-xs'
+            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+        }`}
+      >
+        <FileText size={13} />
+        <span>Stock Report</span>
+      </button>
+    </div>
+  );
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
-        {/* Top Header Card with Tab Switcher */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-xs border border-[#F0E6DF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/20">
-                <Package size={12} /> Kitchen Store
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                ● Raw Materials & Grocery
-              </span>
-            </div>
-            <h1 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
-              {activeTab === 'report' ? 'Stock Consumption & Audit Report' : activeTab === 'add' ? 'Add Store Item' : 'Raw Ingredients & Stock'}
-            </h1>
-          </div>
-
-          {/* Tab Switcher Controls */}
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-full sm:w-auto overflow-x-auto scrollbar-none">
-            <button
-              onClick={() => handleTabChange('inventory')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'inventory'
-                  ? 'bg-white text-[#f05a24] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Package size={14} />
-              <span>Live Stock</span>
-            </button>
-            <button
-              onClick={() => handleTabChange('add')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'add'
-                  ? 'bg-white text-[#f05a24] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Plus size={14} />
-              <span>+ Add Item</span>
-            </button>
-            <button
-              onClick={() => handleTabChange('report')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'report'
-                  ? 'bg-white text-[#f05a24] shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FileText size={14} />
-              <span>Stock Report</span>
-            </button>
-          </div>
+  const renderStockBody = (isMobile: boolean = false) => (
+    <div className={`space-y-3 ${isMobile ? 'px-3 py-3 pb-24' : 'px-5 py-4 w-full'}`}>
+      <main className="space-y-3">
+        {/* Tab Switcher on Page Right */}
+        <div className="flex justify-end pb-1">
+          {renderTabSwitcher()}
         </div>
 
         {/* ───────────────────────────────────────────────────────── */}
@@ -385,98 +374,106 @@ const StockPage: React.FC = () => {
         {/* ───────────────────────────────────────────────────────── */}
         {activeTab === 'inventory' && (
           <>
-            {/* 4 Metric Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            {/* 4 Metric Summary Cards - Compact */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
               <div 
                 onClick={() => setStatusFilter('all')}
-                className={`p-3 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
-                  statusFilter === 'all' ? 'bg-white border-[#f05a24] ring-2 ring-[#f05a24]/20' : 'bg-white border-[#F0E6DF] hover:border-gray-300'
+                className={`p-3 rounded-xl border transition-all cursor-pointer shadow-[0_1px_3px_rgba(15,23,42,0.03)] ${
+                  statusFilter === 'all' 
+                    ? 'bg-white dark:bg-[#18181b] border-[#ff4b1f] ring-2 ring-[#ff4b1f]/10' 
+                    : 'bg-white dark:bg-[#18181b] border-[#eee9e4] dark:border-zinc-800 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center justify-between text-gray-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1 sm:mb-2">
+                <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400 text-[10px] font-medium uppercase tracking-wider mb-1">
                   <span>Tracked</span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center font-black">
-                    <Package size={14} />
+                  <div className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 flex items-center justify-center">
+                    <Package size={13} />
                   </div>
                 </div>
-                <div className="text-xl sm:text-3xl font-black text-gray-900 leading-none">{totalTracked}</div>
-                <div className="hidden sm:block text-[11px] text-gray-400 font-medium mt-1">Total store items</div>
+                <div className="text-xl font-semibold text-[#071B34] dark:text-white leading-none">{totalTracked}</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 dark:text-zinc-500 font-normal mt-1">Total store items</div>
               </div>
 
               <div 
                 onClick={() => setStatusFilter('in_stock')}
-                className={`p-3 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
-                  statusFilter === 'in_stock' ? 'bg-emerald-50/70 border-emerald-500 ring-2 ring-emerald-500/20' : 'bg-white border-[#F0E6DF] hover:border-emerald-200'
+                className={`p-3 rounded-xl border transition-all cursor-pointer shadow-[0_1px_3px_rgba(15,23,42,0.03)] ${
+                  statusFilter === 'in_stock' 
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-500 ring-2 ring-emerald-500/10' 
+                    : 'bg-white dark:bg-[#18181b] border-[#eee9e4] dark:border-zinc-800 hover:border-emerald-200'
                 }`}
               >
-                <div className="flex items-center justify-between text-emerald-700 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1 sm:mb-2">
+                <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 text-[10px] font-medium uppercase tracking-wider mb-1">
                   <span>In Stock</span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
-                    <CheckCircle2 size={14} />
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <CheckCircle2 size={13} />
                   </div>
                 </div>
-                <div className="text-xl sm:text-3xl font-black text-emerald-800 leading-none">{inStockCount}</div>
-                <div className="hidden sm:block text-[11px] text-emerald-600 font-medium mt-1">Ready for cooking</div>
+                <div className="text-xl font-semibold text-emerald-800 dark:text-emerald-300 leading-none">{inStockCount}</div>
+                <div className="hidden sm:block text-[10px] text-emerald-600/80 dark:text-emerald-500 font-normal mt-1">Ready for cooking</div>
               </div>
 
               <div 
                 onClick={() => setStatusFilter('low_stock')}
-                className={`p-3 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
-                  statusFilter === 'low_stock' ? 'bg-amber-50/70 border-amber-500 ring-2 ring-amber-500/20' : 'bg-white border-[#F0E6DF] hover:border-amber-200'
+                className={`p-3 rounded-xl border transition-all cursor-pointer shadow-[0_1px_3px_rgba(15,23,42,0.03)] ${
+                  statusFilter === 'low_stock' 
+                    ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-500 ring-2 ring-amber-500/10' 
+                    : 'bg-white dark:bg-[#18181b] border-[#eee9e4] dark:border-zinc-800 hover:border-amber-200'
                 }`}
               >
-                <div className="flex items-center justify-between text-amber-700 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1 sm:mb-2">
+                <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 text-[10px] font-medium uppercase tracking-wider mb-1">
                   <span>Low Stock</span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
-                    <AlertTriangle size={14} />
+                  <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <AlertTriangle size={13} />
                   </div>
                 </div>
-                <div className="text-xl sm:text-3xl font-black text-amber-800 leading-none">{lowStockCount}</div>
-                <div className="hidden sm:block text-[11px] text-amber-600 font-medium mt-1">Needs vendor re-order</div>
+                <div className="text-xl font-semibold text-amber-800 dark:text-amber-300 leading-none">{lowStockCount}</div>
+                <div className="hidden sm:block text-[10px] text-amber-600/80 dark:text-amber-500 font-normal mt-1">Needs vendor re-order</div>
               </div>
 
               <div 
                 onClick={() => setStatusFilter('out_of_stock')}
-                className={`p-3 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
-                  statusFilter === 'out_of_stock' ? 'bg-red-50/70 border-red-500 ring-2 ring-red-500/20' : 'bg-white border-[#F0E6DF] hover:border-red-200'
+                className={`p-3 rounded-xl border transition-all cursor-pointer shadow-[0_1px_3px_rgba(15,23,42,0.03)] ${
+                  statusFilter === 'out_of_stock' 
+                    ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-500 ring-2 ring-rose-500/10' 
+                    : 'bg-white dark:bg-[#18181b] border-[#eee9e4] dark:border-zinc-800 hover:border-rose-200'
                 }`}
               >
-                <div className="flex items-center justify-between text-red-700 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1 sm:mb-2">
+                <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 text-[10px] font-medium uppercase tracking-wider mb-1">
                   <span>Out of Stock</span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-black">
-                    <XCircle size={14} />
+                  <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <XCircle size={13} />
                   </div>
                 </div>
-                <div className="text-xl sm:text-3xl font-black text-red-800 leading-none">{outOfStockCount}</div>
-                <div className="hidden sm:block text-[11px] text-red-600 font-medium mt-1">Completely finished</div>
+                <div className="text-xl font-semibold text-rose-800 dark:text-rose-300 leading-none">{outOfStockCount}</div>
+                <div className="hidden sm:block text-[10px] text-rose-600/80 dark:text-rose-500 font-normal mt-1">Completely finished</div>
               </div>
             </div>
 
-            {/* Filter & Search Toolbar */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-3 sm:space-y-4">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-2.5 sm:gap-3">
-                <div className="relative w-full md:w-80">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 pointer-events-none">
-                    <Search size={15} />
+            {/* Filter & Search Toolbar - Compact Single Container */}
+            <div className="bg-white dark:bg-[#18181b] rounded-xl p-3 border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-2.5">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-2.5">
+                <div className="relative w-full md:w-72">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                    <Search size={14} />
                   </span>
                   <input
                     type="text"
                     placeholder="Search ingredients or supplier..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] bg-gray-50/50"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                   />
                 </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
+                <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto pb-0.5 md:pb-0 no-scrollbar">
                   {categories.map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all cursor-pointer ${
                         selectedCategory === cat
-                          ? 'bg-[#f05a24] text-white shadow-xs'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-[#fff0ea] text-[#ff4b1f] border border-orange-200/80 dark:bg-orange-950/40 dark:border-orange-900/50'
+                          : 'bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 border border-transparent'
                       }`}
                     >
                       {cat}
@@ -485,31 +482,31 @@ const StockPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-gray-100 text-xs font-bold text-gray-500 scrollbar-none">
-                <span className="hidden sm:flex items-center gap-1 text-gray-400 mr-1 shrink-0">
-                  <SlidersHorizontal size={13} /> Filter:
+              <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-[#eee9e4] dark:border-zinc-800 text-[11px] font-medium text-slate-500 dark:text-zinc-400 no-scrollbar">
+                <span className="hidden sm:flex items-center gap-1 text-slate-400 mr-1 shrink-0">
+                  <SlidersHorizontal size={12} /> Status:
                 </span>
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'all' ? 'bg-[#f05a24]/10 text-[#f05a24] font-black' : 'hover:text-gray-900'}`}
+                  className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'all' ? 'bg-[#fff0ea] text-[#ff4b1f] font-semibold' : 'hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   All ({totalTracked})
                 </button>
                 <button
                   onClick={() => setStatusFilter('in_stock')}
-                  className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'in_stock' ? 'bg-emerald-100 text-emerald-800 font-black' : 'hover:text-gray-900'}`}
+                  className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'in_stock' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold' : 'hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   In Stock ({inStockCount})
                 </button>
                 <button
                   onClick={() => setStatusFilter('low_stock')}
-                  className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'low_stock' ? 'bg-amber-100 text-amber-800 font-black' : 'hover:text-gray-900'}`}
+                  className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'low_stock' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 font-semibold' : 'hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   Low ({lowStockCount})
                 </button>
                 <button
                   onClick={() => setStatusFilter('out_of_stock')}
-                  className={`px-2.5 py-1 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'out_of_stock' ? 'bg-red-100 text-red-800 font-black' : 'hover:text-gray-900'}`}
+                  className={`px-2 py-0.5 rounded-md whitespace-nowrap transition-colors cursor-pointer ${statusFilter === 'out_of_stock' ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 font-semibold' : 'hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   Depleted ({outOfStockCount})
                 </button>
@@ -517,213 +514,332 @@ const StockPage: React.FC = () => {
             </div>
 
             {/* Inventory Stock Container */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs border border-[#F0E6DF] space-y-3 sm:space-y-4">
-              <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-gray-100">
-                <h3 className="text-sm sm:text-base font-black text-gray-900 tracking-tight">
-                  Store Items ({filteredItems.length})
-                </h3>
+            <div className="bg-white dark:bg-[#18181b] rounded-xl p-3 sm:p-4 border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-3">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#eee9e4] dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-[#071B34] dark:text-white tracking-tight">
+                    Store Items ({filteredItems.length})
+                  </h3>
+                  {/* Grid / List View Switcher */}
+                  <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/80 dark:border-zinc-700">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1 rounded-md transition cursor-pointer ${
+                        viewMode === 'grid'
+                          ? 'bg-white dark:bg-[#18181b] text-[#ff4b1f] shadow-xs'
+                          : 'text-slate-400 dark:text-zinc-500 hover:text-slate-700'
+                      }`}
+                      title="Grid View"
+                    >
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      className={`p-1 rounded-md transition cursor-pointer ${
+                        viewMode === 'list'
+                          ? 'bg-white dark:bg-[#18181b] text-[#ff4b1f] shadow-xs'
+                          : 'text-slate-400 dark:text-zinc-500 hover:text-slate-700'
+                      }`}
+                      title="List View"
+                    >
+                      <List size={14} />
+                    </button>
+                  </div>
+                </div>
+
                 <button
                   onClick={() => handleTabChange('add')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f05a24] hover:bg-[#d94815] text-white rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95 shadow-2xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff4b1f] hover:bg-[#e03e15] text-white rounded-xl text-[12px] font-medium transition-all cursor-pointer active:scale-95 shadow-xs"
                 >
                   <Plus size={14} />
                   <span>+ Add Item</span>
                 </button>
               </div>
 
-              {/* Mobile Card View (Optimized for Small Screens) */}
-              <div className="block sm:hidden divide-y divide-gray-100">
-                {filteredItems.length === 0 ? (
-                  <div className="py-8 text-center text-gray-400 text-xs font-semibold">
-                    No items found.
-                  </div>
-                ) : (
-                  filteredItems.map(item => {
-                    const isOutOfStock = item.currentStock === 0;
-                    const isLowStock = item.currentStock > 0 && item.currentStock <= item.minThreshold;
+              {/* GRID VIEW */}
+              {viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 pt-1">
+                  {filteredItems.length === 0 ? (
+                    <div className="col-span-full py-8 text-center text-slate-400 dark:text-zinc-500 text-xs font-normal">
+                      No items found matching your filters.
+                    </div>
+                  ) : (
+                    filteredItems.map(item => {
+                      const isOutOfStock = item.currentStock === 0;
+                      const isLowStock = item.currentStock > 0 && item.currentStock <= item.minThreshold;
 
-                    return (
-                      <div key={item.id} className="py-3 space-y-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-9 h-9 rounded-xl bg-[#FFF0E6] flex items-center justify-center text-lg shrink-0 border border-[#f05a24]/10 shadow-2xs">
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-slate-50/50 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-800 rounded-xl p-3 flex flex-col justify-between gap-2.5 hover:border-slate-300 dark:hover:border-zinc-700 transition"
+                        >
+                          <div className="flex items-start justify-between gap-1.5">
+                            <span className="w-9 h-9 rounded-xl bg-[#fff0ea] dark:bg-orange-950/40 flex items-center justify-center text-lg shrink-0 border border-orange-200/50 dark:border-orange-900/40">
                               {item.image}
                             </span>
-                            <div className="min-w-0">
-                              <div className="text-xs font-black text-gray-900 truncate">{item.name}</div>
-                              <div className="text-[10px] text-gray-400 font-medium">{item.category}</div>
-                            </div>
-                          </div>
-
-                          <div className="shrink-0">
                             {isOutOfStock ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40 shrink-0">
                                 Out
                               </span>
                             ) : isLowStock ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40 shrink-0">
                                 Low
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40 shrink-0">
                                 Good
                               </span>
                             )}
                           </div>
-                        </div>
 
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <div className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl p-1">
-                            <button
-                              onClick={() => handleQuantityAdjust(item.id, -1)}
-                              disabled={item.currentStock === 0}
-                              className="w-6 h-6 rounded-lg bg-white text-gray-700 flex items-center justify-center shadow-2xs active:scale-90 disabled:opacity-30 cursor-pointer"
-                            >
-                              <Minus size={11} />
-                            </button>
-                            <span className="w-14 text-center text-xs font-black text-gray-900 font-mono">
-                              {item.currentStock} {item.unit}
-                            </span>
-                            <button
-                              onClick={() => handleQuantityAdjust(item.id, 1)}
-                              className="w-6 h-6 rounded-lg bg-white text-gray-700 flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer"
-                            >
-                              <Plus size={11} />
-                            </button>
+                          <div className="min-w-0">
+                            <div className="text-[12px] font-semibold text-[#071B34] dark:text-white truncate" title={item.name}>
+                              {item.name}
+                            </div>
+                            <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal truncate mt-0.5">
+                              {item.category}
+                            </div>
                           </div>
 
-                          <button
-                            onClick={() => {
-                              setSelectedItemForRestock(item);
-                              setRestockQty(10);
-                              setUpdatedThreshold(item.minThreshold);
-                            }}
-                            className="px-3 py-1.5 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white rounded-xl border border-[#f05a24]/20 text-[11px] font-extrabold transition-all cursor-pointer active:scale-95 shadow-2xs"
-                          >
-                            + Restock
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                          <div className="space-y-1.5 pt-1 border-t border-slate-200/60 dark:border-zinc-800">
+                            <div className="flex items-center justify-between bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 rounded-lg p-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleQuantityAdjust(item.id, -1)}
+                                disabled={item.currentStock === 0}
+                                className="w-6 h-6 rounded-md bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-white flex items-center justify-center shadow-2xs active:scale-90 disabled:opacity-30 cursor-pointer"
+                              >
+                                <Minus size={11} />
+                              </button>
+                              <span className="text-[11px] font-semibold text-[#071B34] dark:text-white font-mono px-1">
+                                {item.currentStock} {item.unit}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleQuantityAdjust(item.id, 1)}
+                                className="w-6 h-6 rounded-md bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer"
+                              >
+                                <Plus size={11} />
+                              </button>
+                            </div>
 
-              {/* Desktop Table View (Hidden on Small Screens) */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[720px]">
-                  <thead>
-                    <tr className="text-[11px] font-black text-gray-400 uppercase border-b border-gray-200 pb-2">
-                      <th className="py-2.5 px-3">Item / Ingredient</th>
-                      <th className="py-2.5 px-3">Category</th>
-                      <th className="py-2.5 px-3 text-center">Current Quantity</th>
-                      <th className="py-2.5 px-3 text-center">Buffer Health</th>
-                      <th className="py-2.5 px-3">Supplier / Last Order</th>
-                      <th className="py-2.5 px-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedItemForRestock(item);
+                                setRestockQty(10);
+                                setUpdatedThreshold(item.minThreshold);
+                              }}
+                              className="w-full py-1 bg-[#fff0ea] hover:bg-[#ff4b1f] text-[#ff4b1f] hover:text-white dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-[#ff4b1f] dark:hover:text-white rounded-lg border border-orange-200/80 dark:border-orange-900/40 text-[11px] font-medium transition-all cursor-pointer active:scale-95 text-center"
+                            >
+                              + Restock
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : (
+                /* LIST VIEW */
+                <>
+                  {/* Mobile List View */}
+                  <div className="block sm:hidden divide-y divide-[#eee9e4] dark:divide-zinc-800">
                     {filteredItems.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-12 text-center text-gray-400 text-sm font-semibold">
-                          No inventory items found matching your filters.
-                        </td>
-                      </tr>
+                      <div className="py-8 text-center text-slate-400 dark:text-zinc-500 text-xs font-normal">
+                        No items found matching your filters.
+                      </div>
                     ) : (
                       filteredItems.map(item => {
                         const isOutOfStock = item.currentStock === 0;
                         const isLowStock = item.currentStock > 0 && item.currentStock <= item.minThreshold;
 
                         return (
-                          <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-2xl bg-[#FFF0E6] flex items-center justify-center text-xl flex-shrink-0 border border-[#f05a24]/10 shadow-2xs">
+                          <div key={item.id} className="py-3.5 space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="w-10 h-10 rounded-xl bg-[#fff0ea] dark:bg-orange-950/30 flex items-center justify-center text-xl shrink-0 border border-orange-200/50 dark:border-orange-900/40">
                                   {item.image}
                                 </span>
-                                <div>
-                                  <div className="text-sm font-black text-gray-900">{item.name}</div>
+                                <div className="min-w-0">
+                                  <div className="text-[13px] font-medium text-[#071B34] dark:text-white truncate">{item.name}</div>
+                                  <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">{item.category}</div>
                                 </div>
                               </div>
-                            </td>
 
-                            <td className="py-3 px-3">
-                              <span className="inline-block px-2.5 py-1 text-xs font-extrabold text-[#c2410c] bg-[#fff7ed] border border-[#ffedd5] rounded-lg">
-                                {item.category}
-                              </span>
-                            </td>
+                              <div className="shrink-0">
+                                {isOutOfStock ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40">
+                                    Out of Stock
+                                  </span>
+                                ) : isLowStock ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40">
+                                    Low Stock
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40">
+                                    Healthy
+                                  </span>
+                                )}
+                              </div>
+                            </div>
 
-                            <td className="py-3 px-3 text-center">
-                              <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-1 shadow-2xs">
+                            <div className="flex items-center justify-between gap-2 pt-0.5">
+                              <div className="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 rounded-xl p-1">
                                 <button
                                   onClick={() => handleQuantityAdjust(item.id, -1)}
                                   disabled={item.currentStock === 0}
-                                  className="w-7 h-7 rounded-lg bg-white hover:bg-gray-100 text-gray-700 flex items-center justify-center shadow-2xs transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
-                                  title="Deduct 1 unit"
+                                  className="w-7 h-7 rounded-lg bg-white dark:bg-zinc-700 text-slate-700 dark:text-white flex items-center justify-center shadow-xs active:scale-90 disabled:opacity-30 cursor-pointer"
                                 >
-                                  <Minus size={13} />
+                                  <Minus size={12} />
                                 </button>
-                                <span className="w-16 text-center text-sm font-black text-gray-900 font-mono">
+                                <span className="w-16 text-center text-xs font-semibold text-[#071B34] dark:text-white font-mono">
                                   {item.currentStock} {item.unit}
                                 </span>
                                 <button
                                   onClick={() => handleQuantityAdjust(item.id, 1)}
-                                  className="w-7 h-7 rounded-lg bg-white hover:bg-gray-100 text-gray-700 flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer"
-                                  title="Add 1 unit"
+                                  className="w-7 h-7 rounded-lg bg-white dark:bg-zinc-700 text-slate-700 dark:text-white flex items-center justify-center shadow-xs active:scale-90 cursor-pointer"
                                 >
-                                  <Plus size={13} />
+                                  <Plus size={12} />
                                 </button>
                               </div>
-                              <div className="text-[10px] text-gray-400 font-semibold mt-1">
-                                Min Buffer: {item.minThreshold} {item.unit}
-                              </div>
-                            </td>
 
-                            <td className="py-3 px-3 text-center">
-                              {isOutOfStock ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-red-100 text-red-700 border border-red-200">
-                                  <XCircle size={12} /> Depleted (0)
-                                </span>
-                              ) : isLowStock ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-200">
-                                  <AlertTriangle size={12} /> Low Buffer ({item.currentStock} left)
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                  <CheckCircle2 size={12} /> Healthy Buffer
-                                </span>
-                              )}
-                            </td>
-
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-                                <Truck size={12} className="text-[#f05a24] shrink-0" />
-                                <span className="truncate max-w-[130px]">{item.supplier}</span>
-                              </div>
-                              <div className="text-[10px] text-gray-400 font-medium mt-0.5">
-                                {item.lastRestocked}
-                              </div>
-                            </td>
-
-                            <td className="py-3 px-3 text-right">
                               <button
                                 onClick={() => {
                                   setSelectedItemForRestock(item);
                                   setRestockQty(10);
                                   setUpdatedThreshold(item.minThreshold);
                                 }}
-                                className="px-3.5 py-1.5 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white rounded-xl border border-[#f05a24]/20 text-xs font-extrabold transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                className="px-3.5 py-1.5 bg-[#fff0ea] hover:bg-[#ff4b1f] text-[#ff4b1f] hover:text-white dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-[#ff4b1f] dark:hover:text-white rounded-xl border border-orange-200/80 dark:border-orange-900/40 text-[11px] font-medium transition-all cursor-pointer active:scale-95"
                               >
                                 + Restock
                               </button>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         );
                       })
                     )}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[720px]">
+                      <thead>
+                        <tr className="border-b border-[#eee9e4] dark:border-zinc-800">
+                          <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide">Item / Ingredient</th>
+                          <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide">Category</th>
+                          <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-center">Current Quantity</th>
+                          <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-center">Buffer Health</th>
+                          <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide">Supplier / Last Order</th>
+                          <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#f4f1ee] dark:divide-zinc-800/60">
+                        {filteredItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-zinc-500 text-xs font-normal">
+                              No inventory items found matching your filters.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredItems.map(item => {
+                            const isOutOfStock = item.currentStock === 0;
+                            const isLowStock = item.currentStock > 0 && item.currentStock <= item.minThreshold;
+
+                            return (
+                              <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition-colors">
+                                <td className="py-3 px-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className="w-10 h-10 rounded-xl bg-[#fff0ea] dark:bg-orange-950/30 flex items-center justify-center text-xl flex-shrink-0 border border-orange-200/50 dark:border-orange-900/40">
+                                      {item.image}
+                                    </span>
+                                    <div>
+                                      <div className="text-[13px] font-medium text-[#071B34] dark:text-white">{item.name}</div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="py-3 px-3">
+                                  <span className="inline-block px-2.5 py-0.5 text-[11px] font-normal text-[#c2410c] bg-[#fff7ed] border border-[#ffedd5] rounded-lg dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-900/40">
+                                    {item.category}
+                                  </span>
+                                </td>
+
+                                <td className="py-3 px-3 text-center">
+                                  <div className="inline-flex items-center gap-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 rounded-xl p-1 shadow-2xs">
+                                    <button
+                                      onClick={() => handleQuantityAdjust(item.id, -1)}
+                                      disabled={item.currentStock === 0}
+                                      className="w-7 h-7 rounded-lg bg-white dark:bg-zinc-700 text-slate-700 dark:text-white hover:bg-slate-100 flex items-center justify-center transition-all active:scale-90 disabled:opacity-40 cursor-pointer"
+                                      title="Deduct 1 unit"
+                                    >
+                                      <Minus size={12} />
+                                    </button>
+                                    <span className="w-16 text-center text-xs font-semibold text-[#071B34] dark:text-white font-mono">
+                                      {item.currentStock} {item.unit}
+                                    </span>
+                                    <button
+                                      onClick={() => handleQuantityAdjust(item.id, 1)}
+                                      className="w-7 h-7 rounded-lg bg-white dark:bg-zinc-700 text-slate-700 dark:text-white hover:bg-slate-100 flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+                                      title="Add 1 unit"
+                                    >
+                                      <Plus size={12} />
+                                    </button>
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal mt-1">
+                                    Min Buffer: {item.minThreshold} {item.unit}
+                                  </div>
+                                </td>
+
+                                <td className="py-3 px-3 text-center">
+                                  {isOutOfStock ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40">
+                                      <XCircle size={12} /> Depleted (0)
+                                    </span>
+                                  ) : isLowStock ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40">
+                                      <AlertTriangle size={12} /> Low Buffer ({item.currentStock} left)
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40">
+                                      <CheckCircle2 size={12} /> Healthy Buffer
+                                    </span>
+                                  )}
+                                </td>
+
+                                <td className="py-3 px-3">
+                                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-zinc-300">
+                                    <Truck size={12} className="text-[#ff4b1f] shrink-0" />
+                                    <span className="truncate max-w-[130px]">{item.supplier}</span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal mt-0.5">
+                                    {item.lastRestocked}
+                                  </div>
+                                </td>
+
+                                <td className="py-3 px-3 text-right">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedItemForRestock(item);
+                                      setRestockQty(10);
+                                      setUpdatedThreshold(item.minThreshold);
+                                    }}
+                                    className="px-3.5 py-1.5 bg-[#fff0ea] hover:bg-[#ff4b1f] text-[#ff4b1f] hover:text-white dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-[#ff4b1f] dark:hover:text-white rounded-xl border border-orange-200/80 dark:border-orange-900/40 text-[11px] font-medium transition-all cursor-pointer active:scale-95"
+                                  >
+                                    + Restock
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}
@@ -732,22 +848,22 @@ const StockPage: React.FC = () => {
         {/* VIEW 2: DETAILED STOCK REPORT VIEW                        */}
         {/* ───────────────────────────────────────────────────────── */}
         {activeTab === 'report' && (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4">
             {/* Report Filter & Export Bar */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xs border border-[#F0E6DF] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+            <div className="bg-white dark:bg-[#18181b] rounded-2xl p-4 border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_4px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="flex items-center justify-between sm:justify-start gap-2">
-                <span className="text-xs font-black text-gray-500 flex items-center gap-1 shrink-0">
+                <span className="text-[12px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1 shrink-0">
                   <Calendar size={13} /> Period:
                 </span>
-                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
                   {(['today', 'week', 'month'] as const).map(p => (
                     <button
                       key={p}
                       onClick={() => setReportDateRange(p)}
-                      className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-black uppercase transition-all cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-medium uppercase transition-all cursor-pointer ${
                         reportDateRange === p
-                          ? 'bg-white text-[#f05a24] shadow-xs'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-white dark:bg-[#18181b] text-[#ff4b1f] shadow-xs'
+                          : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       {p === 'today' ? 'Today' : p === 'week' ? 'Week' : 'Month'}
@@ -759,14 +875,14 @@ const StockPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#071B34] hover:bg-slate-900 text-white rounded-xl text-[12px] font-medium transition-all cursor-pointer active:scale-95 shadow-xs"
                 >
                   <Printer size={13} />
                   <span>Print</span>
                 </button>
                 <button
                   onClick={() => toast.success('Report exported as CSV!')}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:py-2 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white border border-[#f05a24]/20 rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#fff0ea] hover:bg-[#ff4b1f] text-[#ff4b1f] hover:text-white border border-orange-200/80 dark:bg-orange-950/30 dark:text-orange-400 rounded-xl text-[12px] font-medium transition-all cursor-pointer active:scale-95"
                 >
                   <span>Export CSV</span>
                 </button>
@@ -774,58 +890,58 @@ const StockPage: React.FC = () => {
             </div>
 
             {/* Financial Valuation Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-              <div className="p-3.5 sm:p-5 rounded-2xl bg-white border border-[#F0E6DF] shadow-2xs">
-                <div className="text-[10px] sm:text-xs font-bold uppercase text-gray-400 mb-1">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-4 rounded-2xl bg-white dark:bg-[#18181b] border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+                <div className="text-[11px] font-medium uppercase text-slate-400 dark:text-zinc-500 mb-1">
                   Store Valuation
                 </div>
-                <div className="text-lg sm:text-2xl font-black text-gray-900 font-mono">
+                <div className="text-xl sm:text-2xl font-semibold text-[#071B34] dark:text-white font-mono">
                   ₹{totalInventoryValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
-                <div className="text-[10px] text-gray-400 font-medium mt-0.5">Current in-stock worth</div>
+                <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal mt-0.5">Current in-stock worth</div>
               </div>
 
-              <div className="p-3.5 sm:p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs">
-                <div className="text-[10px] sm:text-xs font-bold uppercase text-emerald-700 mb-1">
+              <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/40 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+                <div className="text-[11px] font-medium uppercase text-emerald-700 dark:text-emerald-400 mb-1">
                   Kitchen Consumed
                 </div>
-                <div className="text-lg sm:text-2xl font-black text-emerald-800 font-mono">
+                <div className="text-xl sm:text-2xl font-semibold text-emerald-800 dark:text-emerald-300 font-mono">
                   ₹{totalConsumedValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
-                <div className="text-[10px] text-emerald-600 font-medium mt-0.5">Used in orders/prep</div>
+                <div className="text-[11px] text-emerald-600/80 dark:text-emerald-500 font-normal mt-0.5">Used in orders/prep</div>
               </div>
 
-              <div className="p-3.5 sm:p-5 rounded-2xl bg-amber-50/70 border border-amber-200 shadow-2xs">
-                <div className="text-[10px] sm:text-xs font-bold uppercase text-amber-700 mb-1">
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+                <div className="text-[11px] font-medium uppercase text-amber-700 dark:text-amber-400 mb-1">
                   Urgent Re-orders
                 </div>
-                <div className="text-lg sm:text-2xl font-black text-amber-800">
+                <div className="text-xl sm:text-2xl font-semibold text-amber-800 dark:text-amber-300">
                   {urgentReorders.length} Items
                 </div>
-                <div className="text-[10px] text-amber-600 font-medium mt-0.5">Below buffer limit</div>
+                <div className="text-[11px] text-amber-600/80 dark:text-amber-500 font-normal mt-0.5">Below buffer limit</div>
               </div>
 
-              <div className="p-3.5 sm:p-5 rounded-2xl bg-purple-50/70 border border-purple-200 shadow-2xs">
-                <div className="text-[10px] sm:text-xs font-bold uppercase text-purple-700 mb-1">
+              <div className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/70 dark:border-purple-900/40 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+                <div className="text-[11px] font-medium uppercase text-purple-700 dark:text-purple-400 mb-1">
                   Active Categories
                 </div>
-                <div className="text-lg sm:text-2xl font-black text-purple-900">
+                <div className="text-xl sm:text-2xl font-semibold text-purple-900 dark:text-purple-300">
                   {categories.length - 1} Categories
                 </div>
-                <div className="text-[10px] text-purple-600 font-medium mt-0.5">Dairy, Meats, Groceries</div>
+                <div className="text-[11px] text-purple-600/80 dark:text-purple-500 font-normal mt-0.5">Dairy, Meats, Groceries</div>
               </div>
             </div>
 
             {/* Comprehensive Stock Audit Table */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs border border-[#F0E6DF] space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div className="bg-white dark:bg-[#18181b] rounded-2xl p-4 sm:p-5 border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-[#eee9e4] dark:border-zinc-800">
                 <div>
-                  <h3 className="text-sm sm:text-base font-black text-gray-900 tracking-tight">
+                  <h3 className="text-sm sm:text-base font-semibold text-[#071B34] dark:text-white tracking-tight">
                     Stock Audit & Consumption Breakdown
                   </h3>
-                  <p className="text-xs text-gray-400 font-medium">Opening stock vs kitchen usage & remaining balance</p>
+                  <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-normal">Opening stock vs kitchen usage & remaining balance</p>
                 </div>
-                <span className="text-xs text-gray-500 font-bold">
+                <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
                   {stockItems.length} Total Ingredients
                 </span>
               </div>
@@ -833,56 +949,56 @@ const StockPage: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[650px]">
                   <thead>
-                    <tr className="text-[11px] font-black text-gray-400 uppercase border-b border-gray-200 pb-2">
-                      <th className="py-2 px-3">Item Name</th>
-                      <th className="py-2 px-3">Category</th>
-                      <th className="py-2 px-3 text-center">Opening</th>
-                      <th className="py-2 px-3 text-center text-rose-600">Consumed (-)</th>
-                      <th className="py-2 px-3 text-center">Closing Stock</th>
-                      <th className="py-2 px-3 text-right">Est. Value</th>
-                      <th className="py-2 px-3 text-center">Status</th>
+                    <tr className="border-b border-[#eee9e4] dark:border-zinc-800">
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide">Item Name</th>
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide">Category</th>
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-center">Opening</th>
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wide text-center">Consumed (-)</th>
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-center">Closing Stock</th>
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-right">Est. Value</th>
+                      <th className="py-2.5 px-3 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-xs">
+                  <tbody className="divide-y divide-[#f4f1ee] dark:divide-zinc-800/60 text-xs">
                     {stockItems.map(item => {
                       const isOutOfStock = item.currentStock === 0;
                       const isLowStock = item.currentStock > 0 && item.currentStock <= item.minThreshold;
                       const itemValuation = item.currentStock * item.unitCost;
 
                       return (
-                        <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                        <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition-colors">
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2">
                               <span className="text-base">{item.image}</span>
-                              <span className="font-black text-gray-900">{item.name}</span>
+                              <span className="font-medium text-[#071B34] dark:text-white">{item.name}</span>
                             </div>
                           </td>
                           <td className="py-3 px-3">
-                            <span className="font-semibold text-gray-500">{item.category}</span>
+                            <span className="font-normal text-slate-500 dark:text-zinc-400">{item.category}</span>
                           </td>
-                          <td className="py-3 px-3 text-center font-mono font-bold text-gray-600">
+                          <td className="py-3 px-3 text-center font-mono font-medium text-slate-600 dark:text-zinc-300">
                             {item.openingStock} {item.unit}
                           </td>
-                          <td className="py-3 px-3 text-center font-mono font-bold text-rose-600 bg-rose-50/40">
+                          <td className="py-3 px-3 text-center font-mono font-semibold text-rose-600 dark:text-rose-400 bg-rose-50/40 dark:bg-rose-950/20">
                             {item.consumed} {item.unit}
                           </td>
-                          <td className="py-3 px-3 text-center font-mono font-black text-gray-900">
+                          <td className="py-3 px-3 text-center font-mono font-semibold text-[#071B34] dark:text-white">
                             {item.currentStock} {item.unit}
                           </td>
-                          <td className="py-3 px-3 text-right font-mono font-black text-gray-900">
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-[#071B34] dark:text-white">
                             ₹{itemValuation.toFixed(2)}
                           </td>
                           <td className="py-3 px-3 text-center">
                             {isOutOfStock ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40">
                                 Depleted
                               </span>
                             ) : isLowStock ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/40">
                                 Low
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40">
                                 Normal
                               </span>
                             )}
@@ -897,26 +1013,26 @@ const StockPage: React.FC = () => {
 
             {/* Low Buffer Urgent Reorder Checklist */}
             {urgentReorders.length > 0 && (
-              <div className="bg-amber-50/50 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-amber-200 space-y-2.5 sm:space-y-3">
+              <div className="bg-amber-50/60 dark:bg-amber-950/20 rounded-2xl p-4 border border-amber-200/80 dark:border-amber-900/40 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle size={16} className="text-amber-700" />
-                    <h4 className="text-xs sm:text-sm font-black text-amber-900">
+                    <AlertTriangle size={15} className="text-amber-700 dark:text-amber-400" />
+                    <h4 className="text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-300">
                       Immediate Re-orders ({urgentReorders.length})
                     </h4>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-700">
+                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
                     &lt; Min Buffer
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {urgentReorders.map(item => (
-                    <div key={item.id} className="bg-white p-2.5 sm:p-3 rounded-xl border border-amber-200/80 shadow-2xs flex items-center justify-between gap-2">
+                    <div key={item.id} className="bg-white dark:bg-[#18181b] p-3 rounded-xl border border-amber-200/80 dark:border-zinc-800 shadow-2xs flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-xs font-black text-gray-900 truncate">{item.name}</div>
-                        <div className="text-[10px] text-gray-500 font-medium truncate">{item.supplier}</div>
-                        <div className="text-[10px] text-amber-700 font-bold mt-0.5">
+                        <div className="text-xs font-medium text-[#071B34] dark:text-white truncate">{item.name}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-normal truncate">{item.supplier}</div>
+                        <div className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
                           Left: {item.currentStock} {item.unit}
                         </div>
                       </div>
@@ -926,7 +1042,7 @@ const StockPage: React.FC = () => {
                           setRestockQty(10);
                           setUpdatedThreshold(item.minThreshold);
                         }}
-                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black shrink-0 cursor-pointer active:scale-95 shadow-2xs"
+                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-medium shrink-0 cursor-pointer active:scale-95"
                       >
                         + Reorder
                       </button>
@@ -942,25 +1058,25 @@ const StockPage: React.FC = () => {
         {/* VIEW 3: DEDICATED ADD STORE ITEM TAB                      */}
         {/* ───────────────────────────────────────────────────────── */}
         {activeTab === 'add' && (
-          <div className="max-w-2xl mx-auto bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xs border border-[#F0E6DF] space-y-5">
-            <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
-              <span className="w-12 h-12 rounded-2xl bg-[#FFF0E6] text-[#f05a24] flex items-center justify-center text-2xl font-black border border-[#f05a24]/20 shadow-2xs">
+          <div className="max-w-2xl mx-auto bg-white dark:bg-[#18181b] rounded-2xl p-5 sm:p-7 shadow-[0_1px_4px_rgba(15,23,42,0.03)] border border-[#eee9e4] dark:border-zinc-800 space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-[#eee9e4] dark:border-zinc-800">
+              <span className="w-12 h-12 rounded-2xl bg-[#fff0ea] text-[#ff4b1f] dark:bg-orange-950/30 dark:text-orange-400 flex items-center justify-center text-2xl border border-orange-200/60 dark:border-orange-900/40">
                 {newItemEmoji}
               </span>
               <div>
-                <h3 className="text-base sm:text-lg font-black text-gray-900 leading-tight">
+                <h3 className="text-base sm:text-lg font-semibold text-[#071B34] dark:text-white leading-tight">
                   Add New Store Ingredient / Item
                 </h3>
-                <p className="text-xs text-gray-400 font-medium">Add raw material or beverage to kitchen inventory</p>
+                <p className="text-[12px] text-slate-400 dark:text-zinc-500 font-normal">Add raw material or beverage to kitchen inventory</p>
               </div>
             </div>
 
             <form onSubmit={handleAddNewItem} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                   Choose Icon / Emoji
                 </label>
-                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar">
                   {['🧀', '🧈', '🍗', '🥩', '🍚', '🛢️', '🧅', '🍅', '🧄', '🥔', '🥤', '💧', '🍄', '📦'].map(em => (
                     <button
                       key={em}
@@ -968,8 +1084,8 @@ const StockPage: React.FC = () => {
                       onClick={() => setNewItemEmoji(em)}
                       className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg border transition-all cursor-pointer shrink-0 ${
                         newItemEmoji === em
-                          ? 'bg-[#FFF0E6] border-[#f05a24] shadow-xs'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          ? 'bg-[#fff0ea] border-[#ff4b1f] dark:bg-orange-950/40 dark:border-orange-500'
+                          : 'bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-700'
                       }`}
                     >
                       {em}
@@ -979,8 +1095,8 @@ const StockPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
-                  Ingredient / Item Name <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
+                  Ingredient / Item Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -988,20 +1104,20 @@ const StockPage: React.FC = () => {
                   placeholder="e.g. Amul Butter, Fresh Mutton, Garlic Paste"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                   autoFocus
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
-                    Category <span className="text-red-500">*</span>
+                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
+                    Category <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={newItemCategory}
                     onChange={(e) => setNewItemCategory(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] bg-white"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-white dark:bg-zinc-800 text-slate-800 dark:text-white"
                   >
                     <option value="Dairy & Cheese">Dairy & Cheese</option>
                     <option value="Meat & Poultry">Meat & Poultry</option>
@@ -1012,13 +1128,13 @@ const StockPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
-                    Measuring Unit <span className="text-red-500">*</span>
+                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
+                    Measuring Unit <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={newItemUnit}
                     onChange={(e) => setNewItemUnit(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24] bg-white"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-white dark:bg-zinc-800 text-slate-800 dark:text-white"
                   >
                     <option value="kg">kg (Kilograms)</option>
                     <option value="Litres">Litres</option>
@@ -1031,7 +1147,7 @@ const StockPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                     Starting Stock ({newItemUnit})
                   </label>
                   <input
@@ -1041,12 +1157,12 @@ const StockPage: React.FC = () => {
                     required
                     value={newItemStock}
                     onChange={(e) => setNewItemStock(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                     Alert Buffer Threshold ({newItemUnit})
                   </label>
                   <input
@@ -1056,14 +1172,14 @@ const StockPage: React.FC = () => {
                     required
                     value={newItemThreshold}
                     onChange={(e) => setNewItemThreshold(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                     Cost per {newItemUnit} (₹)
                   </label>
                   <input
@@ -1071,12 +1187,12 @@ const StockPage: React.FC = () => {
                     min="0"
                     value={newItemUnitCost}
                     onChange={(e) => setNewItemUnitCost(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-600 mb-1.5">
+                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                     Supplier Name
                   </label>
                   <input
@@ -1084,7 +1200,7 @@ const StockPage: React.FC = () => {
                     placeholder="e.g. Amul, Metro Wholesale"
                     value={newItemSupplier}
                     onChange={(e) => setNewItemSupplier(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                   />
                 </div>
               </div>
@@ -1093,14 +1209,14 @@ const StockPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleTabChange('inventory')}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer active:scale-95"
+                  className="flex-1 py-2.5 px-4 text-xs font-medium text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-xl transition-all cursor-pointer active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!newItemName.trim()}
-                  className="flex-1 py-2.5 px-4 bg-[#f05a24] hover:bg-[#d94815] text-white text-xs font-black rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 px-4 bg-[#ff4b1f] hover:bg-[#e03e15] text-white text-xs font-medium rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   + Add to Store Inventory
                 </button>
@@ -1113,24 +1229,24 @@ const StockPage: React.FC = () => {
       {/* Restock Modal */}
       {selectedItemForRestock && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in"
           onClick={() => setSelectedItemForRestock(null)}
         >
           <div 
-            className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-[#F0E6DF] space-y-5 animate-in zoom-in-95"
+            className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-2xl p-6 shadow-xl border border-[#eee9e4] dark:border-zinc-800 space-y-4 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <span className="w-10 h-10 rounded-2xl bg-[#FFF0E6] flex items-center justify-center text-2xl border border-[#f05a24]/20">
+            <div className="flex items-center justify-between pb-3 border-b border-[#eee9e4] dark:border-zinc-800">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl bg-[#fff0ea] dark:bg-orange-950/30 flex items-center justify-center text-2xl border border-orange-200/60 dark:border-orange-900/40">
                   {selectedItemForRestock.image}
                 </span>
                 <div>
-                  <h3 className="text-base font-black text-gray-900 leading-tight">
+                  <h3 className="text-base font-semibold text-[#071B34] dark:text-white leading-tight">
                     Restock {selectedItemForRestock.name}
                   </h3>
-                  <p className="text-xs text-gray-400 font-medium">
+                  <p className="text-[12px] text-slate-400 dark:text-zinc-500 font-normal">
                     Current: {selectedItemForRestock.currentStock} {selectedItemForRestock.unit}
                   </p>
                 </div>
@@ -1138,7 +1254,7 @@ const StockPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedItemForRestock(null)}
-                className="w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all cursor-pointer"
+                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-all cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -1147,7 +1263,7 @@ const StockPage: React.FC = () => {
             {/* Restock Form */}
             <form onSubmit={handleRestockSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                   Quantity to Add ({selectedItemForRestock.unit})
                 </label>
                 <div className="flex items-center gap-2 mb-2">
@@ -1156,10 +1272,10 @@ const StockPage: React.FC = () => {
                       key={val}
                       type="button"
                       onClick={() => setRestockQty(val)}
-                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition-all cursor-pointer ${
+                      className={`flex-1 py-1.5 text-xs font-medium rounded-xl border transition-all cursor-pointer ${
                         restockQty === val 
-                          ? 'bg-[#f05a24] text-white border-[#f05a24] shadow-xs' 
-                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                          ? 'bg-[#ff4b1f] text-white border-[#ff4b1f] shadow-xs' 
+                          : 'bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-700'
                       }`}
                     >
                       +{val}
@@ -1174,12 +1290,12 @@ const StockPage: React.FC = () => {
                   required
                   value={restockQty}
                   onChange={(e) => setRestockQty(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                  className="w-full px-3.5 py-2 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1.5">
+                <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400 mb-1.5">
                   Minimum Buffer Threshold ({selectedItemForRestock.unit})
                 </label>
                 <input
@@ -1190,19 +1306,19 @@ const StockPage: React.FC = () => {
                   required
                   value={updatedThreshold}
                   onChange={(e) => setUpdatedThreshold(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3.5 py-2.5 text-sm font-semibold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f05a24]/30 focus:border-[#f05a24]"
+                  className="w-full px-3.5 py-2 text-xs font-medium border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff4b1f]/20 focus:border-[#ff4b1f] bg-slate-50/50 dark:bg-zinc-800/50 text-slate-800 dark:text-white"
                 />
-                <p className="text-[11px] text-gray-400 mt-1">Alert triggers when raw stock drops below this buffer.</p>
+                <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 font-normal">Alert triggers when raw stock drops below this buffer.</p>
               </div>
 
-              <div className="p-3 bg-[#FFF0E6]/60 rounded-2xl border border-[#f05a24]/20 text-xs space-y-1">
-                <div className="flex justify-between font-bold text-gray-700">
+              <div className="p-3 bg-[#fff0ea] dark:bg-orange-950/20 rounded-xl border border-orange-200/70 dark:border-orange-900/40 text-xs space-y-1">
+                <div className="flex justify-between font-medium text-slate-700 dark:text-zinc-300">
                   <span>Current Store Room Stock:</span>
                   <span>{selectedItemForRestock.currentStock} {selectedItemForRestock.unit}</span>
                 </div>
-                <div className="flex justify-between font-bold text-[#f05a24]">
+                <div className="flex justify-between font-semibold text-[#ff4b1f]">
                   <span>New Store Room Total:</span>
-                  <span className="font-black text-sm">{parseFloat((selectedItemForRestock.currentStock + restockQty).toFixed(1))} {selectedItemForRestock.unit}</span>
+                  <span className="font-mono text-sm">{parseFloat((selectedItemForRestock.currentStock + restockQty).toFixed(1))} {selectedItemForRestock.unit}</span>
                 </div>
               </div>
 
@@ -1210,14 +1326,14 @@ const StockPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSelectedItemForRestock(null)}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer active:scale-95"
+                  className="flex-1 py-2.5 px-4 text-xs font-medium text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-xl transition-all cursor-pointer active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={restockQty <= 0}
-                  className="flex-1 py-2.5 px-4 bg-[#f05a24] hover:bg-[#d94815] text-white text-xs font-black rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 px-4 bg-[#ff4b1f] hover:bg-[#e03e15] text-white text-xs font-medium rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   Confirm Restock
                 </button>
@@ -1227,6 +1343,24 @@ const StockPage: React.FC = () => {
         </div>
       )}
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile View (< md) */}
+      <div className="block md:hidden min-h-screen bg-[#faf9f7] dark:bg-[#16161d]">
+        <MobileHeader title="Kitchen Store" />
+        {renderStockBody(true)}
+        <MobileFooter activeTab="more" />
+      </div>
+
+      {/* Desktop View (>= md) */}
+      <div className="hidden md:block">
+        <DesktopLayout activePage="Inventory">
+          {renderStockBody(false)}
+        </DesktopLayout>
+      </div>
+    </>
   );
 };
 

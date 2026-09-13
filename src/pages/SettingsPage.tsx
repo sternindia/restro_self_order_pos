@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Building2, Coins, SlidersHorizontal, Printer, Sparkles, LayoutGrid, CheckCircle2, RotateCw, GlassWater } from 'lucide-react';
+import { Building2, Coins, SlidersHorizontal, Printer, Sparkles, LayoutGrid, CheckCircle2, RotateCw, GlassWater } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Header from '../components/Header';
+import DesktopLayout from '../components/DesktopLayout';
+import { MobileHeader, MobileFooter } from '../components/mobile';
 import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
 
 const SettingsPage: React.FC = () => {
@@ -179,24 +180,21 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-12">
-      <Header />
-
-      <div className="mt-4 px-[3%] py-4 max-w-[1000px] mx-auto box-border">
-        {/* Clean Open Header Title */}
+  const renderSettingsBody = (isMobile: boolean = false) => (
+    <div className={`box-border ${isMobile ? 'p-3.5 pb-24' : 'px-7 py-6 flex-1 max-w-[1100px]'}`}>
+        {/* Page Title */}
         <div className="flex items-center justify-between mb-6 px-1">
           <div>
-            <h1 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">POS System Settings</h1>
-            <p className="text-[11px] sm:text-xs text-gray-500 font-medium hidden sm:block">Configure store branding, taxation, and print protocols</p>
+            <h1 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">POS System Settings</h1>
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium hidden sm:block">Configure store branding, taxation, and print protocols</p>
           </div>
-          <button 
+          <button
             type="button"
-            onClick={() => window.location.reload()} 
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#F0E6DF] rounded-[8px] shadow-2xs hover:bg-gray-50 text-gray-700 text-sm font-semibold transition-all active:scale-95 cursor-pointer"
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white dark:bg-[#1f1f28] border border-[#F0E6DF] dark:border-zinc-700 rounded-[8px] shadow-2xs hover:bg-gray-50 dark:hover:bg-[#2a2a35] text-gray-700 dark:text-zinc-200 text-sm font-semibold transition-all active:scale-95 cursor-pointer"
           >
             <RotateCw size={14} className={loading ? 'animate-spin text-[#f05a24]' : ''} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
 
@@ -205,20 +203,20 @@ const SettingsPage: React.FC = () => {
         ) : (
           <form onSubmit={handleSaveSettings}>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              
+
               {/* Left Column: Restaurant Identity */}
               <div className="lg:col-span-7">
-                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] h-full space-y-4">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-gray-100">
+                <div className="bg-white dark:bg-[#1f1f28] rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] dark:border-zinc-700/60 h-full space-y-4 transition-colors">
+                  <div className="flex items-center gap-2 pb-2.5 border-b border-gray-100 dark:border-zinc-700/60">
                     <Building2 size={18} className="text-[#f05a24]" />
-                    <h6 className="font-extrabold text-gray-900 text-sm m-0">Restaurant Identity</h6>
+                    <h6 className="font-extrabold text-gray-900 dark:text-white text-sm m-0">Restaurant Identity</h6>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-extrabold text-gray-500 uppercase mb-1">Restaurant Name</label>
+                    <label className="block text-[11px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">Restaurant Name</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:border-[#f05a24] dark:focus:border-[#f05a24] outline-none transition-colors"
                       required
                       value={posSettings.restaurantName || ''}
                       onChange={(e) => setPosSettings(prev => ({ ...prev, restaurantName: e.target.value }))}
@@ -226,9 +224,9 @@ const SettingsPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-extrabold text-gray-500 uppercase mb-1">Restaurant Address</label>
+                    <label className="block text-[11px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">Restaurant Address</label>
                     <textarea
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:border-[#f05a24] dark:focus:border-[#f05a24] outline-none transition-colors resize-none"
                       rows={3}
                       required
                       value={posSettings.address || ''}
@@ -237,55 +235,41 @@ const SettingsPage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">City</label>
-                      <input
-                        type="text"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
-                        placeholder="Pune"
-                        value={posSettings.city || ''}
-                        onChange={(e) => setPosSettings(prev => ({ ...prev, city: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">State</label>
-                      <input
-                        type="text"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
-                        placeholder="Maharashtra"
-                        value={posSettings.state || ''}
-                        onChange={(e) => setPosSettings(prev => ({ ...prev, state: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Pincode</label>
-                      <input
-                        type="text"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
-                        placeholder="411056"
-                        value={posSettings.pincode || ''}
-                        onChange={(e) => setPosSettings(prev => ({ ...prev, pincode: e.target.value }))}
-                      />
-                    </div>
+                    {[
+                      { label: 'City', key: 'city', placeholder: 'Pune' },
+                      { label: 'State', key: 'state', placeholder: 'Maharashtra' },
+                      { label: 'Pincode', key: 'pincode', placeholder: '411056' },
+                    ].map(({ label, key, placeholder }) => (
+                      <div key={key}>
+                        <label className="block text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">{label}</label>
+                        <input
+                          type="text"
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-bold text-gray-900 dark:text-white focus:border-[#f05a24] outline-none transition-colors"
+                          placeholder={placeholder}
+                          value={(posSettings as any)[key] || ''}
+                          onChange={(e) => setPosSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                        />
+                      </div>
+                    ))}
                   </div>
 
-                  {/* GSTIN & FSSAI Info */}
+                  {/* GSTIN & FSSAI */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">GSTIN Number</label>
+                      <label className="block text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">GSTIN Number</label>
                       <input
                         type="text"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-bold uppercase text-gray-900 focus:border-[#f05a24] outline-none"
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-bold uppercase text-gray-900 dark:text-white focus:border-[#f05a24] outline-none transition-colors"
                         placeholder="27CCCCCC0000A1Z5"
                         value={posSettings.gstin || ''}
                         onChange={(e) => setPosSettings(prev => ({ ...prev, gstin: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">FSSAI License No.</label>
+                      <label className="block text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">FSSAI License No.</label>
                       <input
                         type="text"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:border-[#f05a24] outline-none"
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-bold text-gray-900 dark:text-white focus:border-[#f05a24] outline-none transition-colors"
                         placeholder="10019022009777"
                         value={posSettings.fssaiNo || ''}
                         onChange={(e) => setPosSettings(prev => ({ ...prev, fssaiNo: e.target.value }))}
@@ -297,40 +281,35 @@ const SettingsPage: React.FC = () => {
 
               {/* Right Column: Financials & Preferences */}
               <div className="lg:col-span-5 flex flex-col gap-4">
-                
-                {/* Card 2: Financials & Taxes */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+
+                {/* Card 2: Taxes & Financials */}
+                <div className="bg-white dark:bg-[#1f1f28] rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] dark:border-zinc-700/60 space-y-3 transition-colors">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-zinc-700/60">
                     <Coins size={18} className="text-[#f05a24]" />
-                    <h6 className="font-extrabold text-gray-900 text-sm m-0">Taxes & Financials</h6>
+                    <h6 className="font-extrabold text-gray-900 dark:text-white text-sm m-0">Taxes &amp; Financials</h6>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Tax Rate (%)</label>
+                      <label className="block text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">Tax Rate (%)</label>
                       <input
                         type="number"
                         step="0.01"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-black text-gray-900 focus:border-[#f05a24] outline-none"
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-black text-gray-900 dark:text-white focus:border-[#f05a24] outline-none transition-colors"
                         required
                         value={posSettings.taxRate}
                         onChange={(e) => {
                           const rate = parseFloat(e.target.value) || 0;
-                          setPosSettings(prev => ({
-                            ...prev,
-                            taxRate: rate,
-                            cgst: rate / 2,
-                            sgst: rate / 2
-                          }));
+                          setPosSettings(prev => ({ ...prev, taxRate: rate, cgst: rate / 2, sgst: rate / 2 }));
                         }}
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">Service Charge (%)</label>
+                      <label className="block text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">Service Charge (%)</label>
                       <input
                         type="number"
                         step="0.01"
-                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-black text-gray-900 focus:border-[#f05a24] outline-none"
+                        className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-black text-gray-900 dark:text-white focus:border-[#f05a24] outline-none transition-colors"
                         required
                         value={posSettings.serviceCharge}
                         onChange={(e) => setPosSettings(prev => ({ ...prev, serviceCharge: parseFloat(e.target.value) || 0 }))}
@@ -338,46 +317,41 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* CGST & SGST Badge Breakdown */}
+                  {/* CGST & SGST Badges */}
                   <div className="flex items-center gap-2 py-1">
-                    <span className="px-2 py-1 bg-[#FFF0E6] text-[#f05a24] rounded-md text-[11px] font-extrabold border border-[#f05a24]/20">
+                    <span className="px-2 py-1 bg-[#FFF0E6] dark:bg-[#f05a24]/15 text-[#f05a24] rounded-md text-[11px] font-extrabold border border-[#f05a24]/20">
                       CGST: {(posSettings.cgst ?? (posSettings.taxRate / 2)).toFixed(2)}%
                     </span>
-                    <span className="px-2 py-1 bg-[#FFF0E6] text-[#f05a24] rounded-md text-[11px] font-extrabold border border-[#f05a24]/20">
+                    <span className="px-2 py-1 bg-[#FFF0E6] dark:bg-[#f05a24]/15 text-[#f05a24] rounded-md text-[11px] font-extrabold border border-[#f05a24]/20">
                       SGST: {(posSettings.sgst ?? (posSettings.taxRate / 2)).toFixed(2)}%
                     </span>
                   </div>
 
                   {/* Serves Liquor Block */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="p-3 bg-slate-50 dark:bg-[#2a2a35] rounded-xl border border-slate-200 dark:border-zinc-700 space-y-2 transition-colors">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5 cursor-pointer" htmlFor="servesLiquorCheck">
+                      <label className="text-xs font-bold text-gray-800 dark:text-zinc-200 flex items-center gap-1.5 cursor-pointer" htmlFor="servesLiquorCheck">
                         <GlassWater size={16} className="text-[#f05a24]" />
                         <span>Serves Liquor (State VAT)</span>
                       </label>
                       <input
                         type="checkbox"
                         id="servesLiquorCheck"
-                        className="w-4 h-4 text-[#f05a24] accent-[#f05a24] rounded-md cursor-pointer"
+                        className="w-4 h-4 accent-[#f05a24] rounded-md cursor-pointer"
                         checked={posSettings.isRestaurantServesLiquor ?? false}
                         onChange={(e) => {
                           const checked = e.target.checked;
-                          setPosSettings(prev => ({
-                            ...prev,
-                            isRestaurantServesLiquor: checked,
-                            stateVatTaxRate: checked ? prev.stateVatTaxRate : 0
-                          }));
+                          setPosSettings(prev => ({ ...prev, isRestaurantServesLiquor: checked, stateVatTaxRate: checked ? prev.stateVatTaxRate : 0 }));
                         }}
                       />
                     </div>
-
                     {posSettings.isRestaurantServesLiquor && (
-                      <div className="pt-2 border-t border-[#F0E6DF]">
-                        <label className="block text-[10px] font-extrabold text-gray-500 uppercase mb-1">State VAT Tax Rate (%)</label>
+                      <div className="pt-2 border-t border-[#F0E6DF] dark:border-zinc-700">
+                        <label className="block text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase mb-1">State VAT Tax Rate (%)</label>
                         <input
                           type="number"
                           step="0.01"
-                          className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs font-black text-gray-900 focus:border-[#f05a24] outline-none"
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-[#2a2a35] text-xs font-black text-gray-900 dark:text-white focus:border-[#f05a24] outline-none transition-colors"
                           required
                           value={posSettings.stateVatTaxRate ?? 0}
                           onChange={(e) => setPosSettings(prev => ({ ...prev, stateVatTaxRate: parseFloat(e.target.value) || 0 }))}
@@ -387,63 +361,63 @@ const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Card 3: System Preferences */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                {/* Card 3: System Modules */}
+                <div className="bg-white dark:bg-[#1f1f28] rounded-2xl p-4 sm:p-5 shadow-xs border border-[#F0E6DF] dark:border-zinc-700/60 space-y-3 transition-colors">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-zinc-700/60">
                     <SlidersHorizontal size={18} className="text-[#f05a24]" />
-                    <h6 className="font-extrabold text-gray-900 text-sm m-0">System Modules</h6>
+                    <h6 className="font-extrabold text-gray-900 dark:text-white text-sm m-0">System Modules</h6>
                   </div>
 
                   <div className="space-y-2">
-                    {/* Thermal Printing Switch */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                    {/* Thermal Printing */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-[#2a2a35] transition-colors">
                       <div>
-                        <label className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 cursor-pointer" htmlFor="serialPrinterCheck">
-                          <Printer size={15} className="text-gray-700" />
+                        <label className="text-xs font-extrabold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5 cursor-pointer" htmlFor="serialPrinterCheck">
+                          <Printer size={15} className="text-gray-700 dark:text-zinc-300" />
                           <span>Thermal Printing</span>
                         </label>
-                        <div className="text-[10px] text-gray-500 font-medium">Direct thermal receipt print</div>
+                        <div className="text-[10px] text-gray-500 dark:text-zinc-500 font-medium">Direct thermal receipt print</div>
                       </div>
                       <input
                         type="checkbox"
                         id="serialPrinterCheck"
-                        className="w-4 h-4 text-[#f05a24] accent-[#f05a24] rounded-md cursor-pointer"
+                        className="w-4 h-4 accent-[#f05a24] rounded-md cursor-pointer"
                         checked={posSettings.enableThermalPrinting ?? true}
                         onChange={(e) => setPosSettings(prev => ({ ...prev, enableThermalPrinting: e.target.checked }))}
                       />
                     </div>
 
-                    {/* Auto-Clean Tables Switch */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                    {/* Auto-Clean Tables */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-[#2a2a35] transition-colors">
                       <div>
-                        <label className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 cursor-pointer" htmlFor="autoCleanCheck">
+                        <label className="text-xs font-extrabold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5 cursor-pointer" htmlFor="autoCleanCheck">
                           <Sparkles size={15} className="text-amber-500" />
                           <span>Auto-Clean Tables</span>
                         </label>
-                        <div className="text-[10px] text-gray-500 font-medium">Clean tables when dirty</div>
+                        <div className="text-[10px] text-gray-500 dark:text-zinc-500 font-medium">Clean tables when dirty</div>
                       </div>
                       <input
                         type="checkbox"
                         id="autoCleanCheck"
-                        className="w-4 h-4 text-[#f05a24] accent-[#f05a24] rounded-md cursor-pointer"
+                        className="w-4 h-4 accent-[#f05a24] rounded-md cursor-pointer"
                         checked={posSettings.autoCleanTables ?? false}
                         onChange={(e) => setPosSettings(prev => ({ ...prev, autoCleanTables: e.target.checked }))}
                       />
                     </div>
 
-                    {/* Enable Tables Switch */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                    {/* Enable Tables */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-[#2a2a35] transition-colors">
                       <div>
-                        <label className="text-xs font-extrabold text-gray-900 flex items-center gap-1.5 cursor-pointer" htmlFor="enableTablesCheck">
+                        <label className="text-xs font-extrabold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5 cursor-pointer" htmlFor="enableTablesCheck">
                           <LayoutGrid size={15} className="text-[#f05a24]" />
-                          <span>Seating & Tables</span>
+                          <span>Seating &amp; Tables</span>
                         </label>
-                        <div className="text-[10px] text-gray-500 font-medium">Enable table management</div>
+                        <div className="text-[10px] text-gray-500 dark:text-zinc-500 font-medium">Enable table management</div>
                       </div>
                       <input
                         type="checkbox"
                         id="enableTablesCheck"
-                        className="w-4 h-4 text-[#f05a24] accent-[#f05a24] rounded-md cursor-pointer"
+                        className="w-4 h-4 accent-[#f05a24] rounded-md cursor-pointer"
                         checked={posSettings.isEnableTables ?? false}
                         onChange={(e) => setPosSettings(prev => ({ ...prev, isEnableTables: e.target.checked }))}
                       />
@@ -453,12 +427,12 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right-Aligned Tischly Sunset Orange Save Button */}
+            {/* Save Button */}
             <div className="mt-5 pt-2 flex justify-end items-center">
               <button
                 type="submit"
                 disabled={saving}
-                className="bg-[#f05a24] hover:bg-[#d94815] active:scale-95 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-md shadow-[#f05a24]/20 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
+                className="bg-[#f05a24] hover:bg-[#d94815] active:scale-95 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-md shadow-[#f05a24]/25 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -475,8 +449,25 @@ const SettingsPage: React.FC = () => {
             </div>
           </form>
         )}
-      </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile View (< md) */}
+      <div className="block md:hidden min-h-screen bg-[#faf9f7] dark:bg-[#16161d]">
+        <MobileHeader title="Settings" />
+        {renderSettingsBody(true)}
+        <MobileFooter activeTab="more" />
+      </div>
+
+      {/* Desktop View (>= md) */}
+      <div className="hidden md:block">
+        <DesktopLayout activePage="Settings">
+          {renderSettingsBody(false)}
+        </DesktopLayout>
+      </div>
+    </>
   );
 };
 

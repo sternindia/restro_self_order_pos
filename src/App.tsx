@@ -2,6 +2,8 @@ import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import ThemeSelectionModal from './components/ThemeSelectionModal';
 
 // Lazy loading page routes for Code-Splitting and fast initial page load
 const MenuPage = lazy(() => import('./pages/MenuPage'));
@@ -16,6 +18,11 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ManageMenuPage = lazy(() => import('./pages/ManageMenuPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const StockPage = lazy(() => import('./pages/StockPage'));
+const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const OrderDetailPage = lazy(() => import('./pages/OrderDetailPage'));
+const ContactUsPage = lazy(() => import('./pages/ContactUsPage'));
+const LiveOrderPage = lazy(() => import('./pages/LiveOrderPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -44,7 +51,9 @@ const MenuRouteWrapper: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   return <MenuPage onLogout={onLogout} />;
 };
 
-function App() {
+function AppInner() {
+  const { setTheme } = useTheme();
+
   const [user, setUser] = useState<any>(() => {
     const savedUser = localStorage.getItem('emenu_user');
     if (savedUser) return JSON.parse(savedUser);
@@ -54,6 +63,8 @@ function App() {
     localStorage.setItem('emenu_user', JSON.stringify(defaultUser));
     return defaultUser;
   });
+
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   React.useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -79,6 +90,18 @@ function App() {
     const staffUser = { ...userData, isGuest: false };
     localStorage.setItem('emenu_user', JSON.stringify(staffUser));
     setUser(staffUser);
+    
+    // Show theme picker only on first-ever login
+    const alreadyPicked = localStorage.getItem('emenu_theme_selected');
+    if (!alreadyPicked) {
+      setShowThemePicker(true);
+    }
+  };
+
+  const handleThemeSelect = (theme: 'light' | 'dark') => {
+    setTheme(theme);
+    localStorage.setItem('emenu_theme_selected', '1');
+    setShowThemePicker(false);
   };
 
   const handleLogout = () => {
@@ -111,61 +134,61 @@ function App() {
                     }
                   } catch {}
                   
-                  const rAlias = (user?.role_alias || user?.role || '').toLowerCase();
-                  if (rAlias !== 'waiter' || !enableTables) {
-                    return <Navigate to="/" replace />;
-                  }
-                  return <Navigate to="/tables" replace />;
+                  return enableTables ? <Navigate to="/tables" replace /> : <Navigate to="/" replace />;
                 })()
               ) : (
                 <Login onLogin={handleLogin} />
               )
             } 
           />
-          <Route 
-            path="/" 
-            element={<MenuRouteWrapper onLogout={handleLogout} />} 
-          />
-          <Route 
-            path="/menu" 
-            element={<MenuRouteWrapper onLogout={handleLogout} />} 
-          />
-          <Route 
-            path="/cart" 
-            element={<CartPage />} 
-          />
-          <Route 
-            path="/order-info" 
-            element={<OrderInfoPage />} 
-          />
-          <Route 
-            path="/order-number" 
-            element={<OrderNumberPage />} 
-          />
-          <Route 
-            path="/track-order" 
-            element={<TrackOrderPage />} 
-          />
-          <Route 
-            path="/tables" 
-            element={user && !user.isGuest ? <TablesPage /> : <Navigate to="/" replace />} 
-          />
-          <Route 
-            path="/history" 
-            element={user && !user.isGuest ? <HistoryPage /> : <Navigate to="/" replace />} 
-          />
+          
+          <Route path="/" element={<MenuRouteWrapper onLogout={handleLogout} />} />
+          <Route path="/menu" element={<MenuRouteWrapper onLogout={handleLogout} />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/order-info" element={<OrderInfoPage />} />
+          <Route path="/order-number" element={<OrderNumberPage />} />
+          <Route path="/track" element={<TrackOrderPage />} />
+          <Route path="/track-order" element={<Navigate to="/track" replace />} />
+          <Route path="/tables" element={<TablesPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/order-detail" element={<OrderDetailPage />} />
+          <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
+          <Route path="/live-order" element={<LiveOrderPage />} />
+          
+          {/* Admin Only Routes */}
           <Route 
             path="/settings" 
-            element={user && !user.isGuest ? <SettingsPage /> : <Navigate to="/" replace />} 
+            element={
+              user && (
+                (user?.role_alias || user?.role || '').toLowerCase() === 'admin' || 
+                (user?.role_alias || user?.role || '').toLowerCase() === 'super_admin'
+              ) ? (
+                <SettingsPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
           />
           <Route 
             path="/manage-menu" 
-            element={user && !user.isGuest ? <ManageMenuPage /> : <Navigate to="/" replace />} 
+            element={
+              user && (
+                (user?.role_alias || user?.role || '').toLowerCase() === 'admin' || 
+                (user?.role_alias || user?.role || '').toLowerCase() === 'super_admin'
+              ) ? (
+                <ManageMenuPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
           />
           <Route 
             path="/dashboard" 
             element={
-              user && !user.isGuest && (
+              user && (
                 (user?.role_alias || user?.role || '').toLowerCase() === 'admin' || 
                 (user?.role_alias || user?.role || '').toLowerCase() === 'super_admin'
               ) ? (
@@ -178,7 +201,7 @@ function App() {
           <Route 
             path="/stock" 
             element={
-              user && !user.isGuest && (
+              user && (
                 (user?.role_alias || user?.role || '').toLowerCase() === 'admin' || 
                 (user?.role_alias || user?.role || '').toLowerCase() === 'super_admin'
               ) ? (
@@ -190,7 +213,18 @@ function App() {
           />
         </Routes>
       </Suspense>
+
+      {/* Theme Picker Modal on First Login */}
+      {showThemePicker && <ThemeSelectionModal onSelect={handleThemeSelect} />}
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   );
 }
 

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ShoppingBag, ArrowLeft, Info, FileText, Pencil } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Pencil, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, getRestaurantId } from '../config';
 import BillSummaryModal from '../components/BillSummaryModal';
 import { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
-import { MobileFooter } from '../components/mobile';
 import MobileCartPage from '../mobileview/MobileCartPage';
+import DesktopLayout from '../components/DesktopLayout';
+import { useTheme } from '../context/ThemeContext';
 
 const CartPage: React.FC = () => {
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
@@ -362,6 +364,7 @@ const CartPage: React.FC = () => {
   };
 
   const [isServiceChargeIncluded] = useState(true);
+  const [discountInput, setDiscountInput] = useState("");
   const cartItems = Object.values(cart);
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const serviceChargeRate = posSettings.serviceCharge || 0.0;
@@ -370,7 +373,20 @@ const CartPage: React.FC = () => {
   const taxAmt = (subtotal * taxRate) / 100;
   const cgstAmt = taxAmt / 2;
   const sgstAmt = taxAmt / 2;
-  const grandTotal = subtotal + serviceChargeAmt + taxAmt;
+  const discountAmt = Math.min(Math.max(parseFloat(discountInput) || 0, 0), subtotal + serviceChargeAmt + taxAmt);
+  const grandTotal = subtotal + serviceChargeAmt + taxAmt - discountAmt;
+
+  const [orderType, setOrderType] = useState<"Dine In" | "Takeaway" | "Delivery">("Dine In");
+
+  const getFoodItemImage = (item: any): string => {
+    const fallback = isDark ? "/images/dark_default_image.png" : "/images/default_image.png";
+    const img = item.image || item.image_url;
+    if (!img || typeof img !== "string" || img.trim() === "" || img.includes("default_image.png")) {
+      return fallback;
+    }
+    return img;
+  };
+
 
   return (
     <>
@@ -403,305 +419,306 @@ const CartPage: React.FC = () => {
           existingOrderId={existingOrderId}
           updating={updating}
           onCancelOrder={() => setShowCancelModal(true)}
+          isGuestCustomer={isGuestCustomer}
         />
       </div>
 
       {/* DESKTOP VIEW (>= md) */}
-      <div className="hidden md:block cart-body min-h-screen bg-[#F8FAFC] pb-24 md:pb-8">
-      <div className="header-cart sticky top-0 z-50 flex h-11 md:h-[10vh] w-full items-center justify-between bg-white px-3 md:px-[3%] py-1 md:py-[1.5%] shadow-xs border-b border-slate-200">
-        <div className="backpluscart flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="back-arrow text-gray-700 hover:text-black cursor-pointer p-1 rounded-full hover:bg-gray-100 transition-all">
-            <ArrowLeft size={22} />
-          </button>
-          <div>
-            <h2 className="text-lg md:text-[20px] font-bold text-gray-900">Cart</h2>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {cartItems.length > 0 && (
-            <button 
-              onClick={() => setIsClearModalOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
-              title="Clear All Items"
-            >
-              <Trash2 size={13} className="text-rose-500 flex-shrink-0" />
-              <span>Clear All</span>
-            </button>
-          )}
-          <div className="relative flex items-center justify-center">
-            <button className="cart-icon text-gray-700 p-1 cursor-default">
-              <ShoppingBag size={22} />
-            </button>
-            {cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#f05a24] text-white text-[10px] font-extrabold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-xs">
-                {cartItems.length}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="cart-container mx-2 my-3.5 md:m-[3%_2.5%] md:w-[95%] rounded-2xl bg-white p-3.5 md:p-5 shadow-xs border border-[#F0E6DF]">
-        {cartItems.length === 0 ? (
-          <div className="text-center py-12 md:py-16 text-gray-500 space-y-3 flex flex-col items-center animate-slide-up">
-            <div className="w-16 h-16 bg-[#FFF0E6] border border-[#f05a24]/20 rounded-full flex items-center justify-center shadow-2xs animate-pop-in animate-pulse-glow">
-              <ShoppingBag size={28} className="text-[#f05a24]" />
-            </div>
-            <div>
-              <p className="text-base font-extrabold text-gray-900">Your cart is empty</p>
-              <p className="text-xs text-gray-400 mt-1 max-w-[240px] mx-auto">Explore our menu and add your favorite dishes to get started.</p>
-            </div>
-            <Link 
-              to="/" 
-              className="inline-flex items-center gap-2 bg-[#f05a24] hover:bg-[#d94815] active:scale-95 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all no-underline mt-1"
-            >
-              <span>Explore Menu</span>
-              <span>→</span>
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200/70">
-            {cartItems.map((item) => (
-              <div key={item.id} className="cart-item py-3.5 md:py-[15px] first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div className="item-info flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="iconplusitem flex items-start gap-2.5 flex-1 min-w-0">
-                      <div className="flex-shrink-0 mt-0.5">
-                        <img 
-                          src={item.isVeg ? "/images/veg.png" : "/images/nonVeg.png"} 
-                          alt={item.isVeg ? "Veg" : "Non-Veg"} 
-                          className="h-4 w-4 md:h-[20px] md:w-[20px] object-contain"
-                        />
-                      </div>
-                      <div className="nameplusprice flex-1 min-w-0">
-                        <div className="nameCart text-sm md:text-[16px] font-semibold md:font-bold text-gray-900 leading-snug break-words md:max-w-[40vw]">
-                          {item.name}
-                        </div>
-                        <div className="price text-xs md:text-[15px] font-bold text-[#f05a24] mt-0.5">
-                          {item.price.toFixed(2)} Rs
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Mobile Stepper */}
-                    <div className="quantity flex md:hidden items-center rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/50 px-2 py-1 shadow-2xs">
-                      <button 
-                        onClick={() => removeItem(item.id)}
-                        className="delete p-1 text-red-500 hover:text-red-700 cursor-pointer active:scale-95 transition-transform"
-                        title="Remove item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => updateQty(item.id, -1)}
-                        className="px-1 text-sm font-bold text-gray-600 hover:text-black cursor-pointer active:scale-95"
-                      >
-                        −
-                      </button>
-                      <span className="text-xs font-bold px-1.5 min-w-[16px] text-center text-gray-900">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQty(item.id, 1)}
-                        className="add px-1 text-sm font-bold text-[#f05a24] hover:text-[#d94815] cursor-pointer active:scale-95"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {item.notes && (
-                    <div className="text-xs text-amber-800 bg-amber-50/80 border border-amber-200/60 rounded-md px-2.5 py-1 mt-2 flex items-start gap-1">
-                      <span className="font-semibold flex-shrink-0">Instruction:</span>
-                      <span className="italic break-words">"{item.notes}"</span>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={() => openModal(item.id)}
-                    className="write-instruction mt-1.5 cursor-pointer text-xs font-semibold text-gray-600 hover:text-[#f05a24] flex items-center gap-1.5 transition-colors group"
-                  >
-                    <Pencil size={13} className="text-gray-500 group-hover:text-[#f05a24] transition-colors flex-shrink-0" />
-                    <span className="underline decoration-gray-300 group-hover:decoration-[#f05a24] underline-offset-2">{item.notes ? 'Edit instruction' : 'Write instruction on item.'}</span>
-                  </button>
-                </div>
-
-                {/* Desktop Stepper */}
-                <div className="quantity hidden md:flex items-center rounded-[10px] border border-[#f05a24]/40 bg-[#FFF0E6]/30 p-[10px_5px]">
-                  <button 
-                    onClick={() => removeItem(item.id)}
-                    className="delete mx-[10px] text-[15px] text-red-600 cursor-pointer"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                  <button 
-                    onClick={() => updateQty(item.id, -1)}
-                    className="mx-[5px] text-[16px] text-gray-500 font-bold cursor-pointer"
-                  >
-                    −
-                  </button>
-                  <span className="text-[16px] font-bold px-[5px]">{item.quantity}</span>
-                  <button 
-                    onClick={() => updateQty(item.id, 1)}
-                    className="add mx-[10px] text-[20px] font-bold text-[#f05a24] cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {cartItems.length > 0 && (
-        <>
-          {/* Mobile Bottom Footer */}
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 py-2.5 px-3 shadow-[0_-4px_16px_rgba(0,0,0,0.1)] flex md:hidden items-center justify-between gap-2">
-            <div 
-              onClick={() => setIsBillSheetOpen(true)}
-              className="cursor-pointer group py-0.5 min-w-0 flex-shrink-0"
-              title="Click to view detailed bill breakdown"
-            >
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] font-extrabold text-slate-900 uppercase tracking-wider group-hover:text-[#f05a24] transition-colors">TOTAL</span>
-                <Info size={11} className="text-[#f05a24] group-hover:scale-110 transition-transform" />
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm sm:text-base font-black text-[#f05a24] whitespace-nowrap">
-                  ₹{grandTotal.toFixed(2)}
-                </span>
-                <span className="text-[9px] font-medium text-gray-400 whitespace-nowrap hidden xs:inline">
-                  (incl. GST)
-                </span>
-              </div>
-            </div>
-
-            {isSelfPosBilling ? (
-              <button 
-                onClick={handleSelfPosPlaceOrder}
-                disabled={submittingBilling}
-                className="bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-md flex items-center justify-center gap-1 text-xs sm:text-sm whitespace-nowrap transition-all border border-emerald-700/20 cursor-pointer disabled:opacity-50"
-              >
-                {submittingBilling ? (
-                  <span>Generating Bill...</span>
-                ) : (
-                  <>
-                    <span>⚡ Confirm & Print</span>
-                    <span>→</span>
-                  </>
-                )}
-              </button>
-            ) : !isGuestCustomer && existingOrderId ? (
-              <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-                <button
-                  onClick={() => setShowCancelModal(true)}
-                  className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold px-3 py-2 rounded-xl shadow-xs text-xs whitespace-nowrap transition-all cursor-pointer border border-rose-700/20"
-                >
-                  Cancel
-                </button>
+      <div className="hidden md:block">
+        <DesktopLayout activePage="Cart">
+          <div className="px-6 py-4 w-full space-y-4">
+            
+            {/* Header with Order Type tabs & Clear All */}
+            <div className="flex items-center justify-between bg-white dark:bg-[#1a1b24] px-5 py-3 rounded-2xl border border-[#eee9e4] dark:border-[#262834] shadow-xs">
+              <div className="flex items-center gap-4">
                 <button 
-                  onClick={handleDirectUpdateOrderInCart}
-                  disabled={updating}
-                  className="bg-[#f05a24] hover:bg-[#d94815] active:scale-98 text-white font-extrabold px-3.5 py-2 rounded-xl shadow-xs flex items-center justify-center gap-1 text-xs whitespace-nowrap transition-all border border-[#f05a24]/20 cursor-pointer disabled:opacity-50"
+                  onClick={() => navigate(-1)} 
+                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#252836] text-slate-700 dark:text-[#cbd5e1] hover:bg-slate-200 dark:hover:bg-[#2d3142] transition cursor-pointer"
+                  title="Go Back"
                 >
-                  {updating ? (
-                    <span>Updating...</span>
-                  ) : (
-                    <>
-                      <span>Update Order</span>
-                      <span className="text-xs">→</span>
-                    </>
-                  )}
+                  <ArrowLeft size={18} />
                 </button>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Your Order Cart</span>
+                    {cartItems.length > 0 && (
+                      <span className="text-[11px] bg-[#ff5520]/15 text-[#ff5520] font-semibold px-2.5 py-0.5 rounded-full">
+                        {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+                      </span>
+                    )}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Order Type Tabs */}
+              <div className="flex items-center gap-1 bg-[#eeecea] dark:bg-[#121318] p-1 rounded-xl border border-transparent dark:border-[#262834]">
+                {(["Dine In", "Takeaway", "Delivery"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      setOrderType(type);
+                      try {
+                        sessionStorage.setItem("emenu_order_type", type.toUpperCase());
+                      } catch { }
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      orderType === type
+                        ? "bg-[#ff5520] text-white shadow-xs"
+                        : "text-[#556070] dark:text-[#94a3b8] hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+
+              {cartItems.length > 0 && (
+                <button 
+                  onClick={() => setIsClearModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
+                >
+                  <Trash2 size={14} />
+                  <span>Clear All</span>
+                </button>
+              )}
+            </div>
+
+            {cartItems.length === 0 ? (
+              <div className="bg-white dark:bg-[#1a1b24] rounded-2xl border border-[#eee9e4] dark:border-[#262834] p-16 text-center space-y-4 flex flex-col items-center shadow-xs">
+                <div className="w-20 h-20 bg-[#fff1e9] dark:bg-[#ff5520]/15 border border-[#ff5520]/20 rounded-full flex items-center justify-center shadow-2xs">
+                  <ShoppingBag size={36} className="text-[#ff5520]" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Your cart is empty</h3>
+                  <p className="text-xs text-slate-500 dark:text-[#94a3b8] mt-1 max-w-sm mx-auto">Add some delicious dishes from our menu to get started with your order.</p>
+                </div>
+                <Link 
+                  to="/" 
+                  className="inline-flex items-center gap-2 bg-[#ff5520] hover:bg-[#e04515] active:scale-95 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-md transition-all no-underline mt-2"
+                >
+                  <span>Explore Menu</span>
+                  <span>→</span>
+                </Link>
               </div>
             ) : (
-              <Link 
-                to="/order-info" 
-                className="bg-[#f05a24] hover:bg-[#d94815] active:scale-98 text-white font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap transition-all no-underline"
-              >
-                <span>Confirm Order</span>
-                <span>→</span>
-              </Link>
-            )}
-          </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+                
+                {/* LEFT COLUMN (2 Cols): Items List */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="bg-white dark:bg-[#1a1b24] rounded-2xl border border-[#eee9e4] dark:border-[#262834] p-5 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#262834]">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Selected Items</h3>
+                      <Link 
+                        to="/" 
+                        className="text-xs font-bold text-[#ff5520] hover:underline flex items-center gap-1 no-underline"
+                      >
+                        <Plus size={14} />
+                        <span>Add More Items</span>
+                      </Link>
+                    </div>
 
-          {/* Desktop Bottom Footer */}
-          {isSelfPosBilling ? (
-            <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-emerald-600 p-[15px] shadow-md">
-              <div 
-                onClick={() => setIsBillSheetOpen(true)}
-                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
-                title="Click to view detailed Bill Summary"
-              >
-                <span>Total - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
-                  <FileText size={13} />
-                  <span>Bill Summary</span>
-                </span>
+                    <div className="divide-y divide-slate-100 dark:divide-[#262834]">
+                      {cartItems.map((item) => (
+                        <div key={item.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                          {/* Image & Info */}
+                          <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                            <img 
+                              src={getFoodItemImage(item)} 
+                              alt={item.name}
+                              className="w-13 h-13 rounded-xl object-cover border border-slate-100 dark:border-[#2b2e3c] shrink-0 bg-slate-50 dark:bg-[#222430]"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = isDark ? "/images/dark_default_image.png" : "/images/default_image.png";
+                              }}
+                            />
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <img 
+                                  src={item.isVeg ? "/images/veg.png" : "/images/nonVeg.png"} 
+                                  alt={item.isVeg ? "Veg" : "Non-Veg"} 
+                                  className="h-4 w-4 object-contain shrink-0"
+                                />
+                                <h4 className="text-sm font-semibold text-slate-900 dark:text-[#f1f5f9] truncate">
+                                  {item.name}
+                                </h4>
+                              </div>
+
+                              <div className="text-xs text-slate-500 dark:text-[#94a3b8] font-normal">
+                                ₹{parseFloat(item.price || 0).toFixed(2)} each
+                              </div>
+
+                              {item.notes && (
+                                <div className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-lg px-2.5 py-1 mt-1 flex items-start gap-1">
+                                  <span className="font-semibold shrink-0">Note:</span>
+                                  <span className="italic break-words">"{item.notes}"</span>
+                                </div>
+                              )}
+
+                              <button 
+                                onClick={() => openModal(item.id)}
+                                className="mt-1 cursor-pointer text-[11px] font-medium text-slate-500 dark:text-[#94a3b8] hover:text-[#ff5520] dark:hover:text-[#ff5520] flex items-center gap-1 transition-colors"
+                              >
+                                <Pencil size={12} />
+                                <span className="underline underline-offset-2">{item.notes ? 'Edit instruction' : '+ Special instruction'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Quantity Stepper & Subtotal */}
+                          <div className="flex items-center gap-6 shrink-0">
+                            {/* Stepper */}
+                            <div className="flex items-center rounded-xl border border-slate-200 dark:border-[#323646] bg-slate-50 dark:bg-[#222531] p-1">
+                              <button 
+                                onClick={() => updateQty(item.id, -1)}
+                                className="w-7 h-7 flex items-center justify-center text-sm font-bold text-slate-700 dark:text-[#cbd5e1] hover:bg-slate-200 dark:hover:bg-[#2e3242] rounded-lg cursor-pointer transition"
+                              >
+                                −
+                              </button>
+                              <span className="text-xs font-bold px-3 text-slate-900 dark:text-white min-w-[24px] text-center">
+                                {item.quantity}
+                              </span>
+                              <button 
+                                onClick={() => updateQty(item.id, 1)}
+                                className="w-7 h-7 flex items-center justify-center text-sm font-bold text-[#ff5520] hover:bg-[#ff5520]/10 rounded-lg cursor-pointer transition"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* Item Subtotal */}
+                            <div className="text-right min-w-[80px]">
+                              <div className="text-[11px] text-slate-400 dark:text-[#94a3b8] font-medium">Total</div>
+                              <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                ₹{(parseFloat(item.price || 0) * item.quantity).toFixed(2)}
+                              </div>
+                            </div>
+
+                            {/* Remove button */}
+                            <button 
+                              onClick={() => removeItem(item.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                              title="Remove item"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN (1 Col): Order Summary Card */}
+                <div className="lg:col-span-1 bg-white dark:bg-[#1a1b24] rounded-2xl border border-[#eee9e4] dark:border-[#262834] p-5 shadow-xs space-y-3.5 sticky top-24">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#262834]">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Bill Summary</h3>
+                    <span className="text-xs font-semibold px-2.5 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-full border border-emerald-200/60 dark:border-emerald-900/40">
+                      {orderType}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-[#94a3b8] font-medium">Item Subtotal</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">₹{subtotal.toFixed(2)}</span>
+                    </div>
+
+                    {serviceChargeAmt > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600 dark:text-[#94a3b8] font-medium">Service Charge ({serviceChargeRate}%)</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">₹{serviceChargeAmt.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-[#94a3b8] font-medium">CGST ({(taxRate / 2).toFixed(1)}%)</span>
+                      <span className="font-semibold text-slate-900 dark:text-zinc-100">+₹{cgstAmt.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-[#94a3b8] font-medium">SGST ({(taxRate / 2).toFixed(1)}%)</span>
+                      <span className="font-semibold text-slate-900 dark:text-zinc-100">+₹{sgstAmt.toFixed(2)}</span>
+                    </div>
+
+                    {/* Discount Row */}
+                    <div className="flex justify-between items-center gap-2 pt-1">
+                      <label className="text-slate-600 dark:text-[#94a3b8] font-medium shrink-0">Discount (₹)</label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500 dark:text-[#64748b] text-[11px]">-</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={discountInput}
+                          onChange={(e) => setDiscountInput(e.target.value)}
+                          placeholder="0"
+                          className="w-20 text-right text-xs font-semibold px-2 py-1 rounded-md border border-slate-300 dark:border-[#333748] bg-white dark:bg-[#121318] text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 placeholder:text-slate-400"
+                        />
+                      </div>
+                    </div>
+                    {discountAmt > 0 && (
+                      <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span>Discount Applied</span>
+                        <span>-₹{discountAmt.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    <div className="pt-3 border-t border-slate-200 dark:border-[#2f3342] flex justify-between items-baseline">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">To Pay (Grand Total)</span>
+                      <span className="text-lg font-black text-[#ff5520]">₹{grandTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Primary Action Button directly inside the Summary Card */}
+                  <div className="pt-2">
+                    {isSelfPosBilling ? (
+                      <button 
+                        onClick={handleSelfPosPlaceOrder}
+                        disabled={submittingBilling}
+                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold rounded-xl shadow-md text-sm transition-all cursor-pointer border border-emerald-700/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {submittingBilling ? (
+                          <span>Generating Bill...</span>
+                        ) : (
+                          <>
+                            <span>⚡ Confirm & Print Bill</span>
+                            <span>→</span>
+                          </>
+                        )}
+                      </button>
+                    ) : !isGuestCustomer && existingOrderId ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowCancelModal(true)}
+                          className="py-3 px-4 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={handleDirectUpdateOrderInCart}
+                          disabled={updating}
+                          className="flex-1 py-3 bg-[#ff5520] hover:bg-[#e04515] active:scale-98 text-white font-extrabold rounded-xl shadow-md text-xs transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        >
+                          {updating ? 'Updating...' : `Update Order #${existingOrderId}`}
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => navigate('/order-info')}
+                        className="w-full py-3.5 bg-[#ff5520] hover:bg-[#e04515] active:scale-98 text-white font-extrabold rounded-xl shadow-md text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Confirm Order</span>
+                        <span>→</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
               </div>
-              <button 
-                onClick={handleSelfPosPlaceOrder}
-                disabled={submittingBilling}
-                className="bg-white text-emerald-800 hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all cursor-pointer shadow-md border border-white/40 disabled:opacity-50"
-              >
-                {submittingBilling ? 'Generating Bill...' : '⚡ Confirm & Print →'}
-              </button>
-            </div>
-          ) : !isGuestCustomer && existingOrderId ? (
-            <div className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#f05a24] p-[15px] shadow-md">
-              <div 
-                onClick={() => setIsBillSheetOpen(true)}
-                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
-                title="Click to view detailed Bill Summary"
-              >
-                <span>Update Order - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
-                  <FileText size={13} />
-                  <span>Bill Summary ({taxRate}% GST)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setShowCancelModal(true)}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleDirectUpdateOrderInCart}
-                  disabled={updating}
-                  className="bg-white text-[#f05a24] hover:bg-gray-100 font-bold px-4 py-1.5 rounded-lg text-xs transition-all cursor-pointer border border-white/40 disabled:opacity-50"
-                >
-                  {updating ? 'Updating...' : 'Update Order →'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div 
-              className="cart-footer hidden md:flex fixed bottom-[2.5vh] ml-[2.5vw] h-[6vh] w-[95vw] items-center justify-between rounded-[10px] bg-[#f05a24] p-[15px] shadow-md"
-            >
-              <div 
-                onClick={() => setIsBillSheetOpen(true)}
-                className="cart-button text-[16px] text-white font-bold flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
-                title="Click to view detailed Bill Summary"
-              >
-                <span>Confirm Order - {grandTotal.toFixed(2)} Rs</span>
-                <span className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
-                  <FileText size={13} />
-                  <span>Bill Summary ({taxRate}% GST)</span>
-                </span>
-              </div>
-              <Link 
-                to="/order-info" 
-                className="bg-white text-[#f05a24] hover:bg-gray-100 font-bold px-5 py-2 rounded-lg text-sm transition-all no-underline shadow-md border border-white/40 flex items-center gap-1.5"
-              >
-                <span>Confirm Order</span>
-                <span className="text-lg font-bold">→</span>
-              </Link>
-            </div>
-          )}
-        </>
-      )}
+            )}
+
+          </div>
+        </DesktopLayout>
+      </div>
 
       {/* Unified Bill Summary Modal Component */}
       <BillSummaryModal 
@@ -718,30 +735,30 @@ const CartPage: React.FC = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="modalcart fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="modal-content-cart w-full max-w-[400px] rounded-[8px] bg-white p-[20px] text-center shadow-lg">
+        <div className="modalcart fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="modal-content-cart w-full max-w-[400px] rounded-2xl bg-white dark:bg-[#1a1b24] border border-slate-100 dark:border-[#262834] p-5 text-center shadow-2xl space-y-3">
             <span 
-              className="close float-right cursor-pointer text-[24px]" 
+              className="close float-right cursor-pointer text-2xl text-slate-400 hover:text-slate-700 dark:hover:text-white transition" 
               onClick={() => setIsModalOpen(false)}
             >
               &times;
             </span>
-            <h3 className="text-[16px] font-bold">{cart[selectedItemId]?.name}</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{cart[selectedItemId]?.name}</h3>
             <textarea 
               id="notes-textarea"
               defaultValue={cart[selectedItemId]?.notes || ''}
-              className="modalinput mt-[2vh] h-[20vh] w-full rounded-[5px] border border-[#ccc] p-[8px] outline-none focus:border-[#f05a24]" 
-              placeholder="Enter your instruction"
+              className="modalinput mt-2 h-[120px] w-full rounded-xl border border-slate-200 dark:border-[#323646] bg-slate-50 dark:bg-[#121318] p-3 text-xs text-slate-900 dark:text-white outline-none focus:border-[#ff5520]" 
+              placeholder="Enter special cooking instruction..."
             ></textarea>
             <button 
-              className="submit-btn mt-[2vh] w-full rounded-[5px] bg-[#f05a24] hover:bg-[#d94815] p-[8px_12px] text-white transition-colors"
+              className="submit-btn w-full rounded-xl bg-[#ff5520] hover:bg-[#e04515] py-2.5 text-xs font-bold text-white transition-colors cursor-pointer shadow-md"
               onClick={() => {
                 const el = document.getElementById('notes-textarea') as HTMLTextAreaElement;
                 setItemNotes(selectedItemId, el?.value || '');
                 setIsModalOpen(false);
               }}
             >
-              Submit
+              Save Instruction
             </button>
           </div>
         </div>
@@ -749,19 +766,19 @@ const CartPage: React.FC = () => {
 
       {/* Modal for Clear Cart Confirmation */}
       {isClearModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={() => setIsClearModalOpen(false)}>
-          <div className="w-full max-w-[340px] rounded-2xl bg-white p-5 text-center shadow-2xl space-y-4 animate-pop-in" onClick={(e) => e.stopPropagation()}>
-            <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-2xs">
-              <Trash2 size={22} className="text-rose-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in" onClick={() => setIsClearModalOpen(false)}>
+          <div className="w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#1a1b24] border border-slate-100 dark:border-[#262834] p-5 text-center shadow-2xl space-y-4 animate-pop-in" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mx-auto shadow-2xs">
+              <Trash2 size={22} />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-gray-900">Clear all cart items?</h3>
-              <p className="text-xs text-gray-500 mt-1">This will remove all selected dishes from your cart.</p>
+              <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Clear all cart items?</h3>
+              <p className="text-xs text-gray-500 dark:text-[#94a3b8] mt-1">This will remove all selected dishes from your cart.</p>
             </div>
             <div className="flex items-center gap-2 pt-2">
               <button 
                 onClick={() => setIsClearModalOpen(false)}
-                className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer transition-all"
+                className="flex-1 py-2 bg-gray-100 dark:bg-[#252836] hover:bg-gray-200 dark:hover:bg-[#2d3142] text-gray-700 dark:text-[#cbd5e1] rounded-xl text-xs font-bold cursor-pointer transition-all"
               >
                 Cancel
               </button>
@@ -779,13 +796,13 @@ const CartPage: React.FC = () => {
       {/* Custom Confirmation Modal for Cancel Order */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in" onClick={() => setShowCancelModal(false)}>
-          <div className="w-full max-w-[340px] rounded-2xl bg-white p-6 text-center shadow-2xl space-y-4 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
-            <div className="w-14 h-14 bg-rose-50 border border-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-xs">
-              <Trash2 size={26} className="text-rose-600" />
+          <div className="w-full max-w-[340px] rounded-2xl bg-white dark:bg-[#1a1b24] border border-slate-100 dark:border-[#262834] p-6 text-center shadow-2xl space-y-4 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mx-auto shadow-xs">
+              <Trash2 size={26} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-gray-900">Cancel Order #{existingOrderId}?</h3>
-              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              <h3 className="text-lg font-black text-gray-900 dark:text-white">Cancel Order #{existingOrderId}?</h3>
+              <p className="text-xs text-gray-500 dark:text-[#94a3b8] mt-1.5 leading-relaxed">
                 Are you sure you want to cancel this order? This action cannot be undone.
               </p>
             </div>
@@ -793,7 +810,7 @@ const CartPage: React.FC = () => {
               <button 
                 onClick={() => setShowCancelModal(false)}
                 disabled={cancelling}
-                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-50"
+                className="flex-1 py-2.5 bg-gray-100 dark:bg-[#252836] hover:bg-gray-200 dark:hover:bg-[#2d3142] text-gray-700 dark:text-[#cbd5e1] rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-50"
               >
                 No, Keep Order
               </button>
@@ -815,8 +832,6 @@ const CartPage: React.FC = () => {
           </div>
         </div>
       )}
-
-    </div>
     </>
   );
 };

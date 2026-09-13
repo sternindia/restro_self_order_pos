@@ -14,9 +14,14 @@ import {
   Package,
   Settings,
   LogOut,
+  Sun,
+  Moon,
+  PhoneCall,
+  ClipboardList,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
+import { useTheme } from "../../context/ThemeContext";
 
 export interface MobileHeaderProps {
   title?: string;
@@ -63,9 +68,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   const isGuestUser =
     !userObj || userObj?.isGuest || roleAlias === "guest_user" || roleAlias === "guest";
   const isStaffUser = !!userObj && !isGuestUser;
-  const isWaiter = roleAlias === "waiter";
+  const isWaiter = isStaffUser && roleAlias === "waiter";
   const isAdmin =
-    roleAlias === "admin" || roleAlias === "super_admin" || roleAlias === "owner";
+    isStaffUser &&
+    (roleAlias === "admin" || roleAlias === "super_admin" || roleAlias === "owner");
 
   // Check if tables are enabled
   const isEnableTables = (() => {
@@ -148,9 +154,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
     }
   };
 
+  const { theme, toggleTheme, isDark } = useTheme();
+
   return (
     <>
-      <header className="sticky top-0 z-30 w-full bg-white px-3 sm:px-4 py-2 border-b border-slate-100/80 backdrop-blur">
+      <header className="sticky top-0 z-30 w-full bg-[#faf9f7]/95 dark:bg-[#1a1a22]/95 px-3 sm:px-4 py-2 border-b border-slate-200/60 dark:border-zinc-800/80 backdrop-blur-md transition-colors">
         <div className="flex items-center justify-between gap-1.5 sm:gap-2">
           {/* LEFT SIDE */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
@@ -158,7 +166,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               <button
                 type="button"
                 onClick={onBack ? onBack : () => navigate(-1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 active:scale-95 transition cursor-pointer shrink-0"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 active:scale-95 transition cursor-pointer shrink-0"
                 aria-label="Go Back"
               >
                 <ArrowLeft size={20} />
@@ -179,7 +187,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               )}
 
               <div className="flex flex-col min-w-0">
-                <h1 className="whitespace-nowrap text-base sm:text-[23px] font-extrabold leading-snug sm:leading-[25px] tracking-tight text-[#111827] truncate">
+                <h1 className="whitespace-nowrap text-base sm:text-[23px] font-extrabold leading-snug sm:leading-[25px] tracking-tight text-[#111827] dark:text-white truncate">
                   {title ? (
                     title
                   ) : (
@@ -188,7 +196,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                     </>
                   )}
                 </h1>
-                <p className="text-[10.5px] sm:text-[12px] font-medium leading-tight text-[#64748b] truncate">
+                <p className="text-[10.5px] sm:text-[12px] font-medium leading-tight text-[#64748b] dark:text-zinc-400 truncate">
                   {subtitle || restaurantName}
                 </p>
               </div>
@@ -196,45 +204,67 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Theme Toggle (Dark / Light) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex h-9 w-9 sm:h-[42px] sm:w-[42px] items-center justify-center rounded-full text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 active:scale-95 cursor-pointer transition"
+              aria-label="Toggle dark mode"
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDark ? (
+                <Sun className="w-5 h-5 text-amber-400" strokeWidth={2.2} />
+              ) : (
+                <Moon className="w-5 h-5 text-slate-700" strokeWidth={2.2} />
+              )}
+            </button>
+
+            {/* Desktop Track Order Equivalent for Guest User */}
+            {isGuestUser && (
+              <button
+                type="button"
+                onClick={() => navigate("/track")}
+                className="flex items-center gap-1 h-8 sm:h-9 px-2.5 rounded-full text-[11px] font-medium text-[#ff5722] bg-[#ff5722]/10 hover:bg-[#ff5722]/20 border border-[#ff5722]/25 active:scale-95 cursor-pointer transition"
+                title="Track Order"
+              >
+                <Clock size={13} strokeWidth={2.5} />
+                <span>Track</span>
+              </button>
+            )}
+
             {/* Notification / Call Waiter */}
             {!hideNotification && (
               <button
                 type="button"
                 onClick={triggerOpenCallWaiter}
-                className="relative flex h-9 w-9 sm:h-[42px] sm:w-[42px] items-center justify-center rounded-full text-[#111827] active:scale-95 cursor-pointer hover:bg-slate-50 transition"
+                className="relative flex h-9 w-9 sm:h-[42px] sm:w-[42px] items-center justify-center rounded-full text-[#111827] dark:text-zinc-200 active:scale-95 cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
                 aria-label="Notifications"
-                title="Table Assistance / Notifications"
+                title={isGuestUser ? "Table Assistance / Call Waiter" : "Notifications"}
               >
                 <Bell className="w-6 h-6 sm:w-[27px] sm:h-[27px]" strokeWidth={2} />
-                <span className="absolute right-1 top-1 h-2 w-2 sm:h-[9px] sm:w-[9px] rounded-full border-[1.5px] sm:border-[2px] border-white bg-[#ff5722]" />
+                <span className="absolute right-1 top-1 h-2 w-2 sm:h-[9px] sm:w-[9px] rounded-full border-[1.5px] sm:border-[2px] border-white dark:border-zinc-900 bg-[#ff5722]" />
               </button>
             )}
 
-            {/* Profile Avatar */}
-            {!hideProfile && (
+            {/* Profile Avatar (Only for logged-in Staff/Admin) */}
+            {!hideProfile && isStaffUser && (
               <button
                 type="button"
-                onClick={() => {
-                  if (isAdmin) {
-                    navigate("/settings");
-                  } else if (isStaffUser) {
-                    triggerOpenDrawer();
-                  } else {
-                    navigate("/login");
-                  }
-                }}
-                className="flex h-9 w-9 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-[#f1f3f5] text-xs sm:text-[15px] font-semibold text-[#172033] active:scale-95 cursor-pointer hover:bg-slate-200 transition"
+                onClick={triggerOpenDrawer}
+                className="flex h-9 w-9 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-[#f1f3f5] dark:bg-zinc-800 text-xs sm:text-[15px] font-semibold text-[#172033] dark:text-white active:scale-95 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700 transition border border-transparent dark:border-zinc-700"
                 aria-label="Profile"
-                title={userObj?.username || (isAdmin ? "Admin" : isWaiter ? "Waiter" : "Staff Login")}
+                title={userObj?.name || userObj?.username || (isAdmin ? "Admin" : isWaiter ? "Waiter" : "Staff")}
               >
-                {userObj?.username
+                {userObj?.name
+                  ? userObj.name.slice(0, 2).toUpperCase()
+                  : userObj?.username
                   ? userObj.username.slice(0, 2).toUpperCase()
                   : isAdmin
                   ? "AD"
                   : isWaiter
                   ? "WA"
-                  : "AK"}
+                  : "ST"}
               </button>
             )}
           </div>
@@ -307,26 +337,26 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           onClick={() => setIsDrawerOpen(false)}
         >
           <div
-            className="w-full max-w-md bg-white rounded-t-[28px] p-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200 shadow-2xl space-y-4"
+            className="w-full max-w-md bg-white dark:bg-[#1f1f28] rounded-t-[28px] p-5 pb-24 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200 shadow-2xl space-y-2"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Handle bar & Header */}
-            <div className="space-y-3">
-              <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto" />
-              <div className="flex items-center justify-between pt-1">
+            <div className="space-y-2">
+              <div className="w-10 h-1 bg-slate-300 dark:bg-zinc-600 rounded-full mx-auto" />
+              <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     More Options
                   </h2>
                   {isStaffUser && (
-                    <span className="text-[11px] font-bold text-[#ff5722] bg-[#fff1eb] px-2 py-0.5 rounded-full border border-[#ff5722]/20 inline-block mt-0.5">
+                    <span className="text-[11px] font-bold text-[#ff5722] bg-[#fff1eb] dark:bg-[#ff5722]/15 px-2 py-0.5 rounded-full border border-[#ff5722]/20 inline-block mt-0.5">
                       {userObj?.role_name || (isAdmin ? "Admin" : isWaiter ? "Waiter" : "Staff")}
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => setIsDrawerOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  className="p-1 text-slate-400 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
                   aria-label="Close"
                 >
                   <X size={22} strokeWidth={2.2} />
@@ -334,162 +364,138 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               </div>
             </div>
 
-            {/* List of Options filtered by role */}
-            <div className="space-y-1 divide-y divide-slate-100">
+            {/* List of Options — mirrors desktop nav per role */}
+            <div className="divide-y divide-slate-100 dark:divide-zinc-700/50">
               {(isGuestUser
                 ? [
                     {
                       id: "track",
                       title: "Track Order",
-                      subtitle: "View your order live preparation status",
-                      icon: <Clock size={21} />,
-                      colorClass: "bg-blue-50 text-blue-600",
-                      path: "/track-order",
+                      icon: <Clock size={20} />,
+                      colorClass: "bg-blue-50 dark:bg-blue-500/15 text-blue-600",
+                      path: "/track",
                     },
                     {
                       id: "call_waiter",
                       title: "Call Waiter",
-                      subtitle: "Request cutlery, water or assistance",
-                      icon: <BellRing size={21} />,
-                      colorClass: "bg-amber-50 text-amber-600",
+                      icon: <BellRing size={20} />,
+                      colorClass: "bg-amber-50 dark:bg-amber-500/15 text-amber-600",
                       onClick: () => {
                         setIsDrawerOpen(false);
                         setIsCallWaiterOpen(true);
                       },
                     },
                     {
+                      id: "contact",
+                      title: "Contact Us",
+                      icon: <PhoneCall size={20} />,
+                      colorClass: "bg-orange-50 dark:bg-orange-500/15 text-[#ff5722]",
+                      path: "/contact",
+                    },
+                    {
                       id: "login",
                       title: "Staff Login",
-                      subtitle: "Log in as waiter, cashier or admin",
-                      icon: <User size={21} />,
-                      colorClass: "bg-purple-50 text-purple-600",
+                      icon: <User size={20} />,
+                      colorClass: "bg-purple-50 dark:bg-purple-500/15 text-purple-600",
                       path: "/login",
-                    },
-                    {
-                      id: "help",
-                      title: "Help & Support",
-                      subtitle: "Need help? Ask restaurant staff",
-                      icon: <HelpCircle size={21} />,
-                      colorClass: "bg-rose-50 text-rose-500",
-                      onClick: () => alert("Please ask our staff for assistance."),
-                    },
-                    {
-                      id: "about",
-                      title: "About",
-                      subtitle: "Tischly POS e-Menu",
-                      icon: <Info size={21} />,
-                      colorClass: "bg-indigo-50 text-indigo-600",
-                      onClick: () => alert("Tischly POS e-Menu v1.0.0"),
                     },
                   ]
                 : isWaiter
                 ? [
                     {
                       id: "history",
-                      title: "Order History",
-                      subtitle: "View placed orders, bills & receipts",
-                      icon: <Clock size={21} />,
-                      colorClass: "bg-blue-50 text-blue-600",
+                      title: "History",
+                      icon: <Clock size={20} />,
+                      colorClass: "bg-blue-50 dark:bg-blue-500/15 text-blue-600",
                       path: "/history",
                     },
-                    ...(isEnableTables
-                      ? [
-                          {
-                            id: "tables",
-                            title: "Tables Overview",
-                            subtitle: "Manage dine-in seating and occupied tables",
-                            icon: <Table2 size={21} />,
-                            colorClass: "bg-emerald-50 text-emerald-600",
-                            path: "/tables",
-                          },
-                        ]
-                      : []),
                     {
-                      id: "help",
-                      title: "Help & Support",
-                      subtitle: "Waiter assistance & staff guide",
-                      icon: <HelpCircle size={21} />,
-                      colorClass: "bg-rose-50 text-rose-500",
-                      onClick: () =>
-                        alert("For support contact your restaurant administrator."),
-                    },
-                    {
-                      id: "about",
-                      title: "About",
-                      subtitle: "Tischly POS Waiter Module",
-                      icon: <Info size={21} />,
-                      colorClass: "bg-indigo-50 text-indigo-600",
-                      onClick: () => alert("Tischly POS Waiter Module v1.0.0"),
-                    },
-                  ]
-                : [
-                    {
-                      id: "reports",
-                      title: "Reports",
-                      subtitle: "View sales, orders and analytics",
-                      icon: <BarChart3 size={21} />,
-                      colorClass: "bg-red-50 text-red-500",
-                      path: "/dashboard",
-                    },
-                    {
-                      id: "menu_mgmt",
-                      title: "Menu Management",
-                      subtitle: "Add, edit or manage menu items",
-                      icon: <Utensils size={21} />,
-                      colorClass: "bg-emerald-50 text-emerald-600",
-                      path: "/manage-menu",
-                    },
-                    {
-                      id: "stocks",
-                      title: "Stocks",
-                      subtitle: "Manage inventory and stock items",
-                      icon: <Package size={21} />,
-                      colorClass: "bg-amber-50 text-amber-600",
-                      path: "/stock",
-                    },
-                    {
-                      id: "history",
-                      title: "Order History",
-                      subtitle: "All restaurant orders & past bills",
-                      icon: <Clock size={21} />,
-                      colorClass: "bg-blue-50 text-blue-600",
-                      path: "/history",
+                      id: "live_orders",
+                      title: "Live Orders",
+                      icon: <ClipboardList size={20} />,
+                      colorClass: "bg-blue-50 dark:bg-blue-500/15 text-blue-600",
+                      path: "/live-order",
                     },
                     ...(isEnableTables
                       ? [
                           {
                             id: "tables",
                             title: "Tables",
-                            subtitle: "Manage dine-in tables",
-                            icon: <Table2 size={21} />,
-                            colorClass: "bg-cyan-50 text-cyan-600",
+                            icon: <Table2 size={20} />,
+                            colorClass: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600",
                             path: "/tables",
                           },
                         ]
                       : []),
                     {
+                      id: "contact",
+                      title: "Contact Us",
+                      icon: <PhoneCall size={20} />,
+                      colorClass: "bg-orange-50 dark:bg-orange-500/15 text-[#ff5722]",
+                      path: "/contact",
+                    },
+                  ]
+                : /* Admin / Super Admin — exactly matches desktop */
+                  [
+                    {
+                      id: "history",
+                      title: "History",
+                      icon: <Clock size={20} />,
+                      colorClass: "bg-blue-50 dark:bg-blue-500/15 text-blue-600",
+                      path: "/history",
+                    },
+                    {
+                      id: "live_orders",
+                      title: "Live Orders",
+                      icon: <ClipboardList size={20} />,
+                      colorClass: "bg-blue-50 dark:bg-blue-500/15 text-blue-600",
+                      path: "/live-order",
+                    },
+                    ...(isEnableTables
+                      ? [
+                          {
+                            id: "tables",
+                            title: "Tables",
+                            icon: <Table2 size={20} />,
+                            colorClass: "bg-cyan-50 dark:bg-cyan-500/15 text-cyan-600",
+                            path: "/tables",
+                          },
+                        ]
+                      : []),
+                    {
+                      id: "dashboard",
+                      title: "Dashboard",
+                      icon: <BarChart3 size={20} />,
+                      colorClass: "bg-red-50 dark:bg-red-500/15 text-red-500",
+                      path: "/dashboard",
+                    },
+                    {
+                      id: "stocks",
+                      title: "Stocks",
+                      icon: <Package size={20} />,
+                      colorClass: "bg-amber-50 dark:bg-amber-500/15 text-amber-600",
+                      path: "/stock",
+                    },
+                    {
+                      id: "menu_mgmt",
+                      title: "Manage Menu",
+                      icon: <Utensils size={20} />,
+                      colorClass: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600",
+                      path: "/manage-menu",
+                    },
+                    {
                       id: "settings",
                       title: "Settings",
-                      subtitle: "App, printer and outlet settings",
-                      icon: <Settings size={21} />,
-                      colorClass: "bg-slate-100 text-slate-700",
+                      icon: <Settings size={20} />,
+                      colorClass: "bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200",
                       path: "/settings",
                     },
                     {
-                      id: "help",
-                      title: "Help & Support",
-                      subtitle: "FAQ, contact support",
-                      icon: <HelpCircle size={21} />,
-                      colorClass: "bg-rose-50 text-rose-500",
-                      onClick: () => alert("Contact support at support@tischlypos.com"),
-                    },
-                    {
-                      id: "about",
-                      title: "About",
-                      subtitle: "App version, licenses and info",
-                      icon: <Info size={21} />,
-                      colorClass: "bg-indigo-50 text-indigo-600",
-                      onClick: () => alert("Tischly POS v1.0.0"),
+                      id: "contact",
+                      title: "Contact Us",
+                      icon: <PhoneCall size={20} />,
+                      colorClass: "bg-orange-50 dark:bg-orange-500/15 text-[#ff5722]",
+                      path: "/contact",
                     },
                   ]
               ).map((opt: any) => (
@@ -503,45 +509,35 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                       navigate(opt.path);
                     }
                   }}
-                  className="flex items-center gap-3.5 py-3 px-2 rounded-xl hover:bg-slate-50 cursor-pointer active:scale-98 transition group"
+                  className="flex items-center gap-3.5 py-3 px-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-700/50 cursor-pointer active:scale-98 transition group"
                 >
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${opt.colorClass}`}
                   >
                     {opt.icon}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-slate-800 group-hover:text-[#ff5722] transition-colors leading-tight">
-                      {opt.title}
-                    </h4>
-                    <p className="text-[11.5px] text-slate-500 truncate mt-0.5">
-                      {opt.subtitle}
-                    </p>
-                  </div>
-                  <div className="text-slate-400 group-hover:text-slate-600 text-sm font-bold">
+                  <span className="flex-1 text-sm font-bold text-slate-800 dark:text-zinc-100 group-hover:text-[#ff5722] transition-colors">
+                    {opt.title}
+                  </span>
+                  <div className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 text-sm font-bold">
                     &rarr;
                   </div>
                 </div>
               ))}
 
-              {/* Logout Option for Staff / Admin */}
+              {/* Logout — for all staff */}
               {isStaffUser && (
                 <div
                   onClick={() => {
                     setIsDrawerOpen(false);
                     handleLogout();
                   }}
-                  className="flex items-center gap-3.5 py-3 px-2 rounded-xl hover:bg-rose-50 cursor-pointer active:scale-98 transition group"
+                  className="flex items-center gap-3.5 py-3 px-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer active:scale-98 transition group"
                 >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs bg-rose-50 text-rose-600">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs bg-rose-50 dark:bg-rose-500/15 text-rose-600">
                     <LogOut size={20} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-rose-600 leading-tight">Logout</h4>
-                    <p className="text-[11.5px] text-slate-500 truncate mt-0.5">
-                      End your session and sign out
-                    </p>
-                  </div>
+                  <span className="flex-1 text-sm font-bold text-rose-600">Logout</span>
                   <div className="text-rose-400 group-hover:text-rose-600 text-sm font-bold">
                     &rarr;
                   </div>
@@ -556,3 +552,4 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 };
 
 export default MobileHeader;
+

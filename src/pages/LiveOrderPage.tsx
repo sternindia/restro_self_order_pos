@@ -18,7 +18,7 @@ import { API_BASE_URL } from '../config';
 import DesktopLayout from '../components/DesktopLayout';
 import { printThermalReceiptDirect } from '../components/ReceiptBillPrint';
 import ReceiptModal from '../components/ReceiptModal';
-import MobileHistoryPage from '../mobileview/MobileHistoryPage';
+import MobileLiveOrderPage from '../mobileview/MobileLiveOrderPage';
 import MobileOrderDetailsPage from '../mobileview/MobileOrderDetailsPage';
 
 function HistoryStatusBadge({ status }: { status: string }) {
@@ -89,7 +89,7 @@ interface OrderHistoryItem {
   };
 }
 
-const HistoryPage: React.FC = () => {
+const LiveOrderPage: React.FC = () => {
   const navigate = useNavigate();
   const savedUser = localStorage.getItem('emenu_user');
   const currentUser = savedUser ? JSON.parse(savedUser) : null;
@@ -105,7 +105,7 @@ const HistoryPage: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH'>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'COMPLETED' | 'PENDING' | 'CANCELLED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'COMPLETED' | 'PENDING' | 'CANCELLED'>('PENDING');
   const [search, setSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedDesktopDetailOrder, setSelectedDesktopDetailOrder] = useState<any>(null);
@@ -536,8 +536,8 @@ const HistoryPage: React.FC = () => {
     <>
       {/* MOBILE VIEW (< md) */}
       <div className="block md:hidden">
-        <MobileHistoryPage
-          orders={baseOrders}
+        <MobileLiveOrderPage
+          orders={filteredOrders}
           loading={loading}
           onRefresh={fetchOrderHistory}
           onSelectOrder={(ord) => setSelectedHistoryOrder(ord)}
@@ -550,7 +550,7 @@ const HistoryPage: React.FC = () => {
 
       {/* DESKTOP VIEW (>= md) */}
       <div className="hidden md:block">
-        <DesktopLayout activePage="History">
+        <DesktopLayout activePage="Live Orders">
           <section className="px-5 py-4 flex-1">
             {/* Toolbar row — just Refresh, no redundant title */}
             <div className="mb-3.5 flex items-center justify-end">
@@ -565,107 +565,7 @@ const HistoryPage: React.FC = () => {
             </div>
 
 
-            {/* Filter Bar — single row */}
-            <div className="mb-3.5 flex items-center gap-1 rounded-xl border border-[#eee9e4] dark:border-zinc-800 bg-white dark:bg-[#18181b] px-3 py-1.5 shadow-[0_1px_4px_rgba(15,23,42,0.03)] overflow-x-auto no-scrollbar">
 
-              {/* Status pills */}
-              {[
-                ['ALL', `All (${counts.all})`],
-                ['PAID', `Completed (${counts.completed})`],
-                ...(!isSuperAdmin && !isSelfPosBilling ? [
-                  ['PENDING', `Pending (${counts.pending})`],
-                  ['CANCELLED', `Cancelled (${counts.cancelled})`],
-                ] : [])
-              ].map(([key, label]) => {
-                const isActive = statusFilter === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setStatusFilter(key as any)}
-                    className={`flex h-[32px] items-center gap-1.5 rounded-lg px-3 text-[12px] font-medium transition cursor-pointer whitespace-nowrap flex-shrink-0 ${
-                      isActive
-                        ? 'border border-orange-200 bg-[#fff0ea] text-[#ff4b1f]'
-                        : 'border border-transparent text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    {key === 'PAID' && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                    {key === 'PENDING' && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
-                    {key === 'CANCELLED' && <span className="h-1.5 w-1.5 rounded-full bg-red-500" />}
-                    {label}
-                  </button>
-                );
-              })}
-
-              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-700 mx-1.5 flex-shrink-0" />
-
-              {/* Date presets */}
-              {[
-                ['TODAY', 'Today'],
-                ['YESTERDAY', 'Yesterday'],
-                ['THIS_WEEK', 'This Week'],
-                ['THIS_MONTH', 'This Month'],
-              ].map(([key, label]) => {
-                const isActive = dateFilter === key && !startDate && !endDate;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => {
-                      setDateFilter(isActive ? 'ALL' : (key as any));
-                      setStartDate('');
-                      setEndDate('');
-                    }}
-                    className={`flex h-[32px] items-center rounded-lg px-2.5 text-[12px] font-medium transition cursor-pointer whitespace-nowrap flex-shrink-0 ${
-                      isActive
-                        ? 'border border-slate-300 dark:border-zinc-600 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white'
-                        : 'border border-transparent text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-
-              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-700 mx-1.5 flex-shrink-0" />
-
-              {/* Search */}
-              <div className="relative flex-shrink-0 w-[200px]">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search ID, table, guest..."
-                  className="h-[32px] w-full rounded-lg border border-[#e8e9eb] dark:border-zinc-700 bg-transparent pl-8 pr-3 text-[12px] text-[#071B34] dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-orange-300 font-normal"
-                />
-              </div>
-
-              {/* Date Range */}
-              <button
-                type="button"
-                onClick={openCalendarModal}
-                className={`flex h-[32px] flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-normal transition cursor-pointer ${
-                  startDate || endDate
-                    ? 'border-orange-200 bg-[#fff0ea] text-[#ff4b1f]'
-                    : 'border-[#e8e9eb] dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
-                }`}
-              >
-                <Calendar size={13} className="flex-shrink-0 text-slate-400" />
-                <span className="whitespace-nowrap">
-                  {startDate
-                    ? `${startDate}${endDate && endDate !== startDate ? ` → ${endDate}` : ''}`
-                    : 'Date Range'}
-                </span>
-                {(startDate || endDate) && (
-                  <span
-                    onClick={(e) => { e.stopPropagation(); clearDateRange(); }}
-                    className="ml-0.5 text-slate-400 hover:text-red-500 cursor-pointer flex-shrink-0"
-                  >
-                    <X size={12} />
-                  </span>
-                )}
-              </button>
-            </div>
 
             {/* Table Content */}
             {loading ? (
@@ -1199,4 +1099,4 @@ const HistoryPage: React.FC = () => {
   );
 };
 
-export default HistoryPage;
+export default LiveOrderPage;

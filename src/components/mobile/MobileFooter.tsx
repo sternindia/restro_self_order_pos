@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Utensils, ShoppingBag, Table2, Clock, MoreHorizontal } from "lucide-react";
+import { Utensils, ShoppingCart, ShoppingBag, Table2, Clock, MoreHorizontal, ClipboardList } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export interface MobileFooterProps {
-  activeTab?: "menu" | "orders" | "tables" | "history" | "more";
+  activeTab?: "menu" | "orders" | "cart" | "tables" | "history" | "more" | "dashboard" | "settings" | "inventory" | string;
   onMenuClick?: () => void;
   onOpenDrawer?: () => void;
 }
@@ -23,8 +23,8 @@ function NavItem({ icon, label, active = false, badge, onClick }: NavItemProps) 
       onClick={onClick}
       className={`relative flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 cursor-pointer transition active:scale-95 ${
         active
-          ? "bg-[#fff1eb] text-[#ff5722]"
-          : "text-slate-500 hover:text-slate-800"
+          ? "bg-[#fff1eb] dark:bg-[#ff5722]/15 text-[#ff5722]"
+          : "text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white"
       }`}
     >
       <div className="relative flex items-center justify-center">
@@ -59,11 +59,33 @@ export const MobileFooter: React.FC<MobileFooterProps> = ({
   })();
 
   const roleAlias = (userObj?.role_alias || userObj?.role || "").toLowerCase();
+  const pathname = location.pathname;
+
+  // Determine active tab automatically from pathname if not explicitly passed
+  const currentTab =
+    customActiveTab ||
+    (pathname === "/" || pathname === "/menu"
+      ? "menu"
+      : pathname === "/cart"
+      ? "cart"
+      : pathname === "/tables"
+      ? "tables"
+      : pathname === "/history"
+      ? "history"
+      : pathname === "/live-order"
+      ? "live-order"
+      : pathname === "/dashboard" || pathname === "/stock" || pathname === "/manage-menu" || pathname === "/settings"
+      ? "more"
+      : undefined);
+
+  // Exact parity with desktop Header.tsx logic
   const isGuestUser =
     !userObj || userObj?.isGuest || roleAlias === "guest_user" || roleAlias === "guest";
-  const isWaiter = roleAlias === "waiter";
+  const isStaffUser = !!userObj && !isGuestUser;
+  const isWaiter = isStaffUser && roleAlias === "waiter";
   const isAdmin =
-    roleAlias === "admin" || roleAlias === "super_admin" || roleAlias === "owner";
+    isStaffUser &&
+    (roleAlias === "admin" || roleAlias === "super_admin" || roleAlias === "owner");
 
   // Check if tables are enabled in settings
   const isEnableTables = (() => {
@@ -129,19 +151,6 @@ export const MobileFooter: React.FC<MobileFooterProps> = ({
     };
   }, []);
 
-  // Determine active tab automatically from pathname if not explicitly passed
-  const pathname = location.pathname;
-  const currentTab =
-    customActiveTab ||
-    (pathname === "/" || pathname === "/menu"
-      ? "menu"
-      : pathname === "/cart"
-      ? "orders"
-      : pathname === "/tables"
-      ? "tables"
-      : pathname === "/history"
-      ? "history"
-      : undefined);
 
   const handleOpenMore = () => {
     if (onOpenDrawer) {
@@ -152,7 +161,7 @@ export const MobileFooter: React.FC<MobileFooterProps> = ({
   };
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 border-t border-slate-100 bg-white/95 px-3 pb-2 pt-1.5 backdrop-blur md:hidden">
+    <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 border-t border-slate-200/70 dark:border-zinc-800 bg-[#faf9f7]/95 dark:bg-[#1a1a22]/95 px-3 pb-2 pt-1.5 backdrop-blur-md md:hidden transition-colors">
       <div
         className={`grid ${
           isGuestUser
@@ -160,8 +169,10 @@ export const MobileFooter: React.FC<MobileFooterProps> = ({
             : isWaiter
             ? isEnableTables
               ? "grid-cols-4"
-              : "grid-cols-3 max-w-[340px] mx-auto"
-            : "grid-cols-4"
+              : "grid-cols-3 max-w-[300px] mx-auto"
+            : isEnableTables
+            ? "grid-cols-4"
+            : "grid-cols-3 max-w-[300px] mx-auto"
         }`}
       >
         {/* Menu Tab */}
@@ -180,66 +191,46 @@ export const MobileFooter: React.FC<MobileFooterProps> = ({
           }}
         />
 
-        {/* Orders / Cart Tab */}
+        {/* Cart Tab */}
         <NavItem
-          icon={<ShoppingBag size={21} />}
-          label="Orders"
+          icon={<ShoppingCart size={21} />}
+          label="Cart"
           badge={cartCount}
-          active={currentTab === "orders"}
+          active={currentTab === "cart" || currentTab === "orders"}
           onClick={() => navigate("/cart")}
         />
 
-        {/* Waiter Navigation Tabs */}
-        {isWaiter && (
-          <>
-            {isEnableTables && (
-              <NavItem
-                icon={<Table2 size={21} />}
-                label="Tables"
-                active={currentTab === "tables"}
-                onClick={() => navigate("/tables")}
-              />
-            )}
-            <NavItem
-              icon={<Clock size={21} />}
-              label="History"
-              active={currentTab === "history"}
-              onClick={() => navigate("/history")}
-            />
-          </>
+        {/* Tables Tab — only if enabled & staff */}
+        {isStaffUser && isEnableTables && (
+          <NavItem
+            icon={<Table2 size={21} />}
+            label="Tables"
+            active={currentTab === "tables"}
+            onClick={() => navigate("/tables")}
+          />
         )}
 
-        {/* Admin Navigation Tabs */}
-        {isAdmin && (
-          <>
-            {isEnableTables ? (
-              <NavItem
-                icon={<Table2 size={21} />}
-                label="Tables"
-                active={currentTab === "tables"}
-                onClick={() => navigate("/tables")}
-              />
-            ) : (
-              <NavItem
-                icon={<Clock size={21} />}
-                label="History"
-                active={currentTab === "history"}
-                onClick={() => navigate("/history")}
-              />
-            )}
-            <button
-              type="button"
-              onClick={handleOpenMore}
-              className={`flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 cursor-pointer transition active:scale-95 ${
-                currentTab === "more"
-                  ? "bg-[#fff1eb] text-[#ff5722]"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <MoreHorizontal size={23} />
-              <span className="text-[10px] font-semibold">More</span>
-            </button>
-          </>
+        {/* More — for all staff (opens drawer with History, Live, Contact, etc.) */}
+        {isStaffUser && (
+          <button
+            type="button"
+            onClick={handleOpenMore}
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 cursor-pointer transition active:scale-95 ${
+              currentTab === "more" ||
+              currentTab === "history" ||
+              currentTab === "live-order" ||
+              currentTab === "dashboard" ||
+              currentTab === "settings" ||
+              currentTab === "inventory" ||
+              currentTab === "stock" ||
+              currentTab === "manage-menu"
+                ? "bg-[#fff1eb] dark:bg-[#ff5722]/15 text-[#ff5722]"
+                : "text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white"
+            }`}
+          >
+            <MoreHorizontal size={23} />
+            <span className="text-[10px] font-semibold">More</span>
+          </button>
         )}
       </div>
     </nav>
@@ -247,3 +238,4 @@ export const MobileFooter: React.FC<MobileFooterProps> = ({
 };
 
 export default MobileFooter;
+

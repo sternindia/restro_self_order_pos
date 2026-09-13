@@ -1,419 +1,381 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../components/Header';
+import DesktopLayout from '../components/DesktopLayout';
+import { MobileHeader, MobileFooter } from '../components/mobile';
 import { API_BASE_URL, getRestaurantId } from '../config';
-import { LayoutDashboard, RefreshCw, Wallet, ShoppingBag, CheckCircle2, Users, Flame, ArrowUpRight } from 'lucide-react';
+import {
+  RefreshCw,
+  Wallet,
+  ShoppingBag,
+  CheckCircle2,
+  Users,
+  Flame,
+  TrendingUp,
+  Receipt,
+  Tag,
+  BookOpen,
+} from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
-    const [loading, setLoading] = useState<boolean>(true);
-    const [dateFilter, setDateFilter] = useState<string>('today');
-    const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [dateFilter, setDateFilter] = useState<string>('today');
+  const [dashboardData, setDashboardData] = useState<any>(null);
 
-    const restaurantId = getRestaurantId() || 9;
+  const restaurantId = getRestaurantId() || 9;
 
-    const getSampleMetricsByFilter = (filterKey: string) => {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-        const sevenDaysAgoStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-        const monthStartStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const getSampleMetricsByFilter = (filterKey: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const sevenDaysAgoStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+    const monthStartStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
-        if (filterKey === 'yesterday') {
-            return {
-                meta: {
-                    date_range: "Yesterday",
-                    from_date: `${yesterdayStr}T00:00:00Z`,
-                    to_date: `${yesterdayStr}T23:59:59Z`,
-                    currency: "INR"
-                },
-                kpis: {
-                    total_revenue: 42150.00,
-                    total_order: 61,
-                    total_bills_settled: 58,
-                    total_gst_collected: 2107.50,
-                    total_service_charge: 4215.00,
-                    total_discounts: 250.00,
-                    total_customers: 89
-                },
-                menus: { total_menus: 25, total_category: 10 },
-                top_selling_items: [
-                    { item_id: "PRD-101", name: "Classic Wagyu Burger", category: "Mains", quantity_sold: 32, total_sales: 16000.00 },
-                    { item_id: "PRD-102", name: "Truffle French Fries", category: "Starters", quantity_sold: 25, total_sales: 6250.00 },
-                    { item_id: "PRD-103", name: "Thin Crust Margherita", category: "Mains", quantity_sold: 20, total_sales: 9000.00 },
-                    { item_id: "PRD-502", name: "House Iced Lemon Tea", category: "Beverages", quantity_sold: 19, total_sales: 2850.00 }
-                ]
-            };
-        }
-
-        if (filterKey === 'last_7_days') {
-            return {
-                meta: {
-                    date_range: "Last 7 Days",
-                    from_date: `${sevenDaysAgoStr}T00:00:00Z`,
-                    to_date: `${todayStr}T23:59:59Z`,
-                    currency: "INR"
-                },
-                kpis: {
-                    total_revenue: 318450.00,
-                    total_order: 485,
-                    total_bills_settled: 450,
-                    total_gst_collected: 15922.50,
-                    total_service_charge: 31845.00,
-                    total_discounts: 1500.00,
-                    total_customers: 720
-                },
-                menus: { total_menus: 25, total_category: 10 },
-                top_selling_items: [
-                    { item_id: "PRD-101", name: "Classic Wagyu Burger", category: "Mains", quantity_sold: 210, total_sales: 105000.00 },
-                    { item_id: "PRD-102", name: "Truffle French Fries", category: "Starters", quantity_sold: 165, total_sales: 41250.00 },
-                    { item_id: "PRD-103", name: "Thin Crust Margherita", category: "Mains", quantity_sold: 140, total_sales: 63000.00 },
-                    { item_id: "PRD-502", name: "House Iced Lemon Tea", category: "Beverages", quantity_sold: 135, total_sales: 20250.00 }
-                ]
-            };
-        }
-
-        if (filterKey === 'this_month') {
-            return {
-                meta: {
-                    date_range: "This Month",
-                    from_date: `${monthStartStr}T00:00:00Z`,
-                    to_date: `${todayStr}T23:59:59Z`,
-                    currency: "INR"
-                },
-                kpis: {
-                    total_revenue: 1285900.00,
-                    total_order: 1940,
-                    total_bills_settled: 1820,
-                    total_gst_collected: 64295.00,
-                    total_service_charge: 128590.00,
-                    total_discounts: 6500.00,
-                    total_customers: 2910
-                },
-                menus: { total_menus: 25, total_category: 10 },
-                top_selling_items: [
-                    { item_id: "PRD-101", name: "Classic Wagyu Burger", category: "Mains", quantity_sold: 850, total_sales: 425000.00 },
-                    { item_id: "PRD-103", name: "Thin Crust Margherita", category: "Mains", quantity_sold: 610, total_sales: 274500.00 },
-                    { item_id: "PRD-102", name: "Truffle French Fries", category: "Starters", quantity_sold: 580, total_sales: 145000.00 },
-                    { item_id: "PRD-502", name: "House Iced Lemon Tea", category: "Beverages", quantity_sold: 490, total_sales: 73500.00 }
-                ]
-            };
-        }
-
-        return {
-            meta: {
-                date_range: "today",
-                from_date: `${todayStr}T00:00:00Z`,
-                to_date: `${todayStr}T23:59:59Z`,
-                currency: "INR"
-            },
-            kpis: {
-                total_revenue: 48920.00,
-                total_order: 70,
-                total_bills_settled: 64,
-                total_gst_collected: 2446.00,
-                total_service_charge: 4892.00,
-                total_discounts: 0.00,
-                total_customers: 102
-            },
-            menus: { total_menus: 25, total_category: 10 },
-            top_selling_items: [
-                { item_id: "PRD-101", name: "Classic Wagyu Burger", category: "Mains", quantity_sold: 38, total_sales: 19000.00 },
-                { item_id: "PRD-102", name: "Truffle French Fries", category: "Starters", quantity_sold: 29, total_sales: 7250.00 },
-                { item_id: "PRD-502", name: "House Iced Lemon Tea", category: "Beverages", quantity_sold: 24, total_sales: 3600.00 },
-                { item_id: "PRD-103", name: "Thin Crust Margherita", category: "Mains", quantity_sold: 18, total_sales: 8100.00 }
-            ]
-        };
+    if (filterKey === 'yesterday') {
+      return {
+        meta: { date_range: 'Yesterday', from_date: `${yesterdayStr}T00:00:00Z`, to_date: `${yesterdayStr}T23:59:59Z`, currency: 'INR' },
+        kpis: { total_revenue: 42150, total_order: 61, total_bills_settled: 58, total_gst_collected: 2107.5, total_service_charge: 4215, total_discounts: 250, total_customers: 89 },
+        menus: { total_menus: 25, total_category: 10 },
+        top_selling_items: [
+          { item_id: 'PRD-101', name: 'Classic Wagyu Burger', category: 'Mains', quantity_sold: 32, total_sales: 16000 },
+          { item_id: 'PRD-102', name: 'Truffle French Fries', category: 'Starters', quantity_sold: 25, total_sales: 6250 },
+          { item_id: 'PRD-103', name: 'Thin Crust Margherita', category: 'Mains', quantity_sold: 20, total_sales: 9000 },
+          { item_id: 'PRD-502', name: 'House Iced Lemon Tea', category: 'Beverages', quantity_sold: 19, total_sales: 2850 },
+        ],
+      };
+    }
+    if (filterKey === 'last_7_days') {
+      return {
+        meta: { date_range: 'Last 7 Days', from_date: `${sevenDaysAgoStr}T00:00:00Z`, to_date: `${todayStr}T23:59:59Z`, currency: 'INR' },
+        kpis: { total_revenue: 318450, total_order: 485, total_bills_settled: 450, total_gst_collected: 15922.5, total_service_charge: 31845, total_discounts: 1500, total_customers: 720 },
+        menus: { total_menus: 25, total_category: 10 },
+        top_selling_items: [
+          { item_id: 'PRD-101', name: 'Classic Wagyu Burger', category: 'Mains', quantity_sold: 210, total_sales: 105000 },
+          { item_id: 'PRD-102', name: 'Truffle French Fries', category: 'Starters', quantity_sold: 165, total_sales: 41250 },
+          { item_id: 'PRD-103', name: 'Thin Crust Margherita', category: 'Mains', quantity_sold: 140, total_sales: 63000 },
+          { item_id: 'PRD-502', name: 'House Iced Lemon Tea', category: 'Beverages', quantity_sold: 135, total_sales: 20250 },
+        ],
+      };
+    }
+    if (filterKey === 'this_month') {
+      return {
+        meta: { date_range: 'This Month', from_date: `${monthStartStr}T00:00:00Z`, to_date: `${todayStr}T23:59:59Z`, currency: 'INR' },
+        kpis: { total_revenue: 1285900, total_order: 1940, total_bills_settled: 1820, total_gst_collected: 64295, total_service_charge: 128590, total_discounts: 6500, total_customers: 2910 },
+        menus: { total_menus: 25, total_category: 10 },
+        top_selling_items: [
+          { item_id: 'PRD-101', name: 'Classic Wagyu Burger', category: 'Mains', quantity_sold: 850, total_sales: 425000 },
+          { item_id: 'PRD-103', name: 'Thin Crust Margherita', category: 'Mains', quantity_sold: 610, total_sales: 274500 },
+          { item_id: 'PRD-102', name: 'Truffle French Fries', category: 'Starters', quantity_sold: 580, total_sales: 145000 },
+          { item_id: 'PRD-502', name: 'House Iced Lemon Tea', category: 'Beverages', quantity_sold: 490, total_sales: 73500 },
+        ],
+      };
+    }
+    return {
+      meta: { date_range: 'Today', from_date: `${todayStr}T00:00:00Z`, to_date: `${todayStr}T23:59:59Z`, currency: 'INR' },
+      kpis: { total_revenue: 48920, total_order: 70, total_bills_settled: 64, total_gst_collected: 2446, total_service_charge: 4892, total_discounts: 0, total_customers: 102 },
+      menus: { total_menus: 25, total_category: 10 },
+      top_selling_items: [
+        { item_id: 'PRD-101', name: 'Classic Wagyu Burger', category: 'Mains', quantity_sold: 38, total_sales: 19000 },
+        { item_id: 'PRD-102', name: 'Truffle French Fries', category: 'Starters', quantity_sold: 29, total_sales: 7250 },
+        { item_id: 'PRD-502', name: 'House Iced Lemon Tea', category: 'Beverages', quantity_sold: 24, total_sales: 3600 },
+        { item_id: 'PRD-103', name: 'Thin Crust Margherita', category: 'Mains', quantity_sold: 18, total_sales: 8100 },
+      ],
     };
+  };
 
-    const fetchDashboard = async (filterKey: string = dateFilter) => {
-        setLoading(true);
-        try {
-            const response = await fetch(`${API_BASE_URL}/dashboard/${restaurantId}?filter=${filterKey}&date_range=${filterKey}`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
-            if (data && (data.kpis || data.status === true || data.data)) {
-                setDashboardData(data.data || data);
-            } else {
-                setDashboardData(getSampleMetricsByFilter(filterKey));
-            }
-        } catch (err: any) {
-            console.warn("Dashboard API fetch failed, using fallback sample metrics:", err.message);
-            setDashboardData(getSampleMetricsByFilter(filterKey));
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchDashboard = async (filterKey: string = dateFilter) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard/${restaurantId}?filter=${filterKey}&date_range=${filterKey}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      if (data && (data.kpis || data.status === true || data.data)) {
+        setDashboardData(data.data || data);
+      } else {
+        setDashboardData(getSampleMetricsByFilter(filterKey));
+      }
+    } catch {
+      setDashboardData(getSampleMetricsByFilter(filterKey));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchDashboard(dateFilter);
-    }, [restaurantId, dateFilter]);
+  useEffect(() => { fetchDashboard(dateFilter); }, [restaurantId, dateFilter]);
 
-    const data = dashboardData || getSampleMetricsByFilter(dateFilter);
-    const kpis = data.kpis || {};
-    const menus = data.menus || {};
-    const topItems = data.top_selling_items || [];
-    const meta = data.meta || {};
+  const data = dashboardData || getSampleMetricsByFilter(dateFilter);
+  const kpis = data.kpis || {};
+  const menus = data.menus || {};
+  const topItems = data.top_selling_items || [];
+  const meta = data.meta || {};
+  const maxQtySold = topItems.reduce((max: number, i: any) => Math.max(max, i.quantity_sold || 0), 1);
 
-    const maxQtySold = topItems.reduce((max: number, i: any) => Math.max(max, i.quantity_sold || 0), 1);
+  const fmt = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    return (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
-            <Header />
+  const FILTERS = [
+    { key: 'today', label: 'Today' },
+    { key: 'yesterday', label: 'Yesterday' },
+    { key: 'last_7_days', label: 'Last 7 Days' },
+    { key: 'this_month', label: 'This Month' },
+  ];
 
-            <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
-                {/* Header Banner Card - Compact on Mobile */}
-                <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xs border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/20">
-                                <LayoutDashboard size={12} /> Dashboard
-                            </span>
-                            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                ● Realtime Sync
-                            </span>
-                        </div>
-                        <h1 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
-                            <span className="sm:hidden">Sales Overview</span>
-                            <span className="hidden sm:inline">Sales Analytics & Performance</span>
-                        </h1>
-                        <p className="hidden sm:block text-xs text-gray-500 font-medium mt-0.5">
-                            Restaurant ID: <strong className="text-gray-800">#{restaurantId}</strong> &bull; Showing metrics for <span className="text-[#f05a24] uppercase font-black">{meta.date_range || dateFilter}</span>
-                        </p>
-                    </div>
-
-                    {/* Filter & Refresh Controls */}
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <select
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                            className="flex-1 sm:flex-none px-3 py-1.5 sm:py-2 text-xs font-black text-gray-800 bg-gray-50 border border-gray-300 rounded-xl cursor-pointer shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#f05a24]/20 focus:border-[#f05a24] h-9 sm:h-10"
-                        >
-                            <option value="today">Today (Live)</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="last_7_days">Last 7 Days</option>
-                            <option value="this_month">This Month</option>
-                        </select>
-
-                        <button
-                            type="button"
-                            onClick={() => fetchDashboard(dateFilter)}
-                            disabled={loading}
-                            className="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 h-9 sm:h-10 active:scale-95 disabled:opacity-50 shrink-0"
-                        >
-                            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                            <span>{loading ? 'Syncing...' : 'Refresh'}</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Primary KPI Cards Grid - 2 cols on mobile, 4 on desktop */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-                    {/* Revenue Card */}
-                    <div className="bg-gradient-to-br from-white to-[#FFF0E6]/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs border border-[#f05a24]/30 space-y-1.5 sm:space-y-3 transition-all hover:shadow-md">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-xs font-black uppercase text-gray-500 tracking-wider">Revenue</span>
-                            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#FFF0E6] text-[#f05a24] border border-[#f05a24]/20 flex items-center justify-center shadow-2xs shrink-0">
-                                <Wallet className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            </div>
-                        </div>
-                        <h2 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight font-mono leading-none">
-                            ₹{(kpis.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </h2>
-                        <div className="flex items-center gap-1.5 pt-0.5 sm:pt-1">
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] sm:text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                <ArrowUpRight size={10} /> +12.4%
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Total Orders Card */}
-                    <div className="bg-gradient-to-br from-white to-blue-50/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs border border-blue-200 space-y-1.5 sm:space-y-3 transition-all hover:shadow-md">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-xs font-black uppercase text-gray-500 tracking-wider">Orders</span>
-                            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center shadow-2xs shrink-0">
-                                <ShoppingBag className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            </div>
-                        </div>
-                        <h2 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight font-mono leading-none">
-                            {kpis.total_order || 0}
-                        </h2>
-                        <p className="hidden sm:block text-xs font-extrabold text-blue-700 pt-1">
-                            🛒 Kitchen orders created
-                        </p>
-                    </div>
-
-                    {/* Bills Settled Card */}
-                    <div className="bg-gradient-to-br from-white to-emerald-50/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs border border-emerald-200 space-y-1.5 sm:space-y-3 transition-all hover:shadow-md">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-xs font-black uppercase text-gray-500 tracking-wider">Settled</span>
-                            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center shadow-2xs shrink-0">
-                                <CheckCircle2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            </div>
-                        </div>
-                        <h2 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight font-mono leading-none">
-                            {kpis.total_bills_settled || 0}
-                        </h2>
-                        <p className="hidden sm:block text-xs font-extrabold text-emerald-700 pt-1">
-                            ✓ Payments completed
-                        </p>
-                    </div>
-
-                    {/* Total Guests Card */}
-                    <div className="bg-gradient-to-br from-white to-purple-50/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs border border-purple-200 space-y-1.5 sm:space-y-3 transition-all hover:shadow-md">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-xs font-black uppercase text-gray-500 tracking-wider">Guests</span>
-                            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-purple-100 text-purple-700 border border-purple-200 flex items-center justify-center shadow-2xs shrink-0">
-                                <Users className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            </div>
-                        </div>
-                        <h2 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight font-mono leading-none">
-                            {kpis.total_customers || 0}
-                        </h2>
-                        <p className="hidden sm:block text-xs font-extrabold text-purple-700 pt-1">
-                            👥 Dining guests
-                        </p>
-                    </div>
-                </div>
-
-                {/* Secondary Metrics Bar */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                    <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#F0E6DF] shadow-2xs">
-                        <span className="text-[10px] sm:text-[11px] font-extrabold uppercase text-gray-400 block">GST</span>
-                        <h4 className="text-sm sm:text-lg font-black text-gray-900 mt-0.5 sm:mt-1 font-mono leading-none">
-                            ₹{(kpis.total_gst_collected || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </h4>
-                    </div>
-
-                    <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#F0E6DF] shadow-2xs">
-                        <span className="text-[10px] sm:text-[11px] font-extrabold uppercase text-gray-400 block">Service Fee</span>
-                        <h4 className="text-sm sm:text-lg font-black text-gray-900 mt-0.5 sm:mt-1 font-mono leading-none">
-                            ₹{(kpis.total_service_charge || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </h4>
-                    </div>
-
-                    <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#F0E6DF] shadow-2xs">
-                        <span className="text-[10px] sm:text-[11px] font-extrabold uppercase text-gray-400 block">Discounts</span>
-                        <h4 className="text-sm sm:text-lg font-black text-gray-900 mt-0.5 sm:mt-1 font-mono leading-none">
-                            ₹{(kpis.total_discounts || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </h4>
-                    </div>
-
-                    <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#F0E6DF] shadow-2xs">
-                        <span className="text-[10px] sm:text-[11px] font-extrabold uppercase text-gray-400 block">Active Catalog</span>
-                        <h4 className="text-sm sm:text-lg font-black text-gray-900 mt-0.5 sm:mt-1 leading-none">
-                            {menus.total_menus || 0} Items
-                        </h4>
-                    </div>
-                </div>
-
-                {/* Top Selling Items Showcase */}
-                <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xs border border-[#F0E6DF] space-y-3 sm:space-y-4">
-                    <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-gray-100">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <Flame size={18} className="text-[#f05a24]" />
-                            <h3 className="text-sm sm:text-base font-black text-gray-900 tracking-tight">
-                                Top Selling Dishes
-                            </h3>
-                        </div>
-                        <span className="text-[11px] sm:text-xs font-extrabold text-gray-600 bg-gray-100 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full border border-gray-200">
-                            {topItems.length} Products
-                        </span>
-                    </div>
-
-                    {/* Mobile Card List (Hidden on Desktop) */}
-                    <div className="block sm:hidden space-y-2">
-                        {topItems.map((item: any, index: number) => {
-                            const progressPct = Math.round(((item.quantity_sold || 0) / maxQtySold) * 100);
-                            const rankMedals = ['🥇', '🥈', '🥉', '🏅'];
-                            const medal = rankMedals[index] || '🏅';
-
-                            return (
-                                <div key={item.item_id || index} className="p-2.5 bg-gray-50/70 rounded-xl border border-gray-100 space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className="text-base shrink-0">{medal}</span>
-                                            <span className="text-xs font-black text-gray-900 truncate">{item.name}</span>
-                                        </div>
-                                        <span className="text-xs font-black text-gray-900 font-mono shrink-0">
-                                            ₹{(item.total_sales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[10px] text-gray-500">
-                                        <span>{item.category}</span>
-                                        <span className="font-bold text-[#f05a24]">{item.quantity_sold} sold</span>
-                                    </div>
-                                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-[#f05a24] to-amber-500 rounded-full"
-                                            style={{ width: `${progressPct}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Desktop Table View */}
-                    <div className="hidden sm:block overflow-x-auto">
-                        <table className="w-full text-left border-collapse min-w-[550px]">
-                            <thead>
-                                <tr className="text-[11px] font-black text-gray-400 uppercase border-b border-gray-200 pb-2">
-                                    <th className="py-2.5 px-3">Rank</th>
-                                    <th className="py-2.5 px-3">Item Details</th>
-                                    <th className="py-2.5 px-3 text-center">Category</th>
-                                    <th className="py-2.5 px-3 text-center">Units Sold</th>
-                                    <th className="py-2.5 px-3 text-right">Gross Sales</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {topItems.map((item: any, index: number) => {
-                                    const progressPct = Math.round(((item.quantity_sold || 0) / maxQtySold) * 100);
-                                    const rankMedals = ['🥇', '🥈', '🥉', '🏅'];
-                                    const medal = rankMedals[index] || '🏅';
-
-                                    return (
-                                        <tr key={item.item_id || index} className="hover:bg-gray-50/80 transition-colors">
-                                            <td className="py-3 px-3">
-                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gray-100 border border-gray-200 text-sm font-bold">
-                                                    {medal}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-3">
-                                                <div className="text-sm font-extrabold text-gray-900">{item.name}</div>
-                                                <div className="text-xs text-gray-400 font-mono">ID: {item.item_id}</div>
-                                            </td>
-                                            <td className="py-3 px-3 text-center">
-                                                <span className="inline-block px-3 py-1 text-xs font-extrabold text-[#c2410c] bg-[#fff7ed] border border-[#ffedd5] rounded-lg">
-                                                    {item.category}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-3">
-                                                <div className="space-y-1 max-w-[180px] mx-auto">
-                                                    <div className="flex justify-between text-xs font-bold text-gray-700">
-                                                        <span>{item.quantity_sold} sold</span>
-                                                        <span className="text-gray-400">{progressPct}%</span>
-                                                    </div>
-                                                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-gradient-to-r from-[#f05a24] to-amber-500 rounded-full"
-                                                            style={{ width: `${progressPct}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-3 text-right">
-                                                <span className="text-base font-black text-gray-900 font-mono">
-                                                    ₹{(item.total_sales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </main>
+  /* ── KPI Card ── */
+  const KpiCard = ({
+    icon: Icon,
+    label,
+    value,
+    sub,
+    accent,
+    iconBg,
+  }: {
+    icon: any; label: string; value: string; sub?: string;
+    accent: string; iconBg: string;
+  }) => (
+    <div className={`bg-white dark:bg-[#18181b] rounded-2xl p-4 border ${accent} shadow-[0_1px_4px_rgba(15,23,42,0.04)] flex flex-col gap-3`}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-wide">{label}</span>
+        <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${iconBg}`}>
+          <Icon size={15} />
         </div>
-    );
+      </div>
+      <div>
+        <p className="text-[22px] font-semibold text-[#071B34] dark:text-white leading-none tracking-tight">{value}</p>
+        {sub && <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-1 font-normal">{sub}</p>}
+      </div>
+    </div>
+  );
+
+  /* ── Secondary Mini Card ── */
+  const MiniCard = ({ label, value }: { label: string; value: string }) => (
+    <div className="bg-white dark:bg-[#18181b] rounded-xl px-4 py-3 border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+      <p className="text-[11px] font-normal text-slate-400 dark:text-zinc-500 uppercase tracking-wide">{label}</p>
+      <p className="text-[15px] font-medium text-[#071B34] dark:text-white mt-1 font-mono">{value}</p>
+    </div>
+  );
+
+  const renderDashboardBody = (isMobile: boolean = false) => (
+    <div className={`space-y-4 ${isMobile ? 'px-3.5 py-4 pb-24' : 'px-6 py-5'}`}>
+
+      {/* ── Toolbar — single scrollable row ── */}
+      <div className="flex items-center gap-1.5 bg-white dark:bg-[#18181b] border border-[#eee9e4] dark:border-zinc-800 rounded-xl px-2 py-1.5 shadow-[0_1px_4px_rgba(15,23,42,0.03)] overflow-x-auto no-scrollbar">
+        {/* Filter pills */}
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setDateFilter(f.key)}
+            className={`h-[30px] px-3 rounded-lg text-[12px] font-medium transition cursor-pointer whitespace-nowrap flex-shrink-0 ${
+              dateFilter === f.key
+                ? 'bg-[#fff0ea] text-[#ff4b1f] border border-orange-200'
+                : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 border border-transparent'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+
+        <div className="h-4 w-px bg-slate-200 dark:bg-zinc-700 mx-1 flex-shrink-0" />
+
+        {/* Refresh */}
+        <button
+          type="button"
+          onClick={() => fetchDashboard(dateFilter)}
+          disabled={loading}
+          className="flex h-[30px] flex-shrink-0 items-center gap-1.5 rounded-lg border border-[#e9e4df] dark:border-zinc-700 bg-transparent px-3 text-[12px] font-normal text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer disabled:opacity-50 active:scale-95"
+        >
+          <RefreshCw size={12} className={loading ? 'animate-spin text-[#ff4b1f]' : ''} />
+          <span className="whitespace-nowrap">{loading ? 'Syncing…' : 'Refresh'}</span>
+        </button>
+      </div>
+
+
+      {/* ── Primary KPI Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          icon={Wallet}
+          label="Revenue"
+          value={`₹${fmt(kpis.total_revenue || 0)}`}
+          sub={`Period: ${meta.date_range || dateFilter}`}
+          accent="border-orange-100 dark:border-orange-900/30"
+          iconBg="bg-[#fff0ea] text-[#ff4b1f]"
+        />
+        <KpiCard
+          icon={ShoppingBag}
+          label="Orders"
+          value={String(kpis.total_order || 0)}
+          sub="Total kitchen orders"
+          accent="border-blue-100 dark:border-blue-900/30"
+          iconBg="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+        />
+        <KpiCard
+          icon={CheckCircle2}
+          label="Settled"
+          value={String(kpis.total_bills_settled || 0)}
+          sub="Bills paid & closed"
+          accent="border-emerald-100 dark:border-emerald-900/30"
+          iconBg="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+        />
+        <KpiCard
+          icon={Users}
+          label="Guests"
+          value={String(kpis.total_customers || 0)}
+          sub="Dining covers"
+          accent="border-purple-100 dark:border-purple-900/30"
+          iconBg="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+        />
+      </div>
+
+      {/* ── Secondary Metrics ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <MiniCard label="GST Collected" value={`₹${fmt(kpis.total_gst_collected || 0)}`} />
+        <MiniCard label="Service Charge" value={`₹${fmt(kpis.total_service_charge || 0)}`} />
+        <MiniCard label="Discounts" value={`₹${fmt(kpis.total_discounts || 0)}`} />
+        <MiniCard label="Active Items" value={`${menus.total_menus || 0} items`} />
+      </div>
+
+      {/* ── Top Selling Items ── */}
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl border border-[#eee9e4] dark:border-zinc-800 shadow-[0_1px_4px_rgba(15,23,42,0.03)] overflow-hidden">
+        {/* Section header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#eee9e4] dark:border-zinc-800">
+          <div className="flex items-center gap-2">
+            <Flame size={15} className="text-[#ff4b1f]" />
+            <span className="text-[13px] font-medium text-[#071B34] dark:text-white">Top Selling Dishes</span>
+          </div>
+          <span className="text-[11px] font-normal text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 px-2.5 py-0.5 rounded-full">
+            {topItems.length} items
+          </span>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="block sm:hidden divide-y divide-[#eee9e4] dark:divide-zinc-800">
+          {topItems.map((item: any, index: number) => {
+            const pct = Math.round(((item.quantity_sold || 0) / maxQtySold) * 100);
+            const medals = ['🥇', '🥈', '🥉', '🏅'];
+            return (
+              <div key={item.item_id || index} className="px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base shrink-0">{medals[index] || '🏅'}</span>
+                    <span className="text-[13px] font-medium text-[#071B34] dark:text-white truncate">{item.name}</span>
+                  </div>
+                  <span className="text-[12px] font-medium text-[#071B34] dark:text-white font-mono shrink-0 ml-2">
+                    ₹{fmt(item.total_sales || 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400 dark:text-zinc-500">{item.category}</span>
+                  <span className="text-[#ff4b1f] font-medium">{item.quantity_sold} sold</span>
+                </div>
+                <div className="w-full h-1 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-[#ff4b1f] to-amber-400 rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[560px]">
+            <thead>
+              <tr className="border-b border-[#eee9e4] dark:border-zinc-800">
+                {['Rank', 'Item', 'Category', 'Units Sold', 'Gross Sales'].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`py-2.5 px-4 text-[11px] font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wide ${i >= 2 ? 'text-center' : ''} ${i === 4 ? 'text-right' : ''}`}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f4f1ee] dark:divide-zinc-800/60">
+              {topItems.map((item: any, index: number) => {
+                const pct = Math.round(((item.quantity_sold || 0) / maxQtySold) * 100);
+                const medals = ['🥇', '🥈', '🥉', '🏅'];
+                return (
+                  <tr key={item.item_id || index} className="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 text-sm">
+                        {medals[index] || '🏅'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-[13px] font-medium text-[#071B34] dark:text-white">{item.name}</p>
+                      <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono">ID: {item.item_id}</p>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-block px-2.5 py-0.5 text-[11px] font-normal text-[#c2410c] bg-[#fff7ed] border border-[#ffedd5] rounded-lg dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-900/40">
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="space-y-1 max-w-[160px] mx-auto">
+                        <div className="flex justify-between text-[11px] font-normal text-slate-600 dark:text-zinc-400">
+                          <span>{item.quantity_sold} sold</span>
+                          <span className="text-slate-400">{pct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#ff4b1f] to-amber-400 rounded-full"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-[13px] font-medium text-[#071B34] dark:text-white font-mono">
+                        ₹{fmt(item.total_sales || 0)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Quick Stats Footer Row ── */}
+      <div className="flex overflow-x-auto no-scrollbar items-center gap-2.5 text-[11px] text-slate-500 dark:text-zinc-400 pb-1 whitespace-nowrap">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <TrendingUp size={12} className="text-[#ff4b1f]" />
+          <span>Showing data for <span className="font-medium text-slate-700 dark:text-zinc-200">{meta.date_range || 'Today'}</span></span>
+        </div>
+        <span className="opacity-30 shrink-0">•</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Receipt size={12} className="text-slate-400" />
+          <span>Restaurant <span className="font-medium text-slate-700 dark:text-zinc-200">#{restaurantId}</span></span>
+        </div>
+        <span className="opacity-30 shrink-0">•</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Tag size={12} className="text-slate-400" />
+          <span><span className="font-medium text-slate-700 dark:text-zinc-200">{menus.total_category || 0}</span> categories</span>
+        </div>
+        <span className="opacity-30 shrink-0">•</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <BookOpen size={12} className="text-slate-400" />
+          <span><span className="font-medium text-slate-700 dark:text-zinc-200">{menus.total_menus || 0}</span> menu items</span>
+        </div>
+      </div>
+
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile View (< md) */}
+      <div className="block md:hidden min-h-screen bg-[#faf9f7] dark:bg-[#16161d]">
+        <MobileHeader title="Dashboard" />
+        {renderDashboardBody(true)}
+        <MobileFooter activeTab="dashboard" />
+      </div>
+
+      {/* Desktop View (>= md) */}
+      <div className="hidden md:block">
+        <DesktopLayout activePage="Dashboard">
+          {renderDashboardBody(false)}
+        </DesktopLayout>
+      </div>
+    </>
+  );
 };
 
 export default DashboardPage;

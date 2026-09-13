@@ -20,8 +20,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`min-h-screen bg-[#F8FAFC] text-slate-900 font-sans ${className}`}>
-      <div className="mx-auto min-h-screen w-full max-w-md bg-[#F8FAFC] overflow-x-hidden flex flex-col justify-between">
+    <div className={`min-h-screen bg-[#faf9f7] text-slate-900 font-sans ${className}`}>
+      <div className="mx-auto min-h-screen w-full max-w-md bg-[#faf9f7] overflow-x-hidden flex flex-col justify-between">
         {!hideHeader && <MobileHeader {...headerProps} />}
         <main className="flex-1 pb-20">{children}</main>
         {!hideFooter && <MobileFooter {...footerProps} />}
