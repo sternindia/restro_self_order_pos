@@ -173,8 +173,15 @@ function FoodCard({
           }}
         />
 
-        {/* FSSAI Dietary Badge */}
-        <div className="absolute left-2 top-2 z-10">
+        {/* Category Badge Pill (Top-Left) */}
+        {(item.category || item.category_name) && (
+          <div className="absolute left-2 top-2 z-10 px-2 py-0.5 rounded-md bg-white/95 dark:bg-[#1f1f28]/95 text-[#ff5200] text-[10.5px] font-medium shadow-2xs border border-orange-100/80 dark:border-zinc-700/80 backdrop-blur-xs select-none">
+            {item.category || item.category_name}
+          </div>
+        )}
+
+        {/* FSSAI Dietary Badge (Top-Right) */}
+        <div className="absolute right-2 top-2 z-10">
           <FoodTypeIcon type={item.type} />
         </div>
       </div>
@@ -566,6 +573,7 @@ export default function MobileMenuPage({ onLogout: _onLogout }: { onLogout?: () 
           items: items.map((it: any) => ({
             id: String(it.item_id),
             name: it.item_name,
+            category: cat.category_name,
             price: parseFloat(it.price || "0"),
             type: getDietaryType(it),
             description: it.description || "",
