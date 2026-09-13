@@ -43,12 +43,12 @@ async function fetchWithBypass(
       const key = Buffer.from(keyHex, 'hex');
       const iv = Buffer.from(ivHex, 'hex');
       const ciphertext = Buffer.from(ciphertextHex, 'hex');
-      
+
       const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
       decipher.setAutoPadding(false);
       let decrypted = decipher.update(ciphertext);
       decrypted = Buffer.concat([decrypted, decipher.final()]);
-      
+
       cachedCookie = decrypted.toString('hex');
       console.log(`[Bypass] Automatically solved cookie: __test=${cachedCookie}`);
 
@@ -93,19 +93,19 @@ export default defineConfig({
               }
 
               const result = await fetchWithBypass(targetUrl, req.method || 'GET', reqBody, clientHeaders);
-              
+
               res.statusCode = result.status;
               result.headers.forEach((val, key) => {
                 const lowerKey = key.toLowerCase();
                 if (
-                  lowerKey !== 'transfer-encoding' && 
-                  lowerKey !== 'content-encoding' && 
+                  lowerKey !== 'transfer-encoding' &&
+                  lowerKey !== 'content-encoding' &&
                   lowerKey !== 'content-length'
                 ) {
                   res.setHeader(key, val);
                 }
               });
-              
+
               if (result.body.startsWith('{') || result.body.startsWith('[')) {
                 res.setHeader('content-type', 'application/json');
               }

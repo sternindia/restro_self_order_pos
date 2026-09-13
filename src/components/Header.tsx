@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Menu as MenuIcon, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3 } from 'lucide-react';
+import { Bell, X, User, LogOut, Search, Utensils, Grid, Clock, Settings, Compass, Edit3, LayoutDashboard, Package } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getRestaurantId, parseBool } from '../config';
+import { MobileHeader, MobileFooter } from './mobile';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -21,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
     const cleanId = trackInputId.replace(/^#/i, '').trim();
     setIsTrackModalOpen(false);
     setTrackInputId('');
-    navigate(`/track-order?id=${cleanId}`);
+    navigate(`/track?id=${cleanId}`);
   };
 
   const [restaurantName, setRestaurantName] = useState<string>('RESTAURANT');
@@ -96,10 +97,10 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const isSelfPosBilling = roleAlias === 'self_billing_pos' || roleAlias === 'self_pos_billing' || roleAlias === 'self-pos-billing' || roleAlias === 'super_admin' || roleAlias === 'admin';
   const isStaffUser = user && !isGuestUser;
   const displayRole = user?.role_name || (
-    roleAlias === 'super_admin' ? 'Super Admin' : 
-    roleAlias === 'admin' ? 'Admin' : 
-    roleAlias === 'waiter' ? 'Waiter' : 
-    roleAlias === 'self_billing_pos' ? 'POS Billing' : ''
+    roleAlias === 'super_admin' ? 'Super Admin' :
+      roleAlias === 'admin' ? 'Admin' :
+        roleAlias === 'waiter' ? 'Waiter' :
+          roleAlias === 'self_billing_pos' ? 'POS Billing' : ''
   );
 
   const handleLogoutClick = () => {
@@ -117,150 +118,163 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
   return (
     <>
-      <div className="sticky top-0 z-40 flex h-16 sm:h-18 w-full items-center justify-between bg-[#FFFBF8] px-3 sm:px-8 shadow-xs border-b border-[#F0E6DF] select-none">
-        {/* LEFT: Restaurant Logo & Table Status */}
-        <div 
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity min-w-0"
-        >
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xl sm:text-2xl flex-shrink-0">🧑‍🍳</span>
-              <span className="text-lg sm:text-xl font-black text-black tracking-tight truncate uppercase">
-                {restaurantName}
-              </span>
-              {displayTable && !isSelfPosBilling && isEnableTables && (
-                <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
-                  {displayTable}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-gray-700 font-bold tracking-wide ml-7 -mt-0.5">
-              Smart Restaurant Management
-            </span>
-          </div>
-        </div>
+      {/* COMMON MOBILE HEADER & FOOTER */}
+      <div className="block md:hidden">
+        <MobileHeader onLogout={onLogout} />
+        <MobileFooter />
+      </div>
 
-        {/* CENTER: Desktop Navigation Tabs with real SVG icons */}
-        {isStaffUser && (
-          <div className="hidden lg:flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200">
-            <Link
-              to="/"
-              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
+      {/* DESKTOP VIEW (>= md: Restaurant Logo & Table Status | Nav Tabs | Action Icons) */}
+      <div className="hidden md:flex sticky top-0 z-40 h-16 sm:h-18 w-full items-center justify-between bg-white px-3 sm:px-8 shadow-xs border-b border-slate-200 select-none">
+          {/* LEFT: Restaurant Logo & Table Status */}
+          <div
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity min-w-0"
+          >
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-xl sm:text-2xl flex-shrink-0">🧑‍🍳</span>
+                <span className="text-lg sm:text-xl font-black text-black tracking-tight truncate uppercase">
+                  {restaurantName}
+                </span>
+                {displayTable && !isSelfPosBilling && isEnableTables && (
+                  <span className="bg-[#e8f8f0] text-[#2ecc71] border border-[#2ecc71]/20 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold flex-shrink-0">
+                    {displayTable}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] text-gray-700 font-bold tracking-wide ml-7 -mt-0.5">
+                Smart Restaurant Management
+              </span>
+            </div>
+          </div>
+
+          {/* CENTER: Desktop Navigation Tabs */}
+          {isStaffUser && (
+            <div className="hidden lg:flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200">
+              <Link
+                to="/"
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all ${currentPath === '/'
                   ? 'bg-white text-[#f05a24] shadow-2xs'
                   : 'text-gray-800 hover:text-gray-950 font-extrabold'
-                }`}
-            >
-              <Utensils size={14} />
-              <span>Menu</span>
-            </Link>
-            {isWaiter && isEnableTables && (
-              <Link
-                to="/tables"
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
-                    ? 'bg-white text-[#f05a24] shadow-2xs'
-                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
                   }`}
               >
-                <Grid size={14} />
-                <span>Tables</span>
+                <Utensils size={14} />
+                <span>Menu</span>
               </Link>
-            )}
-            <Link
-              to="/history"
-              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
+              {(isWaiter || roleAlias === 'admin' || roleAlias === 'super_admin') && isEnableTables && (
+                <Link
+                  to="/tables"
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/tables'
+                    ? 'bg-white text-[#f05a24] shadow-2xs'
+                    : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                    }`}
+                >
+                  <Grid size={14} />
+                  <span>Tables</span>
+                </Link>
+              )}
+              <Link
+                to="/history"
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/history'
                   ? 'bg-white text-[#f05a24] shadow-2xs'
                   : 'text-gray-800 hover:text-gray-950 font-extrabold'
-                }`}
-            >
-              <Clock size={14} />
-              <span>History</span>
-            </Link>
-            {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
-              <>
-                <Link
-                  to="/manage-menu"
-                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/manage-menu'
+                  }`}
+              >
+                <Clock size={14} />
+                <span>History</span>
+              </Link>
+              {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/dashboard'
                       ? 'bg-white text-[#f05a24] shadow-2xs'
                       : 'text-gray-800 hover:text-gray-950 font-extrabold'
-                    }`}
-                >
-                  <Edit3 size={14} />
-                  <span>Manage Menu</span>
-                </Link>
-                <Link
-                  to="/settings"
-                  className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
+                      }`}
+                  >
+                    <LayoutDashboard size={14} />
+                    <span>Dashboard</span>
+                  </Link>
+                  <Link
+                    to="/stock"
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/stock'
                       ? 'bg-white text-[#f05a24] shadow-2xs'
                       : 'text-gray-800 hover:text-gray-950 font-extrabold'
-                    }`}
-                >
-                  <Settings size={14} />
-                  <span>Settings</span>
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* RIGHT: Action Icons & Menu Toggle */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* User Profile Badge */}
-          {isStaffUser && (
-            <div 
-              className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-gray-800 bg-[#FAF6F0] hover:bg-[#FFF0E6] px-3 py-1.5 rounded-xl border border-[#F0E6DF] transition-all cursor-pointer shadow-2xs"
-              title={`Logged in as: ${user?.username || user?.name || user?.user_name || 'Staff User'}`}
-            >
-              <User size={15} className="text-[#f05a24]" />
-              <span className="max-w-[110px] truncate font-extrabold">{user?.username || user?.name || user?.user_name || 'Staff'}</span>
-              {displayRole && (
-                <span className="bg-[#f05a24] text-white text-[9px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider">
-                  {displayRole}
-                </span>
+                      }`}
+                  >
+                    <Package size={14} />
+                    <span>Stocks</span>
+                  </Link>
+                  <Link
+                    to="/manage-menu"
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/manage-menu'
+                      ? 'bg-white text-[#f05a24] shadow-2xs'
+                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                      }`}
+                  >
+                    <Edit3 size={14} />
+                    <span>Manage Menu</span>
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-md transition-all ${currentPath === '/settings'
+                      ? 'bg-white text-[#f05a24] shadow-2xs'
+                      : 'text-gray-800 hover:text-gray-950 font-extrabold'
+                      }`}
+                  >
+                    <Settings size={14} />
+                    <span>Settings</span>
+                  </Link>
+                </>
               )}
             </div>
           )}
 
-          {/* Track Order Button (Visible ONLY for Guest Customers) */}
-          {!isStaffUser && (
-            <button
-              onClick={() => setIsTrackModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#f05a24] bg-[#f05a24]/10 hover:bg-[#f05a24]/20 px-3 py-1.5 rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
-              title="Track your order status"
-            >
-              <Search size={14} className="text-[#f05a24]" />
-              <span className="hidden xs:inline">Track Order</span>
-            </button>
-          )}
+          {/* RIGHT: Action Icons & Menu Toggle */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {isStaffUser && (
+              <div
+                className="relative group hidden sm:flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer shadow-2xs"
+                title={`Logged in as: ${user?.username || user?.name || user?.user_name || 'Staff User'}`}
+              >
+                <User size={15} className="text-[#f05a24]" />
+                <span className="max-w-[110px] truncate font-extrabold">{user?.username || user?.name || user?.user_name || 'Staff'}</span>
+                {displayRole && (
+                  <span className="bg-amber-100 text-amber-800 border border-amber-300/80 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                    {displayRole}
+                  </span>
+                )}
+              </div>
+            )}
 
-          <button id="notification-btn" className="p-2 text-gray-700 hover:text-[#f05a24] hover:bg-gray-100 rounded-xl transition-colors cursor-pointer" title="Notifications">
-            <Bell size={20} />
-          </button>
+            {!isStaffUser && (
+              <button
+                onClick={() => setIsTrackModalOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-[#f05a24] bg-[#f05a24]/10 hover:bg-[#f05a24]/20 px-3 py-1.5 rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="Track your order status"
+              >
+                <Search size={14} className="text-[#f05a24]" />
+                <span className="hidden xs:inline">Track Order</span>
+              </button>
+            )}
 
-          {/* Logout Button (Visible ONLY for Staff/Admin Users, Hidden for Guest Customers) */}
-          {isStaffUser && (
-            <button
-              onClick={handleLogoutClick}
-              className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-[#f05a24] hover:bg-[#d94815] text-white font-bold rounded-xl transition-all cursor-pointer shadow-xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
-              title="Logout Account"
-            >
-              <LogOut size={18} />
-              <span className="text-xs">Logout</span>
+            <button id="notification-btn" className="p-2 text-gray-700 hover:text-[#f05a24] hover:bg-gray-100 rounded-xl transition-colors cursor-pointer" title="Notifications">
+              <Bell size={20} />
             </button>
-          )}
 
-          {/* 3-BAR HAMBURGER TOGGLE BUTTON */}
-          {isStaffUser && (
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="flex lg:hidden p-2 rounded-xl border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 transition-all cursor-pointer"
-              title="Toggle Menu"
-            >
-              {isMobileMenuOpen ? <X size={20} /> : <MenuIcon size={20} />}
-            </button>
-          )}
+            {isStaffUser && (
+              <button
+                onClick={handleLogoutClick}
+                className="hidden sm:flex p-2.5 sm:px-3 sm:py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95 items-center justify-center gap-1.5 flex-shrink-0"
+                title="Logout Account"
+              >
+                <LogOut size={18} />
+                <span className="text-xs">Logout</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* MOBILE & TABLET RIGHT SLIDE-OVER DRAWER */}
       {isMobileMenuOpen && isStaffUser && (
@@ -294,21 +308,21 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/'
-                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Utensils size={18} />
                   <span>Menu</span>
                 </Link>
 
-                {isWaiter && isEnableTables && (
+                {(isWaiter || roleAlias === 'admin' || roleAlias === 'super_admin') && isEnableTables && (
                   <Link
                     to="/tables"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/tables'
-                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
                     <Grid size={18} />
@@ -320,8 +334,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                   to="/history"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/history'
-                      ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Clock size={18} />
@@ -331,11 +345,33 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 {(roleAlias === 'super_admin' || roleAlias === 'admin') && (
                   <>
                     <Link
+                      to="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/dashboard'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <LayoutDashboard size={18} />
+                      <span>Dashboard</span>
+                    </Link>
+                    <Link
+                      to="/stock"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/stock'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      <Package size={18} />
+                      <span>Item Stocks</span>
+                    </Link>
+                    <Link
                       to="/manage-menu"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/manage-menu'
-                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                          : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       <Edit3 size={18} />
@@ -345,8 +381,8 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                       to="/settings"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${currentPath === '/settings'
-                          ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
-                          : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-[#f05a24] text-white shadow-md shadow-[#f05a24]/20'
+                        : 'text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       <Settings size={18} />
@@ -360,9 +396,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
             {/* Drawer Footer */}
             <div className="pt-4 border-t border-gray-100 space-y-3">
               {/* User Profile Card */}
-              <div className="bg-[#FAF6F0] p-3 rounded-2xl border border-[#F0E6DF] space-y-2">
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#f05a24] text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
                     <User size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -371,7 +407,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                         {user?.username || user?.name || user?.user_name || 'Admin'}
                       </p>
                       {displayRole && (
-                        <span className="bg-[#f05a24]/10 text-[#f05a24] border border-[#f05a24]/20 text-[9px] px-1.5 py-0.2 rounded-md font-extrabold uppercase shrink-0">
+                        <span className="bg-amber-100 text-amber-800 border border-amber-300/80 text-[9px] px-1.5 py-0.2 rounded-md font-bold uppercase shrink-0">
                           {displayRole}
                         </span>
                       )}
@@ -389,9 +425,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                     setIsMobileMenuOpen(false);
                     handleLogoutClick();
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-[#FFF0E6] hover:bg-[#f05a24] text-[#f05a24] hover:text-white font-extrabold text-xs rounded-xl border border-[#f05a24]/30 transition-all cursor-pointer shadow-2xs active:scale-98 group"
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold text-xs rounded-xl border border-rose-200 transition-all cursor-pointer shadow-2xs active:scale-98 group"
                 >
-                  <LogOut size={16} className="text-[#f05a24] group-hover:text-white transition-colors" />
+                  <LogOut size={16} className="text-rose-600" />
                   <span>Logout Account</span>
                 </button>
               )}
@@ -411,9 +447,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 </div>
                 <h3 className="text-sm font-bold text-gray-900">Track Order Status</h3>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={() => setIsTrackModalOpen(false)} 
+                onClick={() => setIsTrackModalOpen(false)}
                 className="text-gray-400 hover:text-gray-700 text-lg font-bold p-1 cursor-pointer"
               >
                 &times;
@@ -425,7 +461,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                 <label className="block text-xs font-bold text-gray-700 mb-1">
                   Enter Order ID
                 </label>
-                <input 
+                <input
                   type="text"
                   placeholder="e.g. 1042 or 987654"
                   value={trackInputId}

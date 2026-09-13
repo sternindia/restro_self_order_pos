@@ -33,7 +33,7 @@ const OrderInfoPage: React.FC = () => {
         const taxRate = parseFloat(settingsData.financials?.tax_rate_percentage ?? settingsData.taxRate ?? 5.0);
         const serviceCharge = parseFloat(settingsData.financials?.service_charge_percentage ?? settingsData.serviceCharge ?? 0.0);
         const enableTablesVal = settingsData?.hardware_and_preferences?.is_enable_tables ?? settingsData?.is_enable_tables ?? settingsData?.isEnableTables;
-        
+
         setPosSettings({ taxRate, serviceCharge });
         setIsEnableTables(parseBool(enableTablesVal, false));
       };
@@ -66,7 +66,8 @@ const OrderInfoPage: React.FC = () => {
     if (!savedUser) return '';
     try {
       const parsed = JSON.parse(savedUser);
-      return parsed.name || parsed.guest_name || 'Guest';
+      if (parsed.isGuest || parsed.name === 'Guest Customer' || parsed.guest_name === 'Guest') return '';
+      return parsed.name || parsed.guest_name || '';
     } catch {
       return '';
     }
@@ -76,6 +77,7 @@ const OrderInfoPage: React.FC = () => {
     if (!savedUser) return '';
     try {
       const parsed = JSON.parse(savedUser);
+      if (parsed.isGuest || parsed.phone === 'Guest Customer') return '';
       return parsed.phone || '';
     } catch {
       return '';
@@ -88,7 +90,18 @@ const OrderInfoPage: React.FC = () => {
     return savedUser ? JSON.parse(savedUser) : null;
   }, []);
 
-  const isGuestCustomer = !userObj || userObj.isGuest || userObj.role?.toLowerCase() === 'guest';
+  const roleAlias = (userObj?.role_alias || userObj?.role || '').toLowerCase();
+  const isGuestCustomer = !userObj || userObj.isGuest || roleAlias === 'guest' || roleAlias === 'guest_user';
+  const isWaiter = !isGuestCustomer && roleAlias === 'waiter';
+  const isSelfPosBilling = !isGuestCustomer && !isWaiter && (
+    roleAlias === 'self_billing_pos' ||
+    roleAlias === 'self_pos_billing' ||
+    roleAlias === 'self-pos-billing' ||
+    roleAlias === 'super_admin' ||
+    roleAlias === 'admin' ||
+    roleAlias === 'cashier' ||
+    roleAlias === 'manager'
+  );
 
   const [tableIdFromUrl] = useState(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -109,7 +122,7 @@ const OrderInfoPage: React.FC = () => {
     const queryParams = new URLSearchParams(window.location.search);
     const urlTable = queryParams.get('table') || queryParams.get('table_number') || '';
     if (urlTable) return String(urlTable).replace(/[^0-9]/g, '') || urlTable;
-    const stored = sessionStorage.getItem('emenu_table') || '';
+    const stored = sessionStorage.getItem('emenu_table') || localStorage.getItem('emenu_table') || '';
     return String(stored).replace(/[^0-9]/g, '') || stored;
   });
 
@@ -280,7 +293,7 @@ const OrderInfoPage: React.FC = () => {
 
     const savedUser = localStorage.getItem('emenu_user');
     const userObj = savedUser ? JSON.parse(savedUser) : null;
-    const restaurantId = userObj?.restaurant_id || userObj?.restaurent_id || 9;
+    const restaurantId = getRestaurantId();
 
     const matchingTableObj = tables.find(t => String(t.table_number) === String(cleanTableNum) || String(t.table_id) === String(cleanTableNum));
     const tableNumberId = matchingTableObj ? (parseInt(matchingTableObj.table_id) || null) : null;
@@ -302,8 +315,8 @@ const OrderInfoPage: React.FC = () => {
     const orderPayload = {
       order_meta: {
         restaurant_id: restaurantId,
-        staff_id: 5,
-        staff_name: guestName || "E-Menu Customer",
+        staff_id: userObj && !isGuestCustomer ? (userObj.id || 5) : 5,
+        staff_name: userObj && !isGuestCustomer ? (userObj.name || userObj.username || "Staff") : (guestName || "E-Menu Customer"),
         order_type: isEnableTables ? "DINE_IN" : "TAKEAWAY",
         table_number: isEnableTables && cleanTableNum ? `Table #${cleanTableNum}` : null,
         table_number_id: isEnableTables ? tableNumberId : null,
@@ -488,9 +501,9 @@ const OrderInfoPage: React.FC = () => {
   };
 
   return (
-    <div className="infobody min-h-screen bg-[#FAF6F0] font-sans pb-32">
+    <div className="infobody min-h-screen bg-[#faf9f7] font-sans pb-32">
       {/* Top Header */}
-      <div className="header-info sticky top-0 z-50 flex h-11 md:h-16 w-full items-center bg-[#FFFBF8] px-3 md:px-8 shadow-xs border-b border-[#F0E6DF]">
+      <div className="header-info sticky top-0 z-50 flex h-11 md:h-16 w-full items-center bg-white px-3 md:px-8 shadow-xs border-b border-slate-200">
         <button
           onClick={() => navigate(-1)}
           className="back-arrow mr-2.5 p-1.5 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -501,11 +514,11 @@ const OrderInfoPage: React.FC = () => {
       </div>
 
       <div className="bodymiddle flex justify-center px-2 sm:px-4 py-2 sm:py-6">
-        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-[#F0E6DF] space-y-3 sm:space-y-5 flex flex-col">
+        <div className="info-container w-full max-w-2xl bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-xs border-0 sm:border border-slate-200 space-y-3 sm:space-y-5 flex flex-col">
 
           {/* Restaurant Header Info (Only visible for Guest Customers; Hidden for Waiters/Staff) */}
           {isGuestCustomer && (
-            <div className="restaurant-info bg-[#FAF6F0]/60 rounded-xl p-2.5 sm:p-4 border border-[#F0E6DF]">
+            <div className="restaurant-info bg-slate-50 rounded-xl p-2.5 sm:p-4 border border-slate-200">
               <h2 className="text-base sm:text-lg font-black text-gray-900 mb-0.5 tracking-tight">{posSettings?.restaurant_info?.name || 'BIG BEN RESTAURANT'}</h2>
               <p className="text-[11px] sm:text-xs text-gray-600 flex items-start gap-1 my-0.5">
                 <span>📍</span> <span>{posSettings?.restaurant_info?.address || '1st Flr, A Wing, Todi Estate, Sun Mill Compound, Lower Parel (west)'}</span>
@@ -532,36 +545,30 @@ const OrderInfoPage: React.FC = () => {
                 <label className="block text-[10px] sm:text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-1">
                   Table Number *
                 </label>
-                {isGuestCustomer ? (
-                  <select
-                    value={selectedTable}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedTable(val);
-                      if (val) {
-                        sessionStorage.setItem('emenu_table', val);
-                        localStorage.setItem('emenu_table', val);
-                      } else {
-                        sessionStorage.removeItem('emenu_table');
-                      }
-                    }}
-                    className="w-full h-10 sm:h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-bold text-gray-900 bg-white cursor-pointer shadow-2xs"
-                  >
-                    <option value="">-- Select Table Number * --</option>
-                    {tables.map((t: any) => {
-                      const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
-                      return (
-                        <option key={t.table_id || num} value={num}>
-                          Table #{num} ({t.status || 'Available'})
-                        </option>
-                      );
-                    })}
-                  </select>
-                ) : (
-                  <div className="h-10 sm:h-11 rounded-xl border border-[#f05a24]/30 bg-[#FFF0E6]/70 px-3 text-xs font-black text-[#f05a24] flex items-center justify-center gap-1.5 shadow-2xs">
-                    <span>Table #{selectedTable || tableIdFromUrl || sessionStorage.getItem('emenu_table') || '1'}</span>
-                  </div>
-                )}
+                <select
+                  value={selectedTable}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedTable(val);
+                    if (val) {
+                      sessionStorage.setItem('emenu_table', val);
+                      localStorage.setItem('emenu_table', val);
+                    } else {
+                      sessionStorage.removeItem('emenu_table');
+                    }
+                  }}
+                  className="w-full h-10 sm:h-11 rounded-xl border border-gray-300 px-3 outline-none focus:border-[#f05a24] focus:ring-2 focus:ring-[#f05a24]/20 text-xs font-bold text-gray-900 bg-white cursor-pointer shadow-2xs"
+                >
+                  <option value="">-- Select Table Number * --</option>
+                  {tables.map((t: any) => {
+                    const num = String(t.table_number || t.table_name || t.table_id).replace(/[^0-9]/g, '') || t.table_number;
+                    return (
+                      <option key={t.table_id || num} value={num}>
+                        Table #{num} ({t.status || 'Available'})
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
           </div>
@@ -596,7 +603,7 @@ const OrderInfoPage: React.FC = () => {
           </div>
 
           {/* Billing Summary Box */}
-          <div className="summary bg-[#FAF6F0]/60 rounded-xl p-3 sm:p-4 border border-[#F0E6DF] text-xs sm:text-sm space-y-2 sm:space-y-2.5">
+          <div className="summary bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200 text-xs sm:text-sm space-y-2 sm:space-y-2.5">
             <div className="flex items-center justify-between border-b border-gray-200/80 pb-2">
               <span className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] sm:text-xs">Order Summary</span>
               <span className="text-[11px] font-bold text-gray-800">{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</span>
@@ -745,14 +752,14 @@ const OrderInfoPage: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-2 pt-2">
-              <button 
+              <button
                 onClick={() => setShowCancelModal(false)}
                 disabled={cancellingOrder}
                 className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer transition-all disabled:opacity-50"
               >
                 No, Keep Order
               </button>
-              <button 
+              <button
                 onClick={handleConfirmCancelOrder}
                 disabled={cancellingOrder}
                 className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-1 disabled:opacity-50"
